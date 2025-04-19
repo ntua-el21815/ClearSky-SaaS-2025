@@ -1,6 +1,6 @@
 # NTUA ECE SAAS 2025 PROJECT
 
-## TEAM (XX)
+## TEAM (27)
 
 Περιγραφή - οδηγίες
 
