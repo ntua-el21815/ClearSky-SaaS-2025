@@ -32,6 +32,10 @@ const paymentTransactionSchema = new Schema({
     enum: Object.values(PaymentStatus),
     default: PaymentStatus.PENDING
   },
+  reasonForDecline: {
+    type: String,
+    default: null
+  },
   transactionDate: {
     type: Date,
     default: Date.now

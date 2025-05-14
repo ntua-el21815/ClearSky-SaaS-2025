@@ -1,6 +1,8 @@
 const InstitutionCredit = require('../models/institutionCredit');
 const { PaymentTransaction, PaymentStatus } = require('../models/paymentTransaction');
 const CreditUsageLog = require('../models/creditUsageLog');
+const e = require('express');
+const stripe = require('stripe')('sk_test_K4dDnnwpTYqthU0VnbqULyZ000I8mYOPJY');
 
 class CreditService {
   // Get credit balance for an institution
@@ -47,25 +49,6 @@ class CreditService {
       }
       
       await creditRecord.save();
-      
-      // This is dummy logic for payment processing
-      let paymentDetails = {
-        amount: creditsToAdd * 10, 
-        externalTransactionId: `txn_${Date.now()}`
-      };
-      console.log('Payment details:', paymentDetails);
-      // Create payment transaction if payment details are provided
-      if (paymentDetails) {
-        const transaction = new PaymentTransaction({
-          institutionId,
-          numOfCredits: creditsToAdd,
-          amount: paymentDetails.amount,
-          externalTransactionId: paymentDetails.externalTransactionId,
-          status: PaymentStatus.COMPLETED
-        });
-        
-        await transaction.save();
-      }
       
       return {
         institutionId: creditRecord.institutionId,
@@ -140,9 +123,15 @@ class CreditService {
   }
 
   // Process payment and add credits
-  async processPayment(institutionId, numOfCredits, paymentDetails) {
+  async processPayment(institutionId, numOfCredits, paymentDetails = null) {
     try {
-      // Create payment transaction
+      // Dummy payment details for testing
+      let paymentDetails = {
+        amount: numOfCredits * 1000, // Amount in cents
+        currency: 'eur',
+        externalTransactionId: `tx_${Date.now()}`,
+        status: PaymentStatus.PENDING
+      }
       const transaction = new PaymentTransaction({
         institutionId,
         numOfCredits,
@@ -152,26 +141,110 @@ class CreditService {
       });
       
       await transaction.save();
-      
-      // In a real implementation, you would integrate with payment gateway here
-      // For now, we're simulating a successful payment
-      
-      // Update transaction status
-      transaction.status = PaymentStatus.COMPLETED;
+      // List of test Stripe payment method IDs
+      const testCards = [
+        'pm_card_visa',
+        'pm_card_mastercard',
+        'pm_card_amex',
+        'pm_card_discover',
+        'pm_card_jcb',
+        'pm_card_diners',
+        'pm_card_visa_chargeDeclined',
+        'pm_card_visa_chargeDeclinedInsufficientFunds',
+        'pm_card_visa_chargeDeclinedLostCard',
+        'pm_card_visa_chargeDeclinedStolenCard',
+        'pm_card_chargeDeclinedExpiredCard',
+        'pm_card_chargeDeclinedIncorrectCvc',
+        'pm_card_chargeDeclinedProcessingError',
+        'pm_card_visa_chargeDeclinedVelocityLimitExceeded'
+      ];
+
+      // Simulating Errors and Successes in payment
+      // Choose a random card, but 1 out of 10 times pick a failing card
+      let selectedCard;
+      if (Math.random() < 0.3) {
+        // Pick a known failing card from the testCards list
+        const failingCards = [
+          'pm_card_visa_chargeDeclined',
+          'pm_card_visa_chargeDeclinedInsufficientFunds',
+          'pm_card_visa_chargeDeclinedLostCard',
+          'pm_card_visa_chargeDeclinedStolenCard',
+          'pm_card_chargeDeclinedExpiredCard',
+          'pm_card_chargeDeclinedIncorrectCvc',
+          'pm_card_chargeDeclinedProcessingError',
+          'pm_card_visa_chargeDeclinedVelocityLimitExceeded'
+        ];
+        selectedCard = failingCards[Math.floor(Math.random() * failingCards.length)];
+      } else {
+        // Pick a successful card
+        const successCards = [
+          'pm_card_visa',
+          'pm_card_mastercard',
+          'pm_card_amex',
+          'pm_card_discover',
+          'pm_card_jcb',
+          'pm_card_diners'
+        ];
+        selectedCard = successCards[Math.floor(Math.random() * successCards.length)];
+      }
+      let paymentIntent;
+      let reasonForDecline = null;
+      try{
+          paymentIntent = await stripe.paymentIntents.create({
+          amount: paymentDetails.amount, // amount in cents
+          currency: 'eur',
+          payment_method: selectedCard,
+          confirm: true,
+          automatic_payment_methods: {
+            enabled: true,
+            allow_redirects: 'never'
+          }
+        });
+      }
+      catch (error) {
+        console.error('Error while processing payment:', error);
+        reasonForDecline = error.raw.message;
+      }
+
+      if (!paymentIntent) {
+        transaction.status = PaymentStatus.FAILED;
+        transaction.reasonForDecline = reasonForDecline || 'Payment failed';
+        await transaction.save();
+
+        const previousBalance = (await this.getInstitutionCreditBalance(institutionId));
+        return {
+          transactionId: transaction._id,
+          institutionId,
+          numOfCredits,
+          status: transaction.status,
+          creditBalance: previousBalance.availableCredits,
+          reasonForDecline: transaction.reasonForDecline
+        };
+      }
+      // Update transaction status based on payment outcome
+      if (paymentIntent.status === 'succeeded') {
+        transaction.status = PaymentStatus.COMPLETED;
+      } else {
+        transaction.status = PaymentStatus.FAILED;
+        transaction.reasonForDecline = paymentIntent.last_payment_error?.message || 'Payment failed';
+      }
       await transaction.save();
-      
-      // Add credits to institution
-      const result = await this.addCredits(institutionId, numOfCredits, {
-        amount: paymentDetails.amount,
-        externalTransactionId: paymentDetails.externalTransactionId
-      });
+
+      // Add credits to institution if payment succeeded
+      // Get previous balance before adding credits
+      const previousBalance = (await this.getInstitutionCreditBalance(institutionId));
+      let result = previousBalance.availableCredits;
+      if (transaction.status === PaymentStatus.COMPLETED) {
+        result = (await this.addCredits(institutionId, numOfCredits)).availableCredits;
+      }
       
       return {
         transactionId: transaction._id,
         institutionId,
         numOfCredits,
         status: transaction.status,
-        creditBalance: result
+        creditBalance: result,
+        reasonForDecline: transaction.reasonForDecline
       };
     } catch (error) {
       console.error('Error processing payment:', error);

@@ -24,7 +24,7 @@ router.post('/institution/:institutionId/add', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credit amount' });
     }
     
-    const result = await creditService.addCredits(institutionId, credits);
+    const result = await creditService.processPayment(institutionId, credits);
     res.status(200).json(result);
   } catch (error) {
     console.error('Error adding credits:', error);
