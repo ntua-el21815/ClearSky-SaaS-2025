@@ -1,7 +1,6 @@
 const InstitutionCredit = require('../models/institutionCredit');
 const { PaymentTransaction, PaymentStatus } = require('../models/paymentTransaction');
 const CreditUsageLog = require('../models/creditUsageLog');
-const e = require('express');
 const stripe = require('stripe')('sk_test_K4dDnnwpTYqthU0VnbqULyZ000I8mYOPJY');
 
 class CreditService {

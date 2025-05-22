@@ -71,21 +71,21 @@ router.get('/institution/:institutionId/usage', async (req, res) => {
   }
 });
 
-// Process payment and add credits
-router.post('/payment/process', async (req, res) => {
-  try {
-    const { institutionId, numOfCredits, paymentDetails } = req.body;
+// // Process payment and add credits
+// router.post('/payment/process', async (req, res) => {
+//   try {
+//     const { institutionId, numOfCredits, paymentDetails } = req.body;
     
-    if (!institutionId || !numOfCredits || numOfCredits <= 0 || !paymentDetails) {
-      return res.status(400).json({ message: 'Invalid request parameters' });
-    }
+//     if (!institutionId || !numOfCredits || numOfCredits <= 0 || !paymentDetails) {
+//       return res.status(400).json({ message: 'Invalid request parameters' });
+//     }
     
-    const result = await creditService.processPayment(institutionId, numOfCredits, paymentDetails);
-    res.status(200).json(result);
-  } catch (error) {
-    console.error('Error processing payment:', error);
-    res.status(500).json({ message: 'Failed to process payment', error: error.message });
-  }
-});
+//     const result = await creditService.processPayment(institutionId, numOfCredits, paymentDetails);
+//     res.status(200).json(result);
+//   } catch (error) {
+//     console.error('Error processing payment:', error);
+//     res.status(500).json({ message: 'Failed to process payment', error: error.message });
+//   }
+// });
 
 module.exports = router;
