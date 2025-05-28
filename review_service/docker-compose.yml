@@ -1,26 +1,34 @@
-# docker-compose.yml
 services:
   review-service:
     build: .
     ports:
-      - "8400:8400" # Exposes the service on host port 8400 [user requirement]
+      - "8400:8400"
     environment:
       MONGO_URI: mongodb://mongodb:27017/reviewDB
       PORT: 8400
     depends_on:
       - mongodb
     volumes:
-      - .:/app # Optional: For development, mounts current directory to /app in container
-      - /app/node_modules # Optional: To use node_modules from container, not host
+      - .:/app
+      - /app/node_modules
     restart: unless-stopped
+    networks:
+      - clearsky-network
 
   mongodb:
     image: mongo:latest
     ports:
-      - "27017:27017" # Expose MongoDB if you want to connect from host
+      - "27017:27017"
     volumes:
-      - mongo-data:/data/db # Persist MongoDB data
+      - mongo-data:/data/db
     restart: unless-stopped
+    networks:
+      - clearsky-network
 
 volumes:
   mongo-data:
+
+networks:
+  clearsky-network:
+    driver: bridge
+    external: true

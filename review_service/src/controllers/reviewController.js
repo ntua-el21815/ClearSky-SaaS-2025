@@ -4,7 +4,44 @@ import Review from '../models/reviewModel.js';
 // Create a new review [corresponds to "Review Requested" by Review Orchestrator [cite: 3]]
 export const createReview = async (req, res) => {
   try {
-    const review = new Review(req.body);
+    const {
+      studentId,
+      courseId,
+      gradeId,
+      studentRegistrationNumber,
+      reason,
+    } = req.body;
+
+    // Basic sanitization and validation
+    if (
+      typeof studentId !== 'string' ||
+      typeof courseId !== 'string' ||
+      typeof gradeId !== 'string' ||
+      typeof studentRegistrationNumber !== 'string' ||
+      typeof reason !== 'string' ||
+      !studentId.trim() ||
+      !courseId.trim() ||
+      !gradeId.trim() ||
+      !studentRegistrationNumber.trim() ||
+      !reason.trim()
+    ) {
+      return res.status(400).json({ message: 'Invalid input data' });
+    }
+
+    // Check if the student exists, remember to reapply later
+    // const student = await Student.findOne({ id: studentId.trim() });
+    // if (!student) {
+    //   return res.status(404).json({ message: 'Student not found' });
+    // }
+    
+    const review = new Review({
+      studentId: studentId.trim(),
+      courseId: courseId.trim(),
+      gradeId: gradeId.trim(),
+      studentRegistrationNumber: studentRegistrationNumber.trim(),
+      reason: reason.trim(),
+    });
+
     await review.save();
     res.status(201).json(review);
   } catch (error) {
