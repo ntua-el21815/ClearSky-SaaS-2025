@@ -83,8 +83,6 @@ export const updateReview = async (req, res) => {
     if (!review) {
       return res.status(404).json({ message: 'Review not found' });
     }
-    // Publish event to RabbitMQ
-    await publishReviewEvent(`review.updated.${review.status.toLowerCase()}`, review);
     res.status(200).json(review);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -98,7 +96,6 @@ export const deleteReview = async (req, res) => {
     if (!review) {
       return res.status(404).json({ message: 'Review not found' });
     }
-    await publishReviewEvent('review.deleted', { id: req.params.id });
     res.status(200).json({ message: 'Review deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
