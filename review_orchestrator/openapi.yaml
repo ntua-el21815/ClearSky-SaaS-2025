@@ -1,0 +1,312 @@
+openapi: 3.0.3
+info:
+  title: Review Orchestrator API
+  version: 1.0.0
+  description: API for orchestrating review requests and replies with notifications
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /review-requests:
+    post:
+      summary: Create a new review request (UC03)
+      operationId: createReviewRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequestInput'
+      responses:
+        '201':
+          description: Review request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrchestrationResponse'
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Review service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to process review request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: Get review requests with filters
+      operationId: getReviewRequests
+      parameters:
+        - in: query
+          name: courseId
+          schema:
+            type: string
+          description: Filter by course ID
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Filter by status
+      responses:
+        '200':
+          description: List of review requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewRequestsResponse'
+        '503':
+          description: Review service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to fetch review requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /review-requests/{reviewId}:
+    get:
+      summary: Get a specific review request
+      operationId: getReviewRequest
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: string
+          description: Review ID
+      responses:
+        '200':
+          description: Review request details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewRequestResponse'
+        '404':
+          description: Review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Review service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to fetch review request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /review-requests/{reviewId}/reply:
+    post:
+      summary: Reply to a review request (UC04)
+      operationId: replyToReviewRequest
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: string
+          description: Review ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewReplyInput'
+      responses:
+        '200':
+          description: Review reply processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrchestrationResponse'
+        '400':
+          description: Missing required field
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Review service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to process review reply
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+          example: review-orchestrator
+        timestamp:
+          type: string
+          format: date-time
+
+    ReviewRequestInput:
+      type: object
+      required:
+        - studentId
+        - courseId
+        - gradeId
+        - studentRegistrationNumber
+        - reason
+      properties:
+        studentId:
+          type: string
+          description: Student's unique identifier
+        courseId:
+          type: string
+          description: Course's unique identifier
+        gradeId:
+          type: string
+          description: Grade's unique identifier
+        studentRegistrationNumber:
+          type: string
+          description: Student's registration number
+        reason:
+          type: string
+          description: Reason for the review request
+
+    ReviewReplyInput:
+      type: object
+      required:
+        - instructorResponse
+      properties:
+        instructorResponse:
+          type: string
+          description: Instructor's response to the review
+        reviewedGrade:
+          type: string
+          description: Updated grade (optional)
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the review
+        studentId:
+          type: string
+          description: Student's unique identifier
+        courseId:
+          type: string
+          description: Course's unique identifier
+        gradeId:
+          type: string
+          description: Grade's unique identifier
+        studentRegistrationNumber:
+          type: string
+          description: Student's registration number
+        reason:
+          type: string
+          description: Reason for the review
+        status:
+          type: string
+          description: Status of the review
+        instructorResponse:
+          type: string
+          description: Instructor's response
+        reviewedGrade:
+          type: string
+          description: Reviewed grade
+        requestedAt:
+          type: string
+          format: date-time
+          description: Request timestamp
+        resolvedAt:
+          type: string
+          format: date-time
+          description: Resolution timestamp
+
+    OrchestrationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        reviewId:
+          type: string
+        data:
+          $ref: '#/components/schemas/Review'
+
+    ReviewRequestResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Review'
+
+    ReviewRequestsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Additional error details
