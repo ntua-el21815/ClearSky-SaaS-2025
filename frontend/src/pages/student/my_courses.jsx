@@ -1,8 +1,7 @@
-// src/routes/student/personal_grades/personalgrades.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Bar } from 'react-chartjs-2';
-import 'chart.js/auto';
+import Layout from '../../components/layout';
+import Button from '../../components/Button';
 
 const mockUser = {
   name: 'Aggeliki Papadopoulou',
@@ -13,39 +12,32 @@ const mockCourses = [
   {
     name: 'physics',
     examPeriod: 'spring 2025',
-    gradingStatus: 'open',
-    grades: { total: 7.5, Q1: 8, Q2: 7, Q3: 7 },
-    stats: {
-      total: [0, 0, 0, 0, 10, 8, 0, 35, 61, 42, 12],
-      questions: {
-        Q1: [0, 0, 2, 5, 12, 20, 15, 8, 3, 1, 0],
-        Q2: [0, 1, 4, 10, 18, 22, 9, 6, 4, 1, 0],
-        Q3: [0, 0, 1, 2, 8, 30, 40, 10, 3, 1, 0]
-      }
-    }
+    gradingStatus: 'Open'
   },
   {
     name: 'software',
     examPeriod: 'fall 2024',
-    gradingStatus: 'closed',
-    grades: { total: 9.0 },
-    stats: null
+    gradingStatus: 'Closed'
   },
   {
     name: 'mathematics',
     examPeriod: 'fall 2024',
-    gradingStatus: 'closed',
-    grades: { total: 8.5 },
-    stats: null
+    gradingStatus: 'Closed'
   }
 ];
 
-export default function PersonalGrades() {
+const mockReviews = [
+  { course: 'physics', status: 'Pending', instructorResponse: null },
+  { course: 'software', status: 'Reviewed', instructorResponse: 'Regrade not approved' },
+  { course: 'mathematics', status: 'Reviewed', instructorResponse: 'Regrade granted: New grade 8.5' }
+];
+
+export default function MyCourses() {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedCourseName = location.state?.courseName;
-
-  const selectedCourse = mockCourses.find(course => course.name === selectedCourseName);
+  const [expandedCourse, setExpandedCourse] = useState(null);
+  const [reviewMessages, setReviewMessages] = useState({});
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -54,108 +46,137 @@ export default function PersonalGrades() {
     }
   }, [navigate]);
 
-  const renderChart = (label, data, color) => (
-    <Bar
-      data={{
-        labels: Array.from({ length: 11 }, (_, i) => i),
-        datasets: [
-          {
-            label,
-            data,
-            backgroundColor: color || 'rgba(220, 38, 38, 0.7)'
-          }
-        ]
-      }}
-      options={{
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true } }
-      }}
-    />
-  );
+  const handleToggleReview = (courseName) => {
+    setExpandedCourse(prev => (prev === courseName ? null : courseName));
+  };
+
+  const handleReviewSubmit = (courseName) => {
+    const message = reviewMessages[courseName]?.trim();
+    if (!message) {
+      alert('Please enter a message before submitting.');
+      return;
+    }
+    console.log(`Review submitted for ${courseName}:`, message);
+    alert('Review submitted!');
+    setReviewMessages((prev) => ({ ...prev, [courseName]: '' }));
+  };
 
   return (
-    <div className="p-4">
-      <header className="bg-gray-200 p-4 mb-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">ClearSky</h1>
-        <div className="space-x-4">
-          <button onClick={() => navigate('/student/grade_statistics')} className="px-4 py-1 bg-blue-500 text-white rounded">
-            Statistics
-          </button>
-          <button onClick={() => { localStorage.clear(); navigate('/login'); }} className="px-4 py-1 bg-gray-500 text-white rounded">
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <h2 className="text-lg font-semibold mb-4">{mockUser.name}, {mockUser.email}</h2>
-
-      <table className="w-full table-auto border mb-6">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border px-2 py-1">Course Name</th>
-            <th className="border px-2 py-1">Exam Period</th>
-            <th className="border px-2 py-1">Grading Status</th>
-            <th className="border px-2 py-1">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {mockCourses.map((course, idx) => (
-            <tr key={idx} className={`text-center ${course.name === selectedCourseName ? 'bg-yellow-100 font-semibold' : ''}`}>
-              <td className="border px-2 py-1">{course.name}</td>
-              <td className="border px-2 py-1">{course.examPeriod}</td>
-              <td className="border px-2 py-1">{course.gradingStatus}</td>
-              <td className="border px-2 py-1 space-x-2">
-                <button onClick={() => navigate('/student/personal_grades', { state: { courseName: course.name } })} className="bg-blue-500 text-white px-2 py-1 rounded">
-                  View My Grades
-                </button>
-                <button
-                  className="bg-green-500 text-white px-2 py-1 rounded"
-                  disabled={course.gradingStatus !== 'open'}
-                  onClick={() => handleAck(course.name, navigate)}
-                >
-                  Ask for Review
-                </button>
-                <button
-                  className="bg-gray-500 text-white px-2 py-1 rounded"
-                  onClick={() => navigate('/student/review_status', { state: { courseName: course.name } })}
-                >
-                  View Review Status
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {selectedCourse && (
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="p-4 border rounded shadow">
-            <h3 className="font-semibold mb-2">My Grades — {selectedCourse.name} ({selectedCourse.examPeriod})</h3>
-            <ul className="space-y-1">
-              {Object.entries(selectedCourse.grades).map(([label, value]) => (
-                <li key={label} className="flex justify-between border-b py-1">
-                  <span>{label}</span>
-                  <span>{value}</span>
-                </li>
-              ))}
-            </ul>
+    <Layout>
+      <div className="p-8 bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen font-sans">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">My Courses</h1>
+              <p className="text-gray-600">{mockUser.name}, {mockUser.email}</p>
+            </div>
+            <div className="flex gap-3 mt-4 md:mt-0">
+              <Button className="min-w-[120px]" onClick={() => navigate('/student/grade_statistics')}>
+                Statistics
+              </Button>
+              <Button
+                className="min-w-[120px]"
+                variant="secondary"
+                onClick={() => {
+                  localStorage.clear();
+                  navigate('/login');
+                }}
+              >
+                Logout
+              </Button>
+            </div>
           </div>
+          <div className="overflow-auto bg-white shadow rounded-xl mb-6">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left">Course Name</th>
+                  <th className="px-4 py-2 text-left">Exam Period</th>
+                  <th className="px-4 py-2 text-left">Grading Status</th>
+                  <th className="px-4 py-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mockCourses.map((course, idx) => {
+                  const isReviewDisabled = course.gradingStatus.toLowerCase() !== 'open';
+                  const review = mockReviews.find(r => r.course === course.name);
+                  const isExpanded = expandedCourse === course.name;
 
-          {selectedCourse.stats && (
-            <>
-              <div>{renderChart(`${selectedCourse.name} - total`, selectedCourse.stats.total)}</div>
-              {Object.entries(selectedCourse.stats.questions).map(([key, values], idx) => (
-                <div key={idx}>{renderChart(`${selectedCourse.name} - ${key}`, values, 'rgba(30, 64, 175, 0.7)')}</div>
-              ))}
-            </>
-          )}
-        </section>
-      )}
-    </div>
+                  return (
+                    <React.Fragment key={idx}>
+                      <tr className={`border-t ${course.name === selectedCourseName ? 'bg-yellow-50 font-semibold' : ''}`}>
+                        <td className="px-4 py-2 font-semibold">{course.name}</td>
+                        <td className="px-4 py-2">{course.examPeriod}</td>
+                        <td className={`px-4 py-2 ${isReviewDisabled ? 'text-gray-400 italic' : 'text-gray-800'}`}>
+                          {course.gradingStatus}
+                        </td>
+                        <td className="px-4 py-2">
+                          <div className="flex flex-row gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                navigate('/student/personal_grades', { state: { courseName: course.name } })
+                              }
+                            >
+                              View Grades
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={isReviewDisabled}
+                              className={isReviewDisabled ? 'opacity-50 cursor-not-allowed' : ''}
+                              onClick={() => setExpandedCourse(course.name)}
+                            >
+                              Request Review
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleToggleReview(course.name)}
+                            >
+                              Review Status
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="bg-gray-50">
+                          <td colSpan="4" className="px-6 py-4">
+                            {!isReviewDisabled && (
+                              <div className="mb-4">
+                                <label className="block font-semibold text-gray-700 mb-2">Message to instructor:</label>
+                                <textarea
+                                  className="w-full p-2 border border-gray-300 rounded mb-2"
+                                  rows="4"
+                                  value={reviewMessages[course.name] || ''}
+                                  onChange={(e) =>
+                                    setReviewMessages((prev) => ({ ...prev, [course.name]: e.target.value }))
+                                  }
+                                />
+                                <Button onClick={() => handleReviewSubmit(course.name)}>
+                                  Submit Review Request
+                                </Button>
+                              </div>
+                            )}
+                            {review && (
+  <div className="text-gray-700">
+    <strong>Instructor Response:</strong>{' '}
+    {course.gradingStatus.toLowerCase() === 'open'
+      ? 'No review has been sent to instructor.'
+      : review.instructorResponse || 'No response yet.'}
+  </div>
+)}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </Layout>
   );
-}
-
-function handleAck(courseName, navigate) {
-  navigate('/student/grade_review_request', { state: { courseName } });
 }

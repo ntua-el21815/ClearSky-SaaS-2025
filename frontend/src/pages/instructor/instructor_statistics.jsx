@@ -1,13 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import html2canvas from 'html2canvas';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bar } from 'react-chartjs-2';
 import 'chart.js/auto';
-
-const mockInstructor = {
-  name: 'Dr. Maria Ioannidou',
-  email: 'instructor@example.com'
-};
+import Layout from '../../components/layout';
 
 const mockCourses = [
   {
@@ -21,7 +16,7 @@ const mockCourses = [
         Q1: [0, 0, 2, 5, 12, 20, 15, 8, 3, 1, 0],
         Q2: [0, 1, 4, 10, 18, 22, 9, 6, 4, 1, 0],
         Q3: [0, 0, 1, 2, 8, 30, 40, 10, 3, 1, 0],
-        Q4: [0, 0, 0, 0, 5, 10, 50, 20, 8, 2, 0]
+        Q4: [0, 0, 0, 0, 5, 10, 50, 20, 8, 2, 0],
       }
     }
   },
@@ -29,7 +24,7 @@ const mockCourses = [
     name: 'software',
     examPeriod: 'fall 2024',
     initialDate: '2025-02-01',
-    finalDate: null,
+    finalDate: '-',
     stats: null
   },
   {
@@ -42,13 +37,14 @@ const mockCourses = [
 ];
 
 export default function InstructorStatistics() {
-  const navigate = useNavigate();
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const chartsRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || user.role !== 'instructor') navigate('/login');
+    if (!user || user.role !== 'instructor') {
+      navigate('/login');
+    }
   }, [navigate]);
 
   const renderChart = (label, data, color) => (
@@ -57,9 +53,9 @@ export default function InstructorStatistics() {
         labels: Array.from({ length: 11 }, (_, i) => i),
         datasets: [
           {
-            label,
-            data,
-            backgroundColor: color || 'rgba(220, 38, 38, 0.7)'
+            label: label,
+            data: data,
+            backgroundColor: color || '#1d4ed8'
           }
         ]
       }}
@@ -72,77 +68,65 @@ export default function InstructorStatistics() {
   );
 
   return (
-    <div className="p-4">
-      <header className="bg-gray-200 p-4 mb-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">ClearSky - Course Statistics</h1>
-        <div>
-          <button onClick={() => navigate('/instructor/dashboard')} className="px-4 py-1 bg-blue-600 text-white rounded">
-            Back to Dashboard
-          </button>
-        </div>
-      </header>
-
-      <h2 className="text-lg font-semibold mb-4">Available Course Statistics</h2>
-
-      <table className="w-full table-auto border mb-6">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border px-2 py-1">Course Name</th>
-            <th className="border px-2 py-1">Exam Period</th>
-            <th className="border px-2 py-1">Initial Grades Submission</th>
-            <th className="border px-2 py-1">Final Grades Submission</th>
-          </tr>
-        </thead>
-        <tbody>
-          {mockCourses.map((course, idx) => (
-            <tr
-              key={idx}
-              className="cursor-pointer hover:bg-gray-100 text-center"
-              onClick={() => setSelectedCourse(course)}
-            >
-              <td className="border px-2 py-1">{course.name}</td>
-              <td className="border px-2 py-1">{course.examPeriod}</td>
-              <td className="border px-2 py-1">{course.initialDate || '-'}</td>
-              <td className="border px-2 py-1">{course.finalDate || '-'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {selectedCourse && selectedCourse.stats && (
-        <>
-          <section
-            ref={chartsRef}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-          >
+    <Layout>
+      <div className="p-8 bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen font-sans">
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div className="flex justify-between items-center">
             <div>
-              <h3 className="text-center font-semibold mb-2">Total Grading</h3>
-              {renderChart('Total Grading', selectedCourse.stats.total)}
+              <h1 className="text-3xl font-bold text-gray-900">Course Statistics</h1>
+              <p className="text-gray-600">Click on a course to view its grading statistics.</p>
             </div>
-            {Object.entries(selectedCourse.stats.questions).map(([key, values], idx) => (
-              <div key={idx}>
-                <h3 className="text-center font-semibold mb-2">{`Question ${key.replace('Q', '')} Grading`}</h3>
-                {renderChart(`Question ${key.replace('Q', '')} Grading`, values, 'rgba(30, 64, 175, 0.7)')}
-              </div>
-            ))}
-          </section>
-          <div className="mt-4 text-right">
             <button
-              className="px-4 py-2 bg-indigo-600 text-white rounded"
-              onClick={() => {
-                html2canvas(chartsRef.current).then(canvas => {
-                  const link = document.createElement('a');
-                  link.download = `${selectedCourse.name}_statistics.png`;
-                  link.href = canvas.toDataURL();
-                  link.click();
-                });
-              }}
+              onClick={() => navigate('/instructor/dashboard')}
+              className="bg-[#0A2A72] hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm shadow"
             >
-              Export Charts as Image
+              Back to Dashboard
             </button>
           </div>
-        </>
-      )}
-    </div>
+
+          <section className="bg-white shadow rounded-xl overflow-hidden">
+            <table className="w-full text-sm table-auto">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left">Course Name</th>
+                  <th className="px-4 py-2 text-left">Exam Period</th>
+                  <th className="px-4 py-2 text-left">Initial Submission</th>
+                  <th className="px-4 py-2 text-left">Final Submission</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mockCourses.map((course, idx) => (
+                  <tr
+                    key={idx}
+                    className="cursor-pointer hover:bg-gray-50 border-t"
+                    onClick={() => setSelectedCourse(course)}
+                  >
+                    <td className="px-4 py-2 font-medium text-gray-900">{course.name}</td>
+                    <td className="px-4 py-2 text-gray-700">{course.examPeriod}</td>
+                    <td className="px-4 py-2 text-gray-700">{course.initialDate}</td>
+                    <td className="px-4 py-2 text-gray-700">{course.finalDate}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          {selectedCourse && selectedCourse.stats && (
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 bg-white border border-blue-200 rounded-xl shadow-md p-4">
+                <h3 className="text-center font-semibold text-blue-900 text-lg mb-2">Total Grading Overview</h3>
+                {renderChart('Total Grading', selectedCourse.stats.total)}
+              </div>
+              {Object.entries(selectedCourse.stats.questions).map(([key, values], idx) => (
+                <div key={idx} className="bg-white rounded-xl p-4 shadow">
+                  <h3 className="text-center font-semibold text-gray-800 mb-2">{`Question ${key.replace('Q', '')}`}</h3>
+                  {renderChart(`Question ${key.replace('Q', '')} Grading`, values)}
+                </div>
+              ))}
+            </section>
+          )}
+        </div>
+      </div>
+    </Layout>
   );
 }

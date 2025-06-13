@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from "../../components/layout/index";
 
 const mockInstructor = {
   name: 'Dr. Maria Ioannidou',
@@ -35,57 +36,57 @@ export default function InstructorReviewRequests() {
   }, [navigate]);
 
   return (
-    <div className="p-4">
-      <header className="bg-gray-200 p-4 mb-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">ClearSky - Review Requests</h1>
-        <div className="space-x-4">
-          <button
-            onClick={() => navigate('/instructor/dashboard')}
-            className="px-4 py-1 bg-blue-600 text-white rounded"
-          >
-            Back to Courses
-          </button>
-          <button
-            onClick={() => {
-              localStorage.clear();
-              navigate('/login');
-            }}
-            className="px-4 py-1 bg-gray-600 text-white rounded"
-          >
-            Logout
-          </button>
+    <Layout>
+      <div className="p-8 bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen font-sans">
+        <div className="max-w-7xl mx-auto space-y-8">
+
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Review Requests</h1>
+              <p className="text-gray-600">{mockInstructor.name}</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate('/instructor/dashboard')}
+                className="bg-[#0A2A72] text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-auto bg-white shadow rounded-xl">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left">Course Name</th>
+                  <th className="px-4 py-2 text-left">Exam Period</th>
+                  <th className="px-4 py-2 text-left">Student</th>
+                  <th className="px-4 py-2 text-left">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mockReviewRequests.map((req, idx) => (
+                  <tr key={idx} className="border-t">
+                    <td className="px-4 py-2 font-medium text-gray-900">{req.course}</td>
+                    <td className="px-4 py-2 text-gray-700">{req.examPeriod}</td>
+                    <td className="px-4 py-2 text-gray-700">{req.student}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => navigate('/instructor/review_reply', { state: req })}
+                        className="bg-[#0A2A72] text-white px-4 py-1.5 rounded-md text-sm"
+                      >
+                        Reply
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
         </div>
-      </header>
-
-      <h2 className="text-lg font-semibold mb-4">{mockInstructor.name}</h2>
-
-      <table className="w-full table-auto border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border px-2 py-1">Course Name</th>
-            <th className="border px-2 py-1">Exam Period</th>
-            <th className="border px-2 py-1">Student</th>
-            <th className="border px-2 py-1">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {mockReviewRequests.map((req, idx) => (
-            <tr key={idx} className="text-center">
-              <td className="border px-2 py-1">{req.course}</td>
-              <td className="border px-2 py-1">{req.examPeriod}</td>
-              <td className="border px-2 py-1">{req.student}</td>
-              <td className="border px-2 py-1">
-                <button 
-                  className="bg-blue-500 text-white px-4 py-1 rounded"
-                  onClick={() => navigate('/instructor/review_reply', { state: req })}
-                  >
-                  Reply
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+      </div>
+    </Layout>
   );
 }

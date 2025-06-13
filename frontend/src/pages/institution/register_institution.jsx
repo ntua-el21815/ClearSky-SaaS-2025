@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from "../../components/layout";
+import Input from "../../components/Input";
+import Button from "../../components/Button";
 
 const mockUniversities = [
   'National Technical University of Athens',
@@ -24,57 +27,60 @@ export default function RegisterInstitution() {
     if (!exists) {
       setUniversities([...universities, form.name]);
     }
+
     localStorage.setItem('institution', JSON.stringify({
       name: form.name,
       location: form.location,
       email: form.email
     }));
+
     alert(`Institution '${form.name}' registered successfully.`);
     navigate('/institution/dashboard');
   };
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <header className="bg-gray-200 p-4 mb-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">ClearSky - Institution Registration</h1>
-      </header>
+    <Layout>
+      <div className="p-8 bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen font-sans">
+        <div className="max-w-xl mx-auto bg-white shadow rounded-xl p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Register Your Institution</h1>
+          <p className="text-gray-600 mb-6">Provide details to register your academic institution.</p>
 
-      <div className="bg-white p-4 border rounded shadow">
-        <h2 className="text-lg font-semibold mb-4">Register Your Institution</h2>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">Institution Name</label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full border p-2 rounded"
-          />
+          <div className="mb-4">
+            <label className="block mb-1 font-medium text-gray-700">Institution Name</label>
+            <Input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="e.g. University of Crete"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block mb-1 font-medium text-gray-700">Location</label>
+            <Input
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              placeholder="e.g. Heraklion"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-1 font-medium text-gray-700">Institution Email</label>
+            <Input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="e.g. admin@university.gr"
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button onClick={handleSubmit}>Register Institution</Button>
+            <Button variant="secondary" onClick={() => navigate('/institution/dashboard')}>
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">Location</label>
-          <input
-            type="text"
-            value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })}
-            className="w-full border p-2 rounded"
-          />
-        </div>
-        <div className="mb-6">
-          <label className="block mb-1 font-medium">Institution Email</label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full border p-2 rounded"
-          />
-        </div>
-        <button
-          onClick={handleSubmit}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          Register Institution
-        </button>
       </div>
-    </div>
+    </Layout>
   );
 }

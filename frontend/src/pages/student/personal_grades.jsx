@@ -2,11 +2,8 @@ import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Bar } from 'react-chartjs-2';
 import 'chart.js/auto';
-
-const mockUser = {
-  name: 'Aggeliki Papadopoulou',
-  email: 'student@example.com'
-};
+import Layout from '../../components/layout/index';
+import Button from '../../components/Button';
 
 const mockCourses = [
   {
@@ -43,8 +40,7 @@ export default function PersonalGrades() {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedCourseName = location.state?.courseName;
-
-  const selectedCourse = mockCourses.find(course => course.name === selectedCourseName);
+  const course = mockCourses.find(c => c.name === selectedCourseName);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -57,13 +53,7 @@ export default function PersonalGrades() {
     <Bar
       data={{
         labels: Array.from({ length: 11 }, (_, i) => i),
-        datasets: [
-          {
-            label,
-            data,
-            backgroundColor: color || 'rgba(220, 38, 38, 0.7)'
-          }
-        ]
+        datasets: [{ label, data, backgroundColor: color || '#1d4ed8' }]
       }}
       options={{
         responsive: true,
@@ -74,93 +64,49 @@ export default function PersonalGrades() {
   );
 
   return (
-    <div className="p-4">
-      <header className="bg-gray-200 p-4 mb-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">ClearSky</h1>
-        <div className="space-x-4">
-          <button onClick={() => navigate('/student/grade_statistics')} className="px-4 py-1 bg-blue-500 text-white rounded">
-            Statistics
-          </button>
-          <button onClick={() => { localStorage.clear(); navigate('/login'); }} className="px-4 py-1 bg-gray-500 text-white rounded">
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <h2 className="text-lg font-semibold mb-4">{mockUser.name}, {mockUser.email}</h2>
-
-      <table className="w-full table-auto border mb-6">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border px-2 py-1">Course Name</th>
-            <th className="border px-2 py-1">Exam Period</th>
-            <th className="border px-2 py-1">Grading Status</th>
-            <th className="border px-2 py-1">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {mockCourses.map((course, idx) => (
-            <tr key={idx} className={`text-center ${course.name === selectedCourseName ? 'bg-yellow-100 font-semibold' : ''}`}>
-              <td className="border px-2 py-1">{course.name}</td>
-              <td className="border px-2 py-1">{course.examPeriod}</td>
-              <td className="border px-2 py-1">{course.gradingStatus}</td>
-              <td className="border px-2 py-1 space-x-2">
-                <button onClick={() => navigate('/student/personal_grades', { state: { courseName: course.name } })} className="bg-blue-500 text-white px-2 py-1 rounded">
-                  View My Grades
-                </button>
-                <button
-                  className="bg-green-500 text-white px-2 py-1 rounded"
-                  disabled={course.gradingStatus !== 'open'}
-                  onClick={handleAck}
-                >
-                  Ask for Review
-                </button>
-                <button
-                  className="bg-gray-500 text-white px-2 py-1 rounded"
-                  onClick={() => navigate('/student/review_status', { state: { courseName: course.name } })}
-                >
-                  View Review Status
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {selectedCourse && (
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="p-4 border rounded shadow">
-            <h3 className="font-semibold mb-2">My Grades — {selectedCourse.name} ({selectedCourse.examPeriod})</h3>
-            <p>Total Grade: {selectedCourse.grades.total}</p>
-            {Object.entries(selectedCourse.grades)
-              .filter(([key]) => key !== 'total')
-              .map(([key, val], idx) => (
-                <p key={idx}>{`Question ${key.replace('Q', '')}: ${val}`}</p>
-              ))}
+    <Layout>
+      <div className="p-8 bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen font-sans">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+           <h1 className="text-2xl font-bold text-gray-900">
+             My Grades — <span className="font-bold">{course?.name}</span> ({course?.examPeriod})
+           </h1>
+            <Button variant="secondary" onClick={() => navigate('/student/courses')}>
+              ← Back to My Courses
+            </Button>
           </div>
 
-          {selectedCourse.stats && (
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 col-span-full">
-              <div>
-                <h3 className="text-center font-semibold mb-2">Total Grading</h3>
-                {renderChart('Total Grading', selectedCourse.stats.total)}
-              </div>
-              {Object.entries(selectedCourse.stats.questions).map(([key, values], idx) => (
-                <div key={idx}>
-                  <h3 className="text-center font-semibold mb-2">{`Question ${key.replace('Q', '')} Grading`}</h3>
-                  {renderChart(`Question ${key.replace('Q', '')} Grading`, values, 'rgba(30, 64, 175, 0.7)')}
-                </div>
-              ))}
-            </section>
-          )}
-        </section>
-      )}
-    </div>
-  );
-}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-white rounded-xl shadow p-4">
+              <h3 className="font-semibold mb-3">Grades</h3>
+              <ul className="space-y-1 text-sm">
+                {course?.grades &&
+                  Object.entries(course.grades).map(([label, value]) => (
+                    <li key={label} className="flex justify-between border-b py-1">
+                      <span>{label}</span>
+                      <span>{value}</span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
 
-// Alert on accepting instructor response
-function handleAck() {
-  alert('You have accepted the instructor response.');
-  // setAcknowledged(true); // Uncomment if you have this state
+            {course?.stats && (
+              <>
+                <div className="bg-white rounded-xl shadow p-4 md:col-span-2 lg:col-span-1">
+                  <h3 className="text-center font-semibold mb-2">Total Grade Distribution</h3>
+                  {renderChart(`${course.name} - total`, course.stats.total)}
+                </div>
+                {Object.entries(course.stats.questions).map(([key, values], idx) => (
+                  <div key={idx} className="bg-white rounded-xl shadow p-4">
+                    <h3 className="text-center font-semibold mb-2">{`Question ${key.replace('Q', '')} Distribution`}</h3>
+                    {renderChart(`${course.name} - ${key}`, values)}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
 }

@@ -1,59 +1,64 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function PurchaseCredits() {
+import Layout from "../../components/layout";
+import Input from "../../components/Input";
+import Button from "../../components/Button";
+
+export default function PurchaseCreditsPage() {
   const navigate = useNavigate();
-  const [credits, setCredits] = useState(5); // αρχικά διαθέσιμα
-  const [quantity, setQuantity] = useState(0);
-  const pricePerCredit = 1;
+  const [credits, setCredits] = useState("");
+  const [creditBalance, setCreditBalance] = useState(150); // demo starting balance
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || user.role !== 'institution') {
-      navigate('/login');
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user || user.role !== "institution") {
+      navigate("/login");
     }
   }, [navigate]);
 
-  const handleBuy = () => {
-    if (quantity <= 0) {
-      alert('Please select a valid quantity.');
+  const handlePurchase = () => {
+    const amount = parseInt(credits);
+
+    if (isNaN(amount) || amount <= 0) {
+      alert("Please enter a positive number of credits.");
       return;
     }
-    const total = credits + quantity;
-    setCredits(total);
-    alert(`${quantity} credits purchased. You now have ${total} credits.`);
-    setQuantity(0);
+
+    setCreditBalance(prev => prev + amount);
+    alert(`Successfully added ${amount} credits.`);
+    setCredits("");
   };
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <header className="bg-gray-200 p-4 mb-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">ClearSky - Purchase Credits</h1>
-        <button onClick={() => navigate('/institution/dashboard')} className="px-4 py-1 bg-blue-600 text-white rounded">
-          Back to Dashboard
-        </button>
-      </header>
+    <Layout>
+      <div className="p-8 bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen font-sans">
+        <div className="max-w-xl mx-auto bg-white shadow rounded-xl p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Purchase Credits</h1>
+          <p className="text-gray-600 mb-6">Add more credits to your institution's account.</p>
 
-      <div className="bg-white p-4 border rounded shadow">
-        <p className="mb-4 font-medium">Available Credits: <span className="font-bold">{credits}</span></p>
+          <div className="mb-6">
+            <span className="block text-sm text-gray-500">Current Balance</span>
+            <span className="text-2xl font-semibold text-blue-900">{creditBalance} credits</span>
+          </div>
 
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">How many credits do you want to buy?</label>
-          <input
+          <label className="block mb-1 font-medium text-gray-700">Credits to purchase:</label>
+          <Input
             type="number"
-            min="0"
-            value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value))}
-            className="w-full border p-2 rounded"
+            min="1"
+            value={credits}
+            onChange={(e) => setCredits(e.target.value)}
+            placeholder="Enter number of credits"
           />
+
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            <Button onClick={handlePurchase}>Purchase Credits</Button>
+            <Button variant="secondary" onClick={() => navigate("/institution/dashboard")}>
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
-
-        <p className="mb-4">Total price: <span className="font-semibold">{quantity * pricePerCredit} €</span></p>
-
-        <button onClick={handleBuy} className="bg-green-600 text-white px-4 py-2 rounded">
-          Buy
-        </button>
       </div>
-    </div>
+    </Layout>
   );
 }

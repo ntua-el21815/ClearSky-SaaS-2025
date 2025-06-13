@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bar } from 'react-chartjs-2';
 import 'chart.js/auto';
+import Layout from '../../components/layout';
 
 const mockCourses = [
   {
@@ -54,7 +55,7 @@ export default function StudentDashboard() {
           {
             label: label,
             data: data,
-            backgroundColor: color || 'rgba(220, 38, 38, 0.7)'
+            backgroundColor: color || '#1d4ed8'
           }
         ]
       }}
@@ -67,69 +68,63 @@ export default function StudentDashboard() {
   );
 
   return (
-    <div className="p-4">
-      <header className="bg-gray-200 p-4 mb-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">ClearSky</h1>
-        <div className="space-x-4">
-          <button
-            onClick={() => navigate('/student/courses')}
-            className="px-4 py-1 bg-blue-500 text-white rounded"
-          >
-            Go to my courses
-          </button>
-          <button
-            onClick={() => {
-              localStorage.clear();
-              navigate('/login');
-            }}
-            className="px-4 py-1 bg-gray-500 text-white rounded"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
+    <Layout>
+      <div className="p-8 bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen font-sans">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+  <div>
+    <h1 className="text-2xl font-bold text-gray-900 mb-1">Grade Statistics</h1>
+    <p className="text-gray-600">Click on a course to view its grading distribution.</p>
+  </div>
+  <button
+    onClick={() => navigate('/student/courses')}
+    className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded transition text-sm shadow"
+  >
+    Go to My Courses
+  </button>
+</div>
 
-      <section>
-        <h2 className="text-lg font-semibold mb-2">Available course statistics</h2>
-        <table className="w-full table-auto border mb-4">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-2 py-1">Course Name</th>
-              <th className="border px-2 py-1">Exam Period</th>
-              <th className="border px-2 py-1">Initial Grades Submission</th>
-              <th className="border px-2 py-1">Final Grades Submission</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mockCourses.map((course, idx) => (
-              <tr
-                key={idx}
-                className="cursor-pointer hover:bg-gray-100"
-                onClick={() => setSelectedCourse(course)}
-              >
-                <td className="border px-2 py-1">{course.name}</td>
-                <td className="border px-2 py-1">{course.examPeriod}</td>
-                <td className="border px-2 py-1">{course.initialDate}</td>
-                <td className="border px-2 py-1">{course.finalDate}</td>
+        <section className="mb-10">
+          <table className="w-full table-auto border mb-4 bg-white shadow rounded-xl overflow-hidden">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-4 py-2 text-left text-sm">Course Name</th>
+                <th className="border px-4 py-2 text-left text-sm">Exam Period</th>
+                <th className="border px-4 py-2 text-left text-sm">Initial Submission</th>
+                <th className="border px-4 py-2 text-left text-sm">Final Submission</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-      {selectedCourse && selectedCourse.stats && (
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <h3 className="text-center font-semibold mb-2">Total Grading</h3>
+            </thead>
+            <tbody>
+              {mockCourses.map((course, idx) => (
+                <tr
+                  key={idx}
+                  className="cursor-pointer hover:bg-gray-50 transition"
+                  onClick={() => setSelectedCourse(course)}
+                >
+                  <td className="border px-4 py-2 text-sm">{course.name}</td>
+                  <td className="border px-4 py-2 text-sm">{course.examPeriod}</td>
+                  <td className="border px-4 py-2 text-sm">{course.initialDate}</td>
+                  <td className="border px-4 py-2 text-sm">{course.finalDate}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        {selectedCourse && selectedCourse.stats && (
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white border border-blue-200 rounded-xl shadow-md p-4">
+            <h3 className="text-center font-semibold text-blue-900 text-lg mb-2"> Total Grading Overview</h3>
             {renderChart('Total Grading', selectedCourse.stats.total)}
           </div>
           {Object.entries(selectedCourse.stats.questions).map(([key, values], idx) => (
-            <div key={idx}>
-              <h3 className="text-center font-semibold mb-2">{`Question ${key.replace('Q', '')} Grading`}</h3>
-              {renderChart(`Question ${key.replace('Q', '')} Grading`, values, 'rgba(30, 64, 175, 0.7)')}
+            <div key={idx} className="bg-white rounded-xl p-4 shadow">
+              <h3 className="text-center font-semibold text-gray-800 mb-2">{`Question ${key.replace('Q', '')} `}</h3>
+              {renderChart(`Question ${key.replace('Q', '')} Grading`, values)}
             </div>
           ))}
         </section>
-      )}
-    </div>
+        )}
+      </div>
+    </Layout>
   );
 }

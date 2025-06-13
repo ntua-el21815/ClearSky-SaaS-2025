@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from "../../components/layout";
+import Input from "../../components/Input";
+import Button from "../../components/Button";
 
 export default function UserManagement() {
   const navigate = useNavigate();
@@ -46,65 +49,66 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <header className="bg-gray-200 p-4 mb-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">ClearSky - User Management</h1>
-        <button onClick={() => navigate('/institution/dashboard')} className="px-4 py-1 bg-blue-600 text-white rounded">
-          Back to Dashboard
-        </button>
-      </header>
+    <Layout>
+      <div className="p-8 bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen font-sans">
+        <div className="max-w-xl mx-auto bg-white shadow rounded-xl p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">User Management</h1>
+          <p className="text-gray-600 mb-6">Manage institution users and credentials.</p>
 
-      <div className="bg-white p-4 border rounded shadow">
-        <h2 className="text-lg font-semibold mb-4">Users</h2>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">Type</label>
-          <select
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-            className="w-full border p-2 rounded"
-          >
-            <option>Institution representative</option>
-            <option>Instructor</option>
-            <option>Student</option>
-          </select>
-        </div>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">User Name</label>
-          <input
-            type="text"
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            className="w-full border p-2 rounded"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">Password</label>
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full border p-2 rounded"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">ID</label>
-          <input
-            type="text"
-            value={form.id}
-            onChange={(e) => setForm({ ...form, id: e.target.value })}
-            className="w-full border p-2 rounded"
-          />
-        </div>
-        <div className="flex space-x-4">
-          <button onClick={handleAddUser} className="bg-green-600 text-white px-4 py-2 rounded">
-            Add User
-          </button>
-          <button onClick={handleChangePassword} className="bg-yellow-600 text-white px-4 py-2 rounded">
-            Change Password
-          </button>
+          {message && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded">
+              {message}
+            </div>
+          )}
+
+          <div className="mb-4">
+            <label className="block mb-1 font-medium text-gray-700">Type</label>
+            <select
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+              className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none text-sm"
+            >
+              <option>Institution representative</option>
+              <option>Instructor</option>
+              <option>Student</option>
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block mb-1 font-medium text-gray-700">Username</label>
+            <Input
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              placeholder="e.g. jdoe"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block mb-1 font-medium text-gray-700">Password</label>
+            <Input
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder="••••••••"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-1 font-medium text-gray-700">User ID</label>
+            <Input
+              value={form.id}
+              onChange={(e) => setForm({ ...form, id: e.target.value })}
+              placeholder="e.g. 12345"
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button onClick={handleAddUser}>Add User</Button>
+            <Button variant="secondary" onClick={handleChangePassword}>Change Password</Button>
+            <Button variant="secondary" onClick={() => navigate('/institution/dashboard')}>Back to Dashboard</Button>
+          </div>
         </div>
       </div>
-
-    </div>
+    </Layout>
   );
 }

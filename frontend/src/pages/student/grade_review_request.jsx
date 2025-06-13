@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import Layout from '../../components/layout';
+import Button from '../../components/Button';
 
 const mockUser = {
   name: 'Aggeliki Papadopoulou',
@@ -48,79 +50,100 @@ export default function GradeReviewRequest() {
   };
 
   return (
-    <div className="p-4">
-      <header className="bg-gray-200 p-4 mb-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">ClearSky</h1>
-        <div className="space-x-4">
-          <button onClick={() => navigate('/student/grade_statistics')} className="px-4 py-1 bg-blue-500 text-white rounded">
-            Statistics
-          </button>
-          <button onClick={() => { localStorage.clear(); navigate('/login'); }} className="px-4 py-1 bg-gray-500 text-white rounded">
-            Logout
-          </button>
+    <Layout>
+      <div className="p-8 bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen font-sans">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">My Courses</h1>
+              <p className="text-gray-600">{mockUser.name}, {mockUser.email}</p>
+            </div>
+            <div className="flex gap-3 mt-4 md:mt-0">
+              <Button className="min-w-[120px]" onClick={() => navigate('/student/grade_statistics')}>
+                Statistics
+              </Button>
+              <Button
+                className="min-w-[120px]"
+                variant="secondary"
+                onClick={() => {
+                  localStorage.clear();
+                  navigate('/login');
+                }}
+              >
+                Logout
+              </Button>
+            </div>
+          </div>
+
+          <div className="overflow-auto bg-white shadow rounded-xl mb-6">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left">Course Name</th>
+                  <th className="px-4 py-2 text-left">Exam Period</th>
+                  <th className="px-4 py-2 text-left">Grading Status</th>
+                  <th className="px-4 py-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mockCourses.map((course, idx) => {
+                  const isReviewDisabled = course.gradingStatus.toLowerCase() !== 'open';
+                  return (
+                    <tr key={idx} className={`border-t ${course.name === selectedCourseName ? 'bg-yellow-50 font-semibold' : ''}`}>
+                      <td className="px-4 py-2 font-semibold">{course.name}</td>
+                      <td className="px-4 py-2">{course.examPeriod}</td>
+                      <td className={`px-4 py-2 ${isReviewDisabled ? 'text-gray-400 italic' : 'text-gray-800'}`}>
+                        {course.gradingStatus}
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex flex-row gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => navigate('/student/personal_grades', { state: { courseName: course.name } })}
+                          >
+                            View Grades
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={isReviewDisabled}
+                            className={isReviewDisabled ? 'opacity-50 cursor-not-allowed' : ''}
+                            onClick={() => navigate('/student/grade_review_request', { state: { courseName: course.name } })}
+                          >
+                            Request Review
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => navigate('/student/review_status', { state: { courseName: course.name } })}
+                          >
+                            Review Status
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {selectedCourseName && (
+            <section className="bg-white p-6 rounded-xl shadow">
+              <h3 className="text-md font-semibold mb-3 text-gray-900">
+                New Review Request — <span className="capitalize">{selectedCourseName}</span>
+              </h3>
+              <textarea
+                placeholder="Message to instructor"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="w-full h-32 p-3 border border-gray-300 rounded mb-4"
+              />
+              <Button onClick={handleSubmit}>Submit grade review request</Button>
+            </section>
+          )}
         </div>
-      </header>
-
-      <h2 className="text-lg font-semibold mb-4">{mockUser.name}, {mockUser.email}</h2>
-
-      <table className="w-full table-auto border mb-6">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border px-2 py-1">Course Name</th>
-            <th className="border px-2 py-1">Exam Period</th>
-            <th className="border px-2 py-1">Grading Status</th>
-            <th className="border px-2 py-1">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {mockCourses.map((course, idx) => (
-            <tr
-              key={idx}
-              className={`text-center ${course.name === selectedCourseName ? 'bg-yellow-100 font-semibold' : ''}`}
-            >
-              <td className="border px-2 py-1">{course.name}</td>
-              <td className="border px-2 py-1">{course.examPeriod}</td>
-              <td className="border px-2 py-1">{course.gradingStatus}</td>
-              <td className="border px-2 py-1 space-x-2">
-                <button 
-                  className="bg-blue-500 text-white px-2 py-1 rounded"
-                  onClick={() => navigate('/student/personal_grades', { state: { courseName: course.name } })}
-                >
-                View My Grades
-                </button>
-                <button
-                  className="bg-green-500 text-white px-2 py-1 rounded"
-                  disabled={course.gradingStatus !== 'open'}
-                  onClick={() => navigate('/student/grade_review_request', { state: { courseName: course.name } })}
-                >
-                  Ask for Review
-                </button>
-                <button
-                  className="bg-gray-500 text-white px-2 py-1 rounded"
-                  onClick={() => navigate('/student/review_status', { state: { courseName: course.name } })}
-                >
-                  View Review Status
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {selectedCourseName && (
-        <section className="bg-gray-100 p-4 rounded shadow">
-          <h3 className="text-md font-semibold mb-2">NEW REVIEW REQUEST — {selectedCourseName}</h3>
-          <textarea
-            placeholder="Message to instructor"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="w-full h-32 p-2 border border-gray-300 rounded mb-4"
-          />
-          <button onClick={handleSubmit} className="bg-blue-600 text-white px-4 py-2 rounded">
-            Submit grade review request
-          </button>
-        </section>
-      )}
-    </div>
+      </div>
+    </Layout>
   );
 }

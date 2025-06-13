@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import Layout from "../../components/layout/index";
 
 export default function PostFinalGrades() {
   const navigate = useNavigate();
@@ -57,63 +58,118 @@ export default function PostFinalGrades() {
   };
 
   return (
-    <div className="p-4">
-      <header className="bg-gray-200 p-4 mb-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">ClearSky - Post Final Grades</h1>
-        <div className="flex flex-col items-end space-y-1">
-          <button
-            onClick={() => navigate('/instructor/dashboard')}
-            className="px-4 py-1 bg-blue-600 text-white rounded"
-          >
-            Back to Dashboard
-          </button>
-          <div className="text-base font-medium text-gray-700">
-            Available credits: 5
+    <Layout>
+      <div className="p-8 min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans">
+        <div className="max-w-4xl mx-auto space-y-8">
+
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Post Final Grades</h1>
+              <p className="text-sm text-gray-600">Upload final grades for an existing course</p>
+            </div>
+            <div className="text-right">
+              <button
+                onClick={() => navigate('/instructor/dashboard')}
+                className="bg-[#0A2A72] text-white px-4 py-2 rounded-md text-sm"
+              >
+                Back to Dashboard
+              </button>
+              <div className="text-sm mt-1 text-gray-700">
+                Available credits: <strong>5</strong>
+              </div>
+            </div>
           </div>
+
+          <section className="bg-white p-6 rounded-xl shadow">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Upload Grades File</h2>
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              className="border-dashed border-2 border-gray-400 p-6 text-center rounded mb-4"
+            >
+              <input type="file" accept=".xlsx" onChange={handleFileChange} className="mb-2" />
+              <p className="text-sm text-gray-600">
+                {file ? file.name : 'Select file to upload or drag and drop here'}
+              </p>
+            </div>
+          </section>
+
+          <section className="bg-white p-6 rounded-xl shadow space-y-4">
+            <h2 className="text-xl font-semibold text-gray-800">Course Information</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Course Name</label>
+              <select
+                value={courseInfo.name}
+                onChange={(e) => setCourseInfo({ ...courseInfo, name: e.target.value })}
+                className="w-full border border-gray-300 p-2 rounded text-sm"
+              >
+                <option value="">-- Select a course --</option>
+                <option value="Mathematics 101">Mathematics 101</option>
+                <option value="Physics 201">Physics 201</option>
+                <option value="Algorithms">Algorithms</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Exam Period</label>
+              <input
+                type="text"
+                value={courseInfo.period}
+                onChange={(e) => setCourseInfo({ ...courseInfo, period: e.target.value })}
+                className="w-full border border-gray-300 p-2 rounded text-sm"
+                placeholder="Enter exam period"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Number of Students</label>
+              <input
+                type="number"
+                value={courseInfo.count}
+                onChange={(e) => setCourseInfo({ ...courseInfo, count: e.target.value })}
+                className="w-full border border-gray-300 p-2 rounded text-sm"
+                placeholder="Enter count"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleConfirm}
+                className="bg-green-600 text-white px-4 py-2 rounded-md text-sm"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={handleCancel}
+                className="border border-gray-400 text-gray-800 px-4 py-2 rounded-md text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </section>
+
+          <section className="bg-white p-6 rounded-xl shadow space-y-3">
+            <h2 className="text-xl font-semibold text-gray-800">Instructor Message (Optional)</h2>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="w-full h-32 p-3 border border-gray-300 rounded text-sm"
+              placeholder="Any additional message..."
+            />
+          </section>
+
+          <div className="text-right">
+            <button
+              onClick={handleSubmit}
+              disabled={!confirmed || !file}
+              className={`px-6 py-2 rounded-md text-sm font-medium ${
+                !confirmed || !file ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#0A2A72] text-white'
+              }`}
+            >
+              Submit Final Grades
+            </button>
+          </div>
+
         </div>
-      </header>
-
-      <section className="bg-gray-100 p-4 rounded shadow mb-6">
-        <h2 className="font-semibold mb-2">Final Grades Posting</h2>
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          className="border-dashed border-2 border-gray-400 p-4 mb-4 text-center rounded"
-        >
-          <input type="file" accept=".xlsx" onChange={handleFileChange} className="mb-2" />
-          <div>{file ? file.name : 'Select file to upload or drag and drop'}</div>
-        </div>
-      </section>
-
-      <section className="bg-white border p-4 rounded shadow mb-6">
-        <h2 className="font-semibold mb-2">Select Course</h2>
-        <select
-          value={courseInfo.name}
-          onChange={(e) => setCourseInfo({ ...courseInfo, name: e.target.value })}
-          className="w-full border p-2 rounded"
-        >
-          <option value="">-- Select a course --</option>
-          <option value="Mathematics 101">Mathematics 101</option>
-          <option value="Physics 201">Physics 201</option>
-          <option value="Algorithms">Algorithms</option>
-        </select>
-      </section>
-
-
-      <section className="bg-white border p-4 rounded shadow">
-        <h2 className="font-semibold mb-2">Message</h2>
-        <textarea
-          placeholder="Optional message for grade upload"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          className="w-full h-28 p-2 border border-gray-300 rounded"
-        />
-      </section>
-      <div className="mt-6">
-        <button onClick={handleSubmit} disabled={!confirmed || !file} className="bg-green-600 text-white px-4 py-2 rounded">
-          Submit Final Grades
-        </button>
       </div>
-    </div>
+    </Layout>
   );
 }
