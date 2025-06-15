@@ -19,11 +19,11 @@ export const createReview = async (req, res) => {
       typeof gradeId !== 'string' ||
       typeof studentRegistrationNumber !== 'string' ||
       typeof reason !== 'string' ||
-      !studentId.trim() ||
-      !courseId.trim() ||
-      !gradeId.trim() ||
-      !studentRegistrationNumber.trim() ||
-      !reason.trim()
+      !studentId ||
+      !courseId ||
+      !gradeId ||
+      !studentRegistrationNumber ||
+      !reason
     ) {
       return res.status(400).json({ message: 'Invalid input data' });
     }
@@ -72,14 +72,50 @@ export const getReviewById = async (req, res) => {
   }
 };
 
+export const getReviewsByCourseId = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    if (!courseId || typeof courseId !== 'string' || !courseId.trim()) {
+      return res.status(400).json({ message: 'Invalid courseId' });
+    }
+    const reviews = await Review.find({ courseId: courseId.trim() });
+    res.status(200).json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Update a review [corresponds to "Review Finished" by Review Orchestrator [cite: 3]]
 // (e.g., status, instructorResponse, reviewedGrade)
 export const updateReview = async (req, res) => {
   try {
-    const review = await Review.findByIdAndUpdate(req.params.id, req.body, {
+    const { status, instructorResponse, reviewedGrade } = req.body;
+
+    // Require all fields to be present and non-empty
+    if (
+      typeof status !== 'string' ||
+      typeof instructorResponse !== 'string' ||
+      !status.trim() ||
+      !instructorResponse.trim() 
+    ) {
+      return res.status(400).json({ message: 'Fields (status, instructorResponse) are required and must be non-empty strings' });
+    }
+
+    if (reviewedGrade && typeof reviewedGrade !== 'string') {
+      return res.status(400).json({ message: 'reviewedGrade must be a string if provided' });
+    }
+
+    const updateData = {
+      status: status.trim(),
+      instructorResponse: instructorResponse.trim(),
+      reviewedGrade: reviewedGrade ? reviewedGrade.trim() : undefined,
+    };
+
+    const review = await Review.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     });
+
     if (!review) {
       return res.status(404).json({ message: 'Review not found' });
     }

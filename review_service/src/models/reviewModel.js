@@ -11,7 +11,7 @@ const reviewSchema = new mongoose.Schema({
   reason: { type: String, required: true },
   status: {
     type: String,
-    enum: ['PENDING', 'UNDER_REVIEW', 'RESOLVED_APPROVED', 'RESOLVED_REJECTED', 'ACTION_REQUIRED'],
+    enum: ['PENDING', 'RESOLVED_APPROVED', 'RESOLVED_REJECTED', 'ACTION_REQUIRED'],
     default: 'PENDING',
   },
   requestedAt: { type: Date, default: Date.now },

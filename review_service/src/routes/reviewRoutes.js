@@ -6,6 +6,7 @@ import {
   getReviewById,
   updateReview,
   deleteReview,
+  getReviewsByCourseId,
 } from '../controllers/reviewController.js';
 
 const router = express.Router();
@@ -15,5 +16,6 @@ router.get('/', getAllReviews);
 router.get('/:id', getReviewById);
 router.put('/:id', updateReview);
 router.delete('/:id', deleteReview); // Optional
+router.get('/course/:courseId', getReviewsByCourseId);
 
 export default router;

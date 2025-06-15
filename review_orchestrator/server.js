@@ -151,7 +151,13 @@ app.post('/api/review-requests', async (req, res) => {
 app.post('/api/review-requests/:reviewId/reply', async (req, res) => {
   try {
     const { reviewId } = req.params;
-    const { instructorResponse, reviewedGrade } = req.body;
+    const { instructorResponse, reviewedGrade} = req.body;
+    
+    let resolution = 'RESOLVED_REJECTED';
+
+    if (reviewedGrade !== undefined) {
+      resolution = 'RESOLVED_APPROVED';
+    }
 
     // Validate required fields
     if (!instructorResponse) {
@@ -167,7 +173,7 @@ app.post('/api/review-requests/:reviewId/reply', async (req, res) => {
     const updateData = {
       instructorResponse,
       reviewedGrade: reviewedGrade || null,
-      status: 'RESOLVED',
+      status: resolution,
       resolvedAt: new Date().toISOString()
     };
 
