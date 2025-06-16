@@ -1,180 +1,166 @@
 # Review Orchestrator Service
 
-The Review Orchestrator is a Node.js microservice responsible for coordinating review-related workflows in the ClearSky platform. It acts as an API gateway and orchestrator between the Review Service, RabbitMQ, and other microservices. The API is documented using OpenAPI and supports robust health checking for container orchestration.
+The Review Orchestrator is a microservice that coordinates review workflows and integrates with RabbitMQ messaging for the ClearSky educational SaaS platform.
 
-## Features
+## Overview
 
-- Orchestrates review request and response flows between services
-- Communicates with RabbitMQ for asynchronous messaging
-- Forwards and aggregates data from the Review Service
-- Provides a health check endpoint for Docker and Kubernetes
-- OpenAPI (Swagger) documented REST API
+- **Port:** 3000
+- **Purpose:** Orchestrates review request workflows and handles messaging between services
+- **Dependencies:** RabbitMQ, Review Service
+- **Health Check:** Built-in Docker health monitoring
 
-## Technology Stack
-
-- Node.js (Express)
-- RabbitMQ (AMQP)
-- Docker & Docker Compose
-- OpenAPI (Swagger) for API documentation
-
-## Getting Started
-
-### Prerequisites
+## Prerequisites
 
 - Docker & Docker Compose
-- Node.js (for local development)
-- RabbitMQ and Review Service running (see `.env` and Docker Compose)
-
-### Running the Service
-
-```sh
-docker-compose up --build
-```
-
-The orchestrator will be available at `http://localhost:3000`.
-
-## Health Check
-
-A health check endpoint is provided for orchestration and monitoring:
-
-- **GET** `/health`
-- **Success Response:**
-  ```json
-  { "status": "ok" }
-  ```
-- **Failure Response:**
-  ```json
-  { "status": "error", "details": "..." }
-  ```
-
-The included `healthcheck.js` script is used by Docker Compose to check service health.
-
-## API Reference
-
-The API is described by the OpenAPI specification (see `openapi.yaml` or `/api-docs` if Swagger UI is enabled).
-
-### Example Endpoints
-
-#### Create a Review Request
-
-- **POST** `/api/reviews`
-- **Description:** Orchestrates the creation of a new review request, forwarding the request to the Review Service and publishing a message to RabbitMQ.
-- **Request Body Example:**
-  ```json
-  {
-    "studentId": "string",
-    "courseId": "string",
-    "gradeId": "string",
-    "studentRegistrationNumber": "string",
-    "reason": "string"
-  }
-  ```
-- **Success Response:**
-  - `201 Created`
-    ```json
-    {
-      "_id": "string",
-      "status": "pending",
-      // ...other fields
-    }
-    ```
-- **Failure Responses:**
-  - `400 Bad Request`
-    ```json
-    { "error": "Validation failed: reason is required." }
-    ```
-  - `500 Internal Server Error`
-    ```json
-    { "error": "Failed to create review request." }
-    ```
-
-#### Get All Reviews
-
-- **GET** `/api/reviews`
-- **Description:** Retrieves all review requests, possibly aggregating from multiple services.
-- **Success Response:**
-  - `200 OK`
-    ```json
-    [
-      {
-        "_id": "string",
-        "studentId": "string",
-        "courseId": "string",
-        // ...
-      }
-    ]
-    ```
-- **Failure Response:**
-  - `500 Internal Server Error`
-    ```json
-    { "error": "Could not fetch reviews." }
-    ```
-
-#### Update a Review
-
-- **PUT** `/api/reviews/{id}`
-- **Description:** Updates a review request, typically by an instructor or admin.
-- **Request Body Example:**
-  ```json
-  {
-    "status": "resolved",
-    "instructorResponse": "Your grade has been updated."
-  }
-  ```
-- **Success Response:**
-  - `200 OK`
-    ```json
-    {
-      "_id": "string",
-      "status": "resolved",
-      // ...other fields
-    }
-    ```
-- **Failure Responses:**
-  - `404 Not Found`
-    ```json
-    { "error": "Review not found." }
-    ```
-  - `400 Bad Request`
-    ```json
-    { "error": "Invalid update data." }
-    ```
-  - `500 Internal Server Error`
-    ```json
-    { "error": "Could not update review." }
-    ```
-
-#### Delete a Review
-
-- **DELETE** `/api/reviews/{id}`
-- **Description:** Deletes a review request (admin only).
-- **Success Response:**
-  - `200 OK`
-    ```json
-    { "message": "Review deleted successfully" }
-    ```
-- **Failure Responses:**
-  - `404 Not Found`
-    ```json
-    { "error": "Review not found." }
-    ```
-  - `403 Forbidden`
-    ```json
-    { "error": "Access denied." }
-    ```
-  - `500 Internal Server Error`
-    ```json
-    { "error": "Could not delete review." }
-    ```
+- Node.js 18+ (for local development)
+- Access to RabbitMQ instance
+- Access to Review Service
 
 ## Environment Variables
 
-- `PORT`: Port for the orchestrator (default: 3000)
-- `RABBITMQ_URL`: RabbitMQ connection string
-- `REVIEW_SERVICE_URL`: URL for the Review Service
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NODE_ENV` | Environment mode | `development` |
+| `PORT` | Service port | `3000` |
+| `RABBITMQ_URL` | RabbitMQ connection URL | Required |
+| `REVIEW_SERVICE_URL` | Review Service base URL | `http://review-service:8400` |
 
-## OpenAPI Documentation
+## Running with Docker
 
-For the full OpenAPI specification, see [`openapi.yaml`](./openapi.yaml) or visit `/api-docs` if Swagger UI is enabled.
+### Using Docker Compose (Recommended)
 
----
+```bash
+# Set required environment variables
+export RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+export REVIEW_SERVICE_URL=http://review-service:8400
+
+# Start the service
+docker-compose up -d
+```
+
+### Using Docker directly
+
+```bash
+docker build -t review-orchestrator .
+docker run -p 3000:3000 \
+  -e RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672 \
+  -e REVIEW_SERVICE_URL=http://review-service:8400 \
+  review-orchestrator
+```
+
+## Running Locally
+
+```bash
+# Install dependencies
+npm install
+
+# Development mode with auto-reload
+npm run dev
+
+# Production mode
+npm start
+```
+
+## Available Scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `start` | `node server.js` | Start in production mode |
+| `dev` | `nodemon server.js` | Start with auto-reload |
+| `test` | `jest` | Run tests |
+| `lint` | `eslint .` | Run linting |
+| `docker:build` | `docker build -t review-orchestrator .` | Build Docker image |
+| `docker:run` | `docker run -p 3000:3000 review-orchestrator` | Run Docker container |
+
+## Health Check
+
+The service includes a built-in health check accessible at:
+
+- **Endpoint:** `GET /health`
+- **Success Response:** `200 OK` with `{ "status": "ok" }`
+- **Docker Health Check:** Updates every 30 seconds with 10s timeout
+
+### Manual Health Check
+
+```bash
+curl http://localhost:3000/health
+```
+
+## Docker Configuration
+
+### Health Check Settings
+
+- **Interval:** 30 seconds
+- **Timeout:** 10 seconds  
+- **Retries:** 3 attempts
+- **Start Period:** 40 seconds (grace period on startup)
+
+### Network Configuration
+
+- Uses external `clearsky-network` bridge network
+- Ensure the network exists: `docker network create clearsky-network`
+
+## Dependencies
+
+### Production Dependencies
+
+- **express** (^4.18.2): Web framework
+- **axios** (^1.6.0): HTTP client for service communication
+- **amqplib** (^0.10.3): RabbitMQ client library
+- **cors** (^2.8.5): Cross-origin resource sharing
+- **helmet** (^7.1.0): Security middleware
+
+### Development Dependencies
+
+- **nodemon** (^3.0.1): Development auto-reload
+- **eslint** (^8.50.0): Code linting
+- **jest** (^29.7.0): Testing framework
+
+## Troubleshooting
+
+### Service Won't Start
+
+1. **Check environment variables:**
+   ```bash
+   echo $RABBITMQ_URL
+   echo $REVIEW_SERVICE_URL
+   ```
+
+2. **Verify network connectivity:**
+   ```bash
+   docker network ls | grep clearsky-network
+   ```
+
+3. **Check service logs:**
+   ```bash
+   docker-compose logs review-orchestrator
+   ```
+
+### Health Check Failures
+
+- Ensure the service is listening on the correct port
+- Verify no firewall blocking port 3000
+- Check if the `/health` endpoint is implemented in `server.js`
+
+### RabbitMQ Connection Issues
+
+- Verify RabbitMQ is running and accessible
+- Check RABBITMQ_URL format: `amqp://username:password@host:port`
+- Ensure RabbitMQ service is on the same network
+
+## File Structure
+
+```
+review_orchestrator/
+├── server.js              # Main application entry point
+├── healthcheck.js          # Docker health check script
+├── package.json           # NPM configuration
+├── docker-compose.yml     # Docker Compose configuration
+├── Dockerfile             # Docker build instructions
+├── .dockerignore          # Docker ignore patterns
+└── README.md              # This file
+```
+
+## License
+
+MIT
