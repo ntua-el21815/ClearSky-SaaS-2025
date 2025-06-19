@@ -1,0 +1,157 @@
+services:
+  # Review Service
+  review-service:
+    build:
+      context: ./review-service
+    ports:
+      - "8400:8400"
+    env_file:
+      - .env
+    environment:
+      - PORT=8400
+      - MONGO_USER=${MONGO_USER}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@review-mongodb:27017/reviewDB?authSource=reviewDB
+    depends_on:
+      - review-mongodb
+    volumes:
+      - ./review-service:/app
+      - /app/node_modules
+    restart: unless-stopped
+    networks:
+      - clearsky-network
+
+  # Review MongoDB
+  review-mongodb:
+    image: mongo:latest
+    container_name: review_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - review_mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_INITDB_DATABASE=admin
+    restart: unless-stopped
+    networks:
+      - clearsky-network
+
+  # Review Orchestrator
+  review-orchestrator:
+    build:
+      context: ./review-orchestrator
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://rabbitmq:5672}
+      - REVIEW_SERVICE_URL=${REVIEW_SERVICE_URL:-http://review-service:8400}
+    depends_on:
+      - rabbitmq
+      - review-service
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Institution Credit Service
+  institution-credit-service:
+    build:
+      context: ./institution-credit-service
+    ports:
+      - "8102:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGO_USER=${MONGO_USER}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@institution-mongodb:27017/institutionCredits?authSource=admin
+    env_file:
+      - .env
+    depends_on:
+      - institution-mongodb
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+
+  # Institution Credit MongoDB
+  institution-mongodb:
+    image: mongo:latest
+    container_name: institution_mongodb
+    ports:
+      - "27018:27017"
+    volumes:
+      - institution_mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - clearsky-network
+
+  # Grades Service
+  grades-service:
+    build:
+      context: ./grades-service
+    container_name: grades-service
+    ports:
+      - "3001:3000"
+    environment:
+      - PORT=3000
+      - MONGO_URI=mongodb://grades-mongodb:27017/grades
+    depends_on:
+      - grades-mongodb
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+
+  # Grades MongoDB
+  grades-mongodb:
+    image: mongo:latest
+    container_name: grades_mongodb
+    ports:
+      - "27019:27017"
+    volumes:
+      - grades_mongo_data:/data/db
+    restart: unless-stopped
+    networks:
+      - clearsky-network
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: clearsky_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq_definitions.json:/etc/rabbitmq/definitions.json
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    environment:
+      - RABBITMQ_DEFAULT_VHOST=/
+      - RABBITMQ_LOAD_DEFINITIONS=/etc/rabbitmq/definitions.json
+    restart: unless-stopped
+    networks:
+      - clearsky-network
+
+volumes:
+  review_mongo_data:
+    driver: local
+  institution_mongo_data:
+    driver: local
+  grades_mongo_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+networks:
+  clearsky-network:
+    driver: bridge
