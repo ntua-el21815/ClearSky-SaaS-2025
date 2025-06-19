@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   institution-credit-service:
     build: .
@@ -10,7 +8,7 @@ services:
       - PORT=3000
       - MONGO_USER=${MONGO_USER}
       - MONGO_PASSWORD=${MONGO_PASSWORD}
-      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/institutionCredits?authSource=admin
+      - MONGODB_URI=${MONGODB_URI}
     env_file:
       - .env
     depends_on:
@@ -18,10 +16,8 @@ services:
     networks:
       - clearsky-network
 
-  mongodb:
+  credit-mongodb:
     image: mongo:latest
-    ports:
-      - "27017:27017"
     volumes:
       - mongodb_data:/data/db
     environment:

@@ -19,7 +19,7 @@ services:
     networks:
       - clearsky-network
 
-  mongodb:
+  review-mongodb:
     image: mongo:latest
     ports:
       - "27017:27017"
