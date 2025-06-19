@@ -35,3 +35,5 @@ pnpm-lock.yaml
 yarn.lock
 node_modules
 .env
+
+rabbitmq_data/
