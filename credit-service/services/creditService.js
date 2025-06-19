@@ -11,10 +11,8 @@ class CreditService {
       
       if (!credit) {
         return {
-          institutionId,
-          totalCredits: 0,
-          usedCredits: 0,
-          availableCredits: 0
+          success: false,
+          error: 'No credits found for institution'
         };
       }
       
