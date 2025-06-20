@@ -22,9 +22,9 @@ services:
     container_name: review-service
     ports:
       - "8400:8400"
-    env_file: ./review-service/.env
     environment:
       - PORT=8400
+      - MONGODB_URI=mongodb://review-mongodb:27017/review?authSource=admin
     depends_on:
       - review-mongodb
     networks:
@@ -37,9 +37,6 @@ services:
     container_name: review-mongodb
     volumes:
       - review-mongo-data:/data/db
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
     networks:
       - review-network
     restart: unless-stopped
@@ -50,9 +47,9 @@ services:
     container_name: institution-credit-service
     ports:
       - "8102:3000"
-    env_file: ./credit-service/.env
     environment:
       - PORT=3000
+      - MONGODB_URI=mongodb://credit-mongodb:27017/credits
     depends_on:
       - credit-mongodb
     networks:
@@ -64,9 +61,6 @@ services:
     container_name: credit-mongodb
     volumes:
       - credit-mongo-data:/data/db
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
     networks:
       - credits-network
 

@@ -1,18 +1,6 @@
 const mongoose = require('mongoose');
 
-// Load environment variables from .env file
-require('dotenv').config({ path: '../.env' });
-// Check if the environment variables are set
-if (!process.env.MONGO_USER || !process.env.MONGO_PASSWORD) {
-  console.error('MongoDB credentials are not set in environment variables');
-  process.exit(1);
-}
-
-// Configure a user and password for MongoDB
-const mongo_username = process.env.MONGO_USER;
-const mongo_password = process.env.MONGO_PASSWORD;
-
-const MONGODB_URI= `mongodb://${mongo_username}:${mongo_password}@mongodb:27017/institutionCredits?authSource=admin`;
+const MONGODB_URI= process.env.MONGODB_URI
 
 // Connect to MongoDB
 const connectDatabase = async () => {

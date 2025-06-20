@@ -4,7 +4,7 @@ const gradeController = require("../controllers/gradeController");
 const router = express.Router();
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "upload/"),
+  destination: (req, file, cb) => cb(null, "./"),
   filename: (req, file, cb) => cb(null, "grades.xlsx"),
 });
 const upload = multer({ storage });

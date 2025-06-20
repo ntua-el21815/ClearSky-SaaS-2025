@@ -113,9 +113,9 @@ app.post('/api/review-requests', async (req, res) => {
     const notificationData = {
       type: 'REVIEW_REQUEST_CREATED',
       reviewId: createdReview.id,
-      studentId,
-      courseId,
-      studentRegistrationNumber,
+      studentId: createdReview.studentId,
+      courseId: createdReview.courseId,
+      studentRegistrationNumber: createdReview.studentRegistrationNumber,
       message: `New grade review request from student ${studentRegistrationNumber}`,
       timestamp: new Date().toISOString()
     };
@@ -249,22 +249,13 @@ app.post('/api/review-requests/:reviewId/reply', async (req, res) => {
 // Get review requests (for instructor dashboard)
 app.get('/api/review-requests', async (req, res) => {
   try {
-    const { courseId, status } = req.query;
-    
-    let url = `${REVIEW_SERVICE_URL}`;
-    const params = new URLSearchParams();
-    
-    // Build filter string for Review Service API
-    const filters = [];
-    if (courseId) filters.push(`courseId=${courseId}`);
-    if (status) filters.push(`status=${status}`);
-    
-    if (filters.length > 0) {
-      params.append('filter', filters.join('&'));
-      url += `?${params.toString()}`;
-    }
+    // Pass query parameters directly to the review service
+    const response = await axios.get(REVIEW_SERVICE_URL, {
+      params: req.query,
+      timeout: 10000
+    });
 
-    const response = await axios.get(url, { timeout: 10000 });
+    console.log('Fetching review requests with filters:', req.query);
     
     res.json({
       success: true,
