@@ -2,7 +2,7 @@ services:
   # --- Infrastructure ---
   rabbitmq:
     image: rabbitmq:3.13-management
-    container_name: clearsky_rabbitmq
+    container_name: clearsky-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -96,7 +96,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - RABBITMQ_URL=${RABBITMQ_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
       - REVIEW_SERVICE_URL=http://review-service:8400/api/reviews
     depends_on:
       - rabbitmq
