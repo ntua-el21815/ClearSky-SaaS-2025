@@ -1,3 +1,6 @@
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
 const User = require("../models/User");
 
 exports.getAllUsers = async (req, res) => {
@@ -69,6 +72,42 @@ exports.assignUserCode = async (req, res) => {
     await user.save();
 
     res.json({ message: "User code assigned", user });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+exports.registerUser = async (req, res) => {
+  const { email, password, fullName, role } = req.body;
+
+  if (!email || !password || !role) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
+
+  try {
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ message: "User already exists" });
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const newUser = new User({ email, fullName, role, password: hashed });
+    await newUser.save();
+
+    const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.status(201).json({
+      token,
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+        fullName: newUser.fullName,
+        role: newUser.role,
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }

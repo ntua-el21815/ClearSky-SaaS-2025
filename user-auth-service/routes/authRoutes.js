@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const {
   login,
-  register,
   getCurrentUser,
   verifyToken,
 } = require("../controllers/authController");
@@ -10,7 +9,6 @@ const {
 const verifyTokenMiddleware = require("../middlewares/authMiddleware"); // <-- άλλαξε το όνομα
 
 router.post("/login", login);
-router.post("/register", register);
 router.get("/me", verifyTokenMiddleware, getCurrentUser);
 router.get("/verify-token", verifyTokenMiddleware, verifyToken);
 
