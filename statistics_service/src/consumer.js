@@ -19,16 +19,29 @@ async function startConsumer() {
     channel.consume(QUEUE_NAME, async msg => {
       if (msg !== null) {
         try {
-          const content = JSON.parse(msg.content.toString());
-          const { courseId, gradeSheetId, data } = content;
+          const parsed = JSON.parse(msg.content.toString());
 
-          if (!courseId || !gradeSheetId || !Array.isArray(data)) {
-            console.warn('⚠️ Invalid input received from queue');
+          const wrapper = parsed?.data?.data;
+          const gradesArray = wrapper?.grades;
+          const courseId = wrapper?.["Τμήμα Τάξης"] || "UNKNOWN";
+          const gradeSheetId = wrapper?.["Περίοδος δήλωσης"] || "UNKNOWN";
+
+          if (!Array.isArray(gradesArray)) {
+            console.warn('⚠️ Invalid input: grades not found');
             channel.ack(msg);
             return;
           }
 
-          const stats = calculateStatistics(data);
+          // Transform data into expected format
+          const transformed = gradesArray.map(student => ({
+            studentId: student["Αριθμός Μητρώου"],
+            finalGrade: student["Βαθμολογία"],
+            questionsRaw: Object.fromEntries(
+              Object.entries(student.responses || {}).map(([k, v]) => [`Q${k.padStart(2, '0')}`, v])
+            )
+          }));
+
+          const stats = calculateStatistics(transformed);
 
           const saved = await CourseStatistics.create({
             courseId,

@@ -34,3 +34,28 @@ exports.getAllStatistics = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch statistics' });
   }
 };
+
+exports.calculateStatisticsFromInput = async (req, res) => {
+  try {
+    const wrapper = req.body?.data?.data;
+    const gradesArray = wrapper?.grades;
+
+    if (!Array.isArray(gradesArray)) {
+      return res.status(400).json({ error: 'Invalid grades array' });
+    }
+
+    const transformed = gradesArray.map(student => ({
+      studentId: student["Αριθμός Μητρώου"],
+      finalGrade: student["Βαθμολογία"],
+      questionsRaw: Object.fromEntries(
+        Object.entries(student.responses || {}).map(([k, v]) => [`Q${k.padStart(2, '0')}`, v])
+      )
+    }));
+
+    const stats = calculateStatistics(transformed);
+    return res.json(stats);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to calculate statistics' });
+  }
+};

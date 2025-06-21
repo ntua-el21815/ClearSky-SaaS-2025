@@ -16,6 +16,7 @@ app.get('/', (req, res) => {
 // API endpoints
 app.post('/statistics/save', controller.handleStatisticsSave);
 app.get('/statistics/all', controller.getAllStatistics);
+app.post('/statistics/calculate', controller.calculateStatisticsFromInput);
 
 const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {

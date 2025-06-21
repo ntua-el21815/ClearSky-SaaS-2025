@@ -1,4 +1,3 @@
-
 FROM node:18
 
 WORKDIR /app
@@ -8,5 +7,4 @@ RUN npm install
 
 COPY . .
 
-CMD [ "node", "src/consumer.js"]
-
+CMD ["node", "server.js"]
