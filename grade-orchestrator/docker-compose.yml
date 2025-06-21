@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  shared-mongo:
+    image: mongo
+    container_name: shared-mongo
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - saas-network
+
+  credit-service:
+    build:
+      context: ./credit-service
+    container_name: credit-service
+    ports:
+      - "8102:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://shared-mongo:27017/credits
+    depends_on:
+      - shared-mongo
+    networks:
+      - saas-network
+
+  grade-service:
+    build:
+      context: ./grade-service
+    container_name: grade-service
+    ports:
+      - "8103:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGO_URI=mongodb://shared-mongo:27017/grades
+    depends_on:
+      - shared-mongo
+    networks:
+      - saas-network
+
+  orchestrator:
+    build:
+      context: ./grade-orchestrator
+    container_name: grade-orchestrator
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - CREDIT_SERVICE_URL=http://credit-service:3000
+      - GRADE_SERVICE_URL=http://grade-service:3000
+    depends_on:
+      - credit-service
+      - grade-service
+    networks:
+      - saas-network
+
+networks:
+  saas-network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+
+
