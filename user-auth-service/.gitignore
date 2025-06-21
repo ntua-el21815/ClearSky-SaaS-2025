@@ -1,0 +1,6 @@
+architecture/SaaS 25-27.vpp.bak_000f
+architecture/SaaS 25-27.vux
+node_modules/
+.env
+microservice01/mongodb-macos-aarch64-8.0.9/bin/mongod
+microservice01/mongodb-macos-aarch64-8.0.9/bin/mongos
