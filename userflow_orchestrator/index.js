@@ -1,9 +1,10 @@
-// index.js
 const express = require('express');
 const axios = require('axios');
 const helmet = require('helmet');
 const cors = require('cors');
 require('dotenv').config();
+
+const { initRabbit, publishUserCreated } = require('./rabbitmq');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -13,20 +14,19 @@ app.use(cors());
 app.use(express.json());
 
 const USER_AUTH_SERVICE_URL = process.env.USER_AUTH_SERVICE_URL || 'http://localhost:5000';
+const CREDIT_SERVICE_URL = process.env.CREDIT_SERVICE_URL || 'http://localhost:3000';
 
 // Auth orchestration endpoint
 app.post('/api/auth', async (req, res) => {
   const { token, email, password } = req.body;
 
   try {
-    // Case 1: If token is provided, try to verify it
     if (token) {
       try {
         const verifyResponse = await axios.get(`${USER_AUTH_SERVICE_URL}/auth/verify-token`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        // Token is valid
         return res.json({
           success: true,
           message: 'Token is valid',
@@ -34,7 +34,6 @@ app.post('/api/auth', async (req, res) => {
           token
         });
       } catch (verifyErr) {
-        // Token is invalid
         console.warn('⚠️ Token verification failed:', verifyErr.response?.data || verifyErr.message);
         return res.status(401).json({
           success: false,
@@ -43,7 +42,6 @@ app.post('/api/auth', async (req, res) => {
       }
     }
 
-    // Case 2: No token, attempt login with email & password
     if (!email || !password) {
       return res.status(400).json({ success: false, error: 'Email and password required' });
     }
@@ -67,7 +65,6 @@ app.post('/api/auth', async (req, res) => {
   }
 });
 
-
 app.post('/api/signup', async (req, res) => {
   const { email, password, fullName, role } = req.body;
 
@@ -86,6 +83,9 @@ app.post('/api/signup', async (req, res) => {
       role
     }, { timeout: 5000 });
 
+    // Publish to RabbitMQ (userId + role)
+    await publishUserCreated(registerResponse.data.user);
+
     return res.status(201).json({
       success: true,
       message: 'Signup successful',
@@ -103,8 +103,26 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
+app.post('/api/credits/institution/:institutionId/add', async (req, res) => {
+  const { institutionId } = req.params;
+  const { credits } = req.body;
 
-// Health check
+  try {
+    const response = await axios.post(
+      `${CREDIT_SERVICE_URL}/api/credits/institution/${institutionId}/add`,
+      { credits }
+    );
+
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('❌ Error forwarding credit payment:', error.message);
+    res.status(error.response?.status || 500).json({
+      message: 'Failed to process credit payment',
+      error: error.response?.data || error.message
+    });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', service: 'auth-orchestrator', timestamp: new Date().toISOString() });
 });
@@ -112,3 +130,6 @@ app.get('/health', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Auth Orchestrator running at http://localhost:${PORT}`);
 });
+
+// 👇 Start RabbitMQ connection (with retry logic in rabbitmq.js)
+initRabbit();
