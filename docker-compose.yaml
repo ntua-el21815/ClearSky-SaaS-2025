@@ -66,7 +66,7 @@ services:
 
   # --- Grade Service ---
   grade-service:
-    build: ./grade_service
+    build: ./grade-service
     container_name: grade-service
     ports:
       - "8200:8200"
@@ -160,7 +160,7 @@ services:
     restart: unless-stopped
 
   userflow-orchestrator:
-    build: ./userflow_orchestrator
+    build: ./userflow-orchestrator
     container_name: userflow-orchestrator
     ports:
       - "8100:8100"
@@ -269,7 +269,22 @@ services:
     networks:
       - clearsky-network
       - user-management-network
-
+    restart: unless-stopped
+  
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "80:80"
+    environment:
+      - VITE_REVIEW_API_URL=http://review-orchestrator:8082
+      - VITE_USER_API_URL=http://userflow-orchestrator:8100
+      - VITE_GRADE_API_URL=http://grade-orchestrator:8081
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+    
+  
 networks:
   clearsky-network:
     driver: bridge
