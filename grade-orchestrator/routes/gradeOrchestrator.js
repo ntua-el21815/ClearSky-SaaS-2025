@@ -19,18 +19,34 @@ const GRADE_API  = (process.env.GRADE_SERVICE_URL  || '')
 
 const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
 
-/* ---------- RabbitMQ bootstrap ---------- */
+/* ---------- RabbitMQ bootstrap with retry ---------- */
 let mqChannel;
-(async () => {
+const MAX_RETRIES   = 12;           // ~1 λεπτό συνολικά
+const RETRY_DELAYMS = 5_000;        // 5″ ανά προσπάθεια
+
+async function connectRabbitMQ(attempt = 1) {
   try {
     const conn = await amqplib.connect(RABBIT_URL);
     mqChannel  = await conn.createChannel();
     await mqChannel.assertQueue('statistics', { durable: true });
-    console.log('[orchestrator] RabbitMQ channel ready');
+    console.log('[orchestrator] 🟢 RabbitMQ channel ready');
+
+    // αν η σύνδεση “πέσει”, ξανα-σύνδεση
+    conn.on('close', () => {
+      console.warn('[orchestrator] RabbitMQ connection closed — reconnecting…');
+      mqChannel = null;
+      connectRabbitMQ();
+    });
   } catch (err) {
-    console.error('[orchestrator] RabbitMQ connection failed:', err.message);
+    console.error(`[orchestrator] RabbitMQ connect failed (attempt ${attempt}):`, err.message);
+    if (attempt < MAX_RETRIES) {
+      setTimeout(() => connectRabbitMQ(attempt + 1), RETRY_DELAYMS);
+    } else {
+      console.error('[orchestrator] ❌ Gave up connecting to RabbitMQ');
+    }
   }
-})();
+}
+connectRabbitMQ();
 
 /* ---------- helper: unwrap axios ---------- */
 function formatAxiosError(err, defaultMsg) {
