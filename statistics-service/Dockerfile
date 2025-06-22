@@ -7,5 +7,6 @@ RUN npm install
 
 COPY . .
 
-# which function the container will start
-CMD ["node", "index.js"]
+EXPOSE 8300
+
+CMD ["node", "server.js"]

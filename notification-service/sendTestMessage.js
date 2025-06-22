@@ -22,8 +22,8 @@ const testMessage2 = {
 const testMessage3 = {
   type: 'REVIEW_REPLIED',
   userId: '03184623',
-  //email: 'el21815@mail.ntua.gr' 
-  email: 'fotakisandreas@gmail.com'
+  email: 'el21815@mail.ntua.gr' 
+  //email: 'fotakisandreas@gmail.com'
 };
 
 async function sendMessage() {

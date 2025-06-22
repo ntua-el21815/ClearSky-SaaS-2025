@@ -21,9 +21,7 @@
     }
   ],
   "queues": [
-    { "name": "review_requests",      "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
-    { "name": "review_replies",       "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
-    { "name": "create_statistics",    "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "statistics",    "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
     { "name": "notifications",        "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} }
   ]
 }

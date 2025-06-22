@@ -46,9 +46,9 @@ services:
     build: ./credit-service
     container_name: institution-credit-service
     ports:
-      - "8102:3000"
+      - "8102:8102"
     environment:
-      - PORT=3000
+      - PORT=8102
       - MONGODB_URI=mongodb://credit-mongodb:27017/credits
     depends_on:
       - credit-mongodb
@@ -66,12 +66,12 @@ services:
 
   # --- Grade Service ---
   grade-service:
-    build: ./grade-service
+    build: ./grade_service
     container_name: grade-service
     ports:
-      - "8103:3000" # Mapped to a different host port
+      - "8200:8200"
     environment:
-      - PORT=3000
+      - PORT=8200
       - MONGO_URI=mongodb://grade-mongodb:27017/grades
     depends_on:
       - grade-mongodb
@@ -92,10 +92,10 @@ services:
     build: ./review-orchestrator
     container_name: review-orchestrator
     ports:
-      - "8082:3000"
+      - "8082:8082"
     environment:
       - NODE_ENV=development
-      - PORT=3000
+      - PORT=8082
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
       - REVIEW_SERVICE_URL=http://review-service:8400/api/reviews
     depends_on:
@@ -122,6 +122,109 @@ services:
     networks:
       - clearsky-network
 
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    ports:
+      - "8500:8500"
+    environment:
+      - PORT=8500
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+    depends_on:
+      - rabbitmq
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+  
+  institution-service:
+    build: ./institution-service
+    container_name: institution-service
+    ports:
+      - "8101:8101"
+    environment:
+      - PORT=8101
+      - MONGODB_URI=mongodb://institution-mongodb:27017/institution-db?authSource=admin
+    depends_on:
+      - institution-mongodb
+    networks:
+      - institution-network
+      - clearsky-network
+
+  institution-mongodb:
+    image: mongo:latest
+    container_name: institution-mongodb
+    volumes:
+      - institution-mongo-data:/data/db
+    networks:
+      - institution-network
+    restart: unless-stopped
+
+  userflow-orchestrator:
+    build: ./userflow_orchestrator
+    container_name: userflow-orchestrator
+    ports:
+      - "8100:8100"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+      - USER_AUTH_SERVICE_URL=http://user-auth-service:8500
+      - CREDIT_SERVICE_URL=http://institution-credit-service:8102
+    depends_on:
+      - rabbitmq
+      - institution-service
+      - institution-credit-service
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+
+  statistics-service:
+    build: 
+      context: ./statistics-service
+    container_name: statistics-service
+    ports:
+      - "8300:8300"
+    environment:
+      - PORT=8300
+      - MONGO_URL=mongodb://statistics-mongodb:27017/statistics?authSource=admin
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+    depends_on:
+      - statistics-mongodb
+      - rabbitmq
+    networks:
+      - clearsky-network
+      - statistics-network
+    restart: unless-stopped
+
+  statistics-mongodb:
+    image: mongo:latest
+    container_name: statistics-mongodb
+    volumes:
+      - statistics-mongo-data:/data/db
+    networks:
+      - statistics-network
+    restart: unless-stopped
+
+  grade-orchestrator:
+    build: 
+      context: ./grade-orchestrator
+    container_name: grade-orchestrator
+    ports:
+      - "8081:8081"
+    environment:
+      - NODE_ENV=development
+      - PORT=8081
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+      - CREDIT_SERVICE_URL=http://credit-service:3000
+      - GRADE_SERVICE_URL=http://grade-service:8200
+    depends_on:
+      - rabbitmq
+      - grade-service
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+
+
 networks:
   clearsky-network:
     driver: bridge
@@ -131,9 +234,18 @@ networks:
     driver: bridge
   grades-network:
     driver: bridge
+  institution-network:
+    driver: bridge
+  statistics-network:
+    driver: bridge
 
 volumes:
   rabbitmq_data:
   review-mongo-data:
   credit-mongo-data:
   grade-mongo-data:
+  institution-mongo-data:
+  statistics-mongo-data:
+  notification-mongo-data:
+  userflow-mongo-data:
+  user-auth-mongo-data:

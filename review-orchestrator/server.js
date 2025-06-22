@@ -16,8 +16,7 @@ app.use(express.json());
 // Environment variables
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
 const REVIEW_SERVICE_URL = process.env.REVIEW_SERVICE_URL || 'http://review-service:3001';
-const REQUEST_QUEUE = "review_requests";
-const REPLY_QUEUE = "review_replies";
+const NOTIFICATION_QUEUE = 'review_notifications';
 
 let rabbitChannel = null;
 
@@ -28,8 +27,7 @@ async function initRabbitMQ() {
     rabbitChannel = await connection.createChannel();
     
     // Ensure notification queue exists
-    await rabbitChannel.assertQueue(REQUEST_QUEUE, { durable: true });
-    await rabbitChannel.assertQueue(REPLY_QUEUE, { durable: true });
+    await rabbitChannel.assertQueue(NOTIFICATION_QUEUE, { durable: true });
     
     console.log('RabbitMQ connected successfully');
   } catch (error) {
@@ -40,7 +38,7 @@ async function initRabbitMQ() {
 }
 
 // Send notification via RabbitMQ
-async function sendNotification(notificationData, queue) {
+async function sendNotification(notificationData) {
   if (!rabbitChannel) {
     console.error('RabbitMQ channel not available');
     return false;
@@ -48,7 +46,7 @@ async function sendNotification(notificationData, queue) {
   
   try {
     await rabbitChannel.sendToQueue(
-      queue,
+      NOTIFICATION_QUEUE,
       Buffer.from(JSON.stringify(notificationData)),
       { persistent: true }
     );
@@ -122,7 +120,7 @@ app.post('/api/review-requests', async (req, res) => {
       timestamp: new Date().toISOString()
     };
 
-    await sendNotification(notificationData, REQUEST_QUEUE);
+    await sendNotification(notificationData);
 
     res.status(201).json({
       success: true,
@@ -173,6 +171,7 @@ app.post('/api/review-requests/:reviewId/reply', async (req, res) => {
 
     // Step 1: Update review with instructor response in Review Service
     const updateData = {
+      type: 'REVIEW_REPLY',
       instructorResponse,
       reviewedGrade: reviewedGrade || null,
       status: resolution,
@@ -204,7 +203,7 @@ app.post('/api/review-requests/:reviewId/reply', async (req, res) => {
       timestamp: new Date().toISOString()
     };
 
-    await sendNotification(notificationData, REPLY_QUEUE);
+    await sendNotification(notificationData);
 
     // Step 3: Trigger cleanup notification for temporary grade data (REQ016)
     const cleanupNotification = {
