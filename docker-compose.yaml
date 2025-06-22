@@ -215,7 +215,7 @@ services:
       - NODE_ENV=development
       - PORT=8081
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
-      - CREDIT_SERVICE_URL=http://credit-service:3000
+      - CREDIT_SERVICE_URL=http://credit-service:8102
       - GRADE_SERVICE_URL=http://grade-service:8200
     depends_on:
       - rabbitmq
@@ -224,6 +224,51 @@ services:
       - clearsky-network
     restart: unless-stopped
 
+  user-auth-service:
+    build: ./user-auth-service
+    container_name: user-auth-service
+    ports:
+      - "5002:5002"
+    environment:
+      - PORT=5002
+      - MONGO_URI=mongodb://user-auth-mongodb:27017/user-auth?authSource=admin
+    depends_on:
+      - user-auth-mongodb
+    networks:
+      - clearsky-network
+      - user-auth-network
+  
+  user-auth-mongodb:
+    image: mongo:latest
+    container_name: user-auth-mongodb
+    volumes:
+      - user-auth-mongo-data:/data/db
+    networks:
+      - user-auth-network
+    restart: unless-stopped
+
+  user-management-service:
+    build: ./user-management-service
+    container_name: user-management-service
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - MONGO_URI=mongodb://user-management-mongodb:27017/userflow?authSource=admin
+    depends_on:
+      - user-management-mongodb
+    networks:
+      - user-management-network
+      - clearsky-network
+  
+  user-management-mongodb:
+    image: mongo:latest
+    container_name: userflow-mongodb
+    volumes:
+      - userflow-mongo-data:/data/db
+    networks:
+      - clearsky-network
+      - user-management-network
 
 networks:
   clearsky-network:
@@ -237,6 +282,10 @@ networks:
   institution-network:
     driver: bridge
   statistics-network:
+    driver: bridge
+  user-auth-network:
+    driver: bridge
+  user-management-network:
     driver: bridge
 
 volumes:

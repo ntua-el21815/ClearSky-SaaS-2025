@@ -95,12 +95,11 @@ exports.registerUser = async (req, res) => {
     const newUser = new User({ email, fullName, role, password: hashed });
     await newUser.save();
 
-    const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    // const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, {
+    //   expiresIn: "1h",
+    // });
 
     res.status(201).json({
-      token,
       user: {
         id: newUser._id,
         email: newUser.email,
@@ -110,5 +109,6 @@ exports.registerUser = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
+    console.error(err);
   }
 };
