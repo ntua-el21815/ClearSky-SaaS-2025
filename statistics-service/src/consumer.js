@@ -1,7 +1,10 @@
 /* --------------------------------------------------
  * statistics-service - consumer.js
  * -------------------------------------------------- */
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/lia
 const amqp = require('amqplib');
 const { calculateStatistics } = require('./statistics');
 const CourseStatistics = require('./model/courseStatistics');
