@@ -8,28 +8,31 @@ const fs       = require('fs');
 const FormData = require('form-data');
 const amqplib  = require('amqplib');
 
-const router  = express.Router();
-const upload  = multer({ dest: 'tempUploads/' });
+const router = express.Router();
+const upload = multer({ dest: 'tempUploads/' });
 
 /* ---------- service URLs ---------- */
 const CREDIT_API = (process.env.CREDIT_SERVICE_URL || '')
-                    .replace(/\/$/, '') + '/api/credits';
+  .replace(/\/$/, '') + '/api/credits';
 const GRADE_API  = (process.env.GRADE_SERVICE_URL  || '')
-                    .replace(/\/$/, '') + '/gradeRoutes';
+  .replace(/\/$/, '') + '/gradeRoutes';
 
 const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
 
 /* ---------- RabbitMQ bootstrap with retry ---------- */
 let mqChannel;
-const MAX_RETRIES   = 12;           // ~1 λεπτό συνολικά
-const RETRY_DELAYMS = 5_000;        // 5″ ανά προσπάθεια
+const MAX_RETRIES   = 12;
+const RETRY_DELAYMS = 5_000;
 
-async function connectRabbitMQ(attempt = 1) {
+async function connectRabbitMQ (attempt = 1) {
   try {
     const conn = await amqplib.connect(RABBIT_URL);
     mqChannel  = await conn.createChannel();
+
+    /* queues we use */
     await mqChannel.assertQueue('statistics',    { durable: true });
-    await mqChannel.assertQueue('notifications', { durable: true }); // 🔔
+    await mqChannel.assertQueue('notifications', { durable: true });
+    await mqChannel.assertQueue('courses',       { durable: true });   // 🆕 new queue
 
     console.log('[orchestrator] 🟢 RabbitMQ channel ready');
 
@@ -50,7 +53,7 @@ async function connectRabbitMQ(attempt = 1) {
 connectRabbitMQ();
 
 /* ---------- helper: unwrap axios ---------- */
-function formatAxiosError(err, defaultMsg) {
+function formatAxiosError (err, defaultMsg) {
   if (err.response) {
     return {
       fromService : true,
@@ -72,7 +75,11 @@ router.post(
   '/api/grade-submissions',
   upload.single('file'),
   async (req, res) => {
-    const { institutionId, courseId = 'unknown' } = req.body;
+    /* pull params from client */
+    const { institutionId,
+            courseId  = 'unknown',
+            userId    = 'unknown' } = req.body;
+
     const isFinal = (req.body.final === 'true' || req.body.final === true);
     const file    = req.file;
 
@@ -143,7 +150,7 @@ router.post(
 
     /* ---------- publish to RabbitMQ ---------- */
     if (mqChannel) {
-      /* 1. raw grades → statistics queue */
+      /* 1. raw grades → statistics */
       try {
         mqChannel.sendToQueue(
           'statistics',
@@ -154,37 +161,53 @@ router.post(
         console.error('[orchestrator] failed to publish to statistics:', err.message);
       }
 
-      /* 2. GRADES_POSTED notification → notifications queue */
+      /* common helper to get inner { metadata, grades } no matter wrapper depth */
+      const inner = gradeResp?.data?.data?.data ?? gradeResp?.data?.data ?? {};
+
+      /* 2. GRADES_POSTED → notifications */
       try {
-        const gradesArr = gradeResp?.data?.data?.data?.grades
-                       ?? gradeResp?.data?.data?.grades
-                       ?? [];
         const emails = [
           ...new Set(
-            gradesArr
+            (inner.grades || [])
               .map(s => (s['Ακαδημαϊκό E-mail'] || s.email || '').trim())
               .filter(Boolean)
           )
         ];
 
-        const notifMsg = {
-          type  : 'GRADES_POSTED',
-          emails
-        };
-
         mqChannel.sendToQueue(
           'notifications',
-          Buffer.from(JSON.stringify(notifMsg)),
+          Buffer.from(JSON.stringify({ type:'GRADES_POSTED', emails })),
           { persistent:true }
         );
-
-        console.log(`[orchestrator] 📨 GRADES_POSTED sent with ${emails.length} emails`);
       } catch (err) {
         console.error('[orchestrator] failed to publish GRADES_POSTED:', err.message);
       }
+
+      /* 3. course-info → courses  (🆕) */
+      try {
+        const meta = inner.metadata || {};
+
+        const courseMsg = {
+          'Περίοδος δήλωσης': meta['Περίοδος δήλωσης'] || null,
+          'Μάθημα'          : meta['Μάθημα']             || null,
+          'Κωδικός μαθήματος': meta['Κωδικός μαθήματος'] || null,
+          institutionId,
+          userId
+        };
+
+        mqChannel.sendToQueue(
+          'courses',
+          Buffer.from(JSON.stringify(courseMsg)),
+          { persistent:true }
+        );
+
+        console.log('[orchestrator] 📚 course info sent to courses queue');
+      } catch (err) {
+        console.error('[orchestrator] failed to publish course info:', err.message);
+      }
     }
 
-    /* ---------- success response to client ---------- */
+    /* ---------- success response ---------- */
     return res.status(200).json({
       success : true,
       message : 'Upload complete',
