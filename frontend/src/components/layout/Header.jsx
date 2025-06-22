@@ -1,9 +1,5 @@
 import React from "react";
-<<<<<<< HEAD
-import { useAuth } from '../../contexts/authcontext';
-=======
 import { useAuth } from "../../contexts/authcontext";
->>>>>>> origin/Harris
 
 export default function Header() {
   const { logout } = useAuth();

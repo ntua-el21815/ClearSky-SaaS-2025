@@ -74,5 +74,44 @@ exports.uploadGrades = async (req, res) => {
   }
 };
 
+exports.getStudentGradesById = async (req, res) => {
+  const { period, courseName, courseCode, id } = req.query;
+
+  console.log("Query parameters:", req.query);
+
+  if (!period || !courseName || !courseCode || !id) {
+    return res.status(400).json({ error: "Missing period, courseName, courseCode, or id query parameters." });
+  }
+
+  try {
+    const course = await GradeUpload.findOne({
+      "Περίοδος δήλωσης": period,
+      "Μάθημα": courseName,
+      "Κωδικός μαθήματος": courseCode,
+    }).lean();
+
+    if (!course) {
+      return res.status(404).json({ error: "Μάθημα δεν βρέθηκε." });
+    }
+
+    const student = course.grades.find(g => g["Αριθμός Μητρώου"] === id);
+
+    if (!student) {
+      return res.status(404).json({ error: "Ο φοιτητής δεν βρέθηκε." });
+    }
+
+    return res.json({
+      "Περίοδος δήλωσης": course["Περίοδος δήλωσης"],
+      "Μάθημα": course["Μάθημα"],
+      "Κωδικός μαθήματος": course["Κωδικός μαθήματος"],
+      final: course.final,
+      student,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send("Σφάλμα κατά την αναζήτηση φοιτητή.");
+  }
+};
+
 exports.getGradesByCourse = async (req, res) => { /* unchanged */ };
 

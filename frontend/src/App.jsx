@@ -1,9 +1,5 @@
 import React from 'react';
-<<<<<<< HEAD
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-=======
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
->>>>>>> origin/Harris
 import LoginPage from './pages/login';
 import StudentDashboard from './pages/student/grade_statistics';
 import StudentCourses from './pages/student/my_courses';
@@ -21,10 +17,7 @@ import RegisterInstitution from './pages/institution/register_institution';
 import UserManagement from './pages/institution/user_management';
 import PurchaseCredits from './pages/institution/purchace_credits';
 import Unauthorized from './pages/unauthorized';
-<<<<<<< HEAD
-=======
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
->>>>>>> origin/Harris
 
 function App() {
   return (

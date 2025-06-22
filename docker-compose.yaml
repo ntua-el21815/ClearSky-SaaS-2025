@@ -81,6 +81,8 @@ services:
 
   grade-mongodb:
     image: mongo:latest
+    ports:
+      - "27017:27017"
     container_name: grade-mongodb
     volumes:
       - grade-mongo-data:/data/db\
@@ -129,13 +131,36 @@ services:
       - "8500:8500"
     environment:
       - PORT=8500
+      - MONGODB_URI=mongodb://notification-mongodb:27017/notification?authSource=admin
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
     depends_on:
       - rabbitmq
     networks:
       - clearsky-network
+      - notification-network
+    restart: unless-stopped
+
+  notification-mongodb:
+    image: mongo:latest
+    container_name: notification-mongodb
+    volumes:
+      - notification-mongo-data:/data/db
+    networks:
+      - notification-network
     restart: unless-stopped
   
+  institution-seeder:
+    build: ./institution-service
+    container_name: institution-seeder
+    command: ["node", "seedInstitution.js"]
+    environment:
+      MONGO_URI: mongodb://institution-mongodb:27017/institution-db?authSource=admin
+    depends_on: 
+      - institution-mongodb
+    networks: 
+      - institution-network
+      - clearsky-network  
+
   institution-service:
     build: ./institution-service
     container_name: institution-service
@@ -143,7 +168,7 @@ services:
       - "8101:8101"
     environment:
       - PORT=8101
-      - MONGODB_URI=mongodb://institution-mongodb:27017/institution-db?authSource=admin
+      - MONGO_URI=mongodb://institution-mongodb:27017/institution-db?authSource=admin
     depends_on:
       - institution-mongodb
     networks:
@@ -302,6 +327,8 @@ networks:
   user-auth-network:
     driver: bridge
   user-management-network:
+    driver: bridge
+  notification-network:
     driver: bridge
 
 volumes:

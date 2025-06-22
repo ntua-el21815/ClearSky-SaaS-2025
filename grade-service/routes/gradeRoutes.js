@@ -19,4 +19,6 @@ router.post("/upload-initial", upload.single("file"), gradeController.uploadGrad
 
 router.get("/", gradeController.getGradesByCourse);
 
+router.get("/student", gradeController.getStudentGradesById);
+
 module.exports = router;
