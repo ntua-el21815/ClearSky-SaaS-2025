@@ -33,7 +33,7 @@ COPY --chown=appuser:nodejs . .
 USER appuser
 
 # Expose port
-EXPOSE 3000
+EXPOSE 8082
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

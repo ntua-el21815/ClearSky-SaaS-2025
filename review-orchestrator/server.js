@@ -16,7 +16,8 @@ app.use(express.json());
 // Environment variables
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
 const REVIEW_SERVICE_URL = process.env.REVIEW_SERVICE_URL || 'http://review-service:3001';
-const NOTIFICATION_QUEUE = 'notification_requests';
+const REQUEST_QUEUE = "review_requests";
+const REPLY_QUEUE = "review_replies";
 
 let rabbitChannel = null;
 
@@ -27,7 +28,8 @@ async function initRabbitMQ() {
     rabbitChannel = await connection.createChannel();
     
     // Ensure notification queue exists
-    await rabbitChannel.assertQueue(NOTIFICATION_QUEUE, { durable: true });
+    await rabbitChannel.assertQueue(REQUEST_QUEUE, { durable: true });
+    await rabbitChannel.assertQueue(REPLY_QUEUE, { durable: true });
     
     console.log('RabbitMQ connected successfully');
   } catch (error) {
@@ -38,7 +40,7 @@ async function initRabbitMQ() {
 }
 
 // Send notification via RabbitMQ
-async function sendNotification(notificationData) {
+async function sendNotification(notificationData, queue) {
   if (!rabbitChannel) {
     console.error('RabbitMQ channel not available');
     return false;
@@ -46,7 +48,7 @@ async function sendNotification(notificationData) {
   
   try {
     await rabbitChannel.sendToQueue(
-      NOTIFICATION_QUEUE,
+      queue,
       Buffer.from(JSON.stringify(notificationData)),
       { persistent: true }
     );
@@ -120,7 +122,7 @@ app.post('/api/review-requests', async (req, res) => {
       timestamp: new Date().toISOString()
     };
 
-    await sendNotification(notificationData);
+    await sendNotification(notificationData, REQUEST_QUEUE);
 
     res.status(201).json({
       success: true,
@@ -202,7 +204,7 @@ app.post('/api/review-requests/:reviewId/reply', async (req, res) => {
       timestamp: new Date().toISOString()
     };
 
-    await sendNotification(notificationData);
+    await sendNotification(notificationData, REPLY_QUEUE);
 
     // Step 3: Trigger cleanup notification for temporary grade data (REQ016)
     const cleanupNotification = {
