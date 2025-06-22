@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { gradeAPI }   from '../../api';
+import { useAuth }    from '../../contexts/authcontext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from "../../components/layout/index";
 
 export default function PostFinalGrades() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user }  = useAuth();
 
   const [courseInfo, setCourseInfo] = useState({
     name: location.state?.courseName || '',
@@ -14,6 +18,13 @@ export default function PostFinalGrades() {
   const [message, setMessage] = useState('');
   const [file, setFile] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
+
+  /* ───────── upload mutation ───────── */
+  const uploadFinal = useMutation((formData) =>
+    gradeAPI.post('/grade-submissions', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  );
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -53,8 +64,21 @@ export default function PostFinalGrades() {
       alert('You must confirm course info and select a file first.');
       return;
     }
-    alert(`Final grades submitted for ${courseInfo.name} (${courseInfo.period}) with ${courseInfo.count} grades.\nMessage: ${message}`);
-    navigate('/instructor/dashboard');
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('institutionId', user.institutionId);
+    fd.append('userId', user.id);
+    fd.append('final', 'true');
+
+    uploadFinal.mutate(fd, {
+      onSuccess: () => {
+        alert('Final grades uploaded successfully');
+        navigate('/instructor/dashboard');
+      },
+      onError: (e) =>
+        alert(e.response?.data?.error || 'Upload failed'),
+    });
   };
 
   return (
