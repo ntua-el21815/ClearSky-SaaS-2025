@@ -1,17 +1,3 @@
-<<<<<<< HEAD
-FROM node:18
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install
-
-COPY . .
-
-EXPOSE 8300
-
-CMD ["node", "server.js"]
-=======
 # Use a small, modern Node image
 FROM node:20-alpine
 
@@ -30,4 +16,3 @@ EXPOSE 3002
 
 # Default: start ONLY the RabbitMQ consumer
 CMD ["node", "src/consumer.js"]
->>>>>>> origin/angie
