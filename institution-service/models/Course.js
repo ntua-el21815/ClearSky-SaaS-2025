@@ -7,7 +7,7 @@ const CourseSchema = new mongoose.Schema(
     academicPeriod:{ type: String },
     instructorId:  { type: String },
     institutionId: { type: String, ref: 'Institution', required: true },
-    status:        { type: String, enum: ['active', 'archived'], default: 'active' }
+    //status:        { type: String, enum: ['active', 'archived'], default: 'active' }
   },
   {
     timestamps: true         
