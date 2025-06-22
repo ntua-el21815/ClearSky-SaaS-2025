@@ -28,10 +28,11 @@ async function connectRabbitMQ(attempt = 1) {
   try {
     const conn = await amqplib.connect(RABBIT_URL);
     mqChannel  = await conn.createChannel();
-    await mqChannel.assertQueue('statistics', { durable: true });
+    await mqChannel.assertQueue('statistics',    { durable: true });
+    await mqChannel.assertQueue('notifications', { durable: true }); // 🔔
+
     console.log('[orchestrator] 🟢 RabbitMQ channel ready');
 
-    // αν η σύνδεση “πέσει”, ξανα-σύνδεση
     conn.on('close', () => {
       console.warn('[orchestrator] RabbitMQ connection closed — reconnecting…');
       mqChannel = null;
@@ -81,7 +82,6 @@ router.post(
 
     /* ---------- credit logic (only if NOT final) ---------- */
     if (!isFinal) {
-      /* 1. balance check */
       let availableCredits = 0;
       try {
         const bal = await axios.get(`${CREDIT_API}/institution/${institutionId}/balance`);
@@ -100,7 +100,7 @@ router.post(
         return res.status(400).json({ success:false, error:'Insufficient credits' });
       }
 
-      /* 2. deduct one credit */
+      /* deduct one credit */
       try {
         await axios.post(`${CREDIT_API}/institution/${institutionId}/use`, {
           credits  : 1,
@@ -138,12 +138,12 @@ router.post(
         ...formatAxiosError(err,'Failed while forwarding file to grade-service')
       });
     } finally {
-      /* always try to delete temp file */
       if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
     }
 
     /* ---------- publish to RabbitMQ ---------- */
     if (mqChannel) {
+      /* 1. raw grades → statistics queue */
       try {
         mqChannel.sendToQueue(
           'statistics',
@@ -151,7 +151,36 @@ router.post(
           { persistent:true }
         );
       } catch (err) {
-        console.error('[orchestrator] failed to publish to RabbitMQ:', err.message);
+        console.error('[orchestrator] failed to publish to statistics:', err.message);
+      }
+
+      /* 2. GRADES_POSTED notification → notifications queue */
+      try {
+        const gradesArr = gradeResp?.data?.data?.data?.grades
+                       ?? gradeResp?.data?.data?.grades
+                       ?? [];
+        const emails = [
+          ...new Set(
+            gradesArr
+              .map(s => (s['Ακαδημαϊκό E-mail'] || s.email || '').trim())
+              .filter(Boolean)
+          )
+        ];
+
+        const notifMsg = {
+          type  : 'GRADES_POSTED',
+          emails
+        };
+
+        mqChannel.sendToQueue(
+          'notifications',
+          Buffer.from(JSON.stringify(notifMsg)),
+          { persistent:true }
+        );
+
+        console.log(`[orchestrator] 📨 GRADES_POSTED sent with ${emails.length} emails`);
+      } catch (err) {
+        console.error('[orchestrator] failed to publish GRADES_POSTED:', err.message);
       }
     }
 
