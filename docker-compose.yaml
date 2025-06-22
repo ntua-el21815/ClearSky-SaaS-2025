@@ -166,10 +166,11 @@ services:
       - "8100:8100"
     environment:
       - NODE_ENV=development
-      - PORT=3000
+      - PORT=8100
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
-      - USER_AUTH_SERVICE_URL=http://user-auth-service:8500
+      - USER_AUTH_SERVICE_URL=http://user-auth-service:5002
       - CREDIT_SERVICE_URL=http://institution-credit-service:8102
+      - USER_MANAGEMENT_SERVICE_URL=http://user-management-service:5001
     depends_on:
       - rabbitmq
       - institution-service
