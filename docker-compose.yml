@@ -60,6 +60,40 @@ services:
     networks: [saas-network]
 
   # --------------------------------------------------
+  # Statistics Service – worker only
+  # --------------------------------------------------
+  statistics-service:
+    build: ./statistics-service
+    container_name: statistics-service
+    environment:
+      NODE_ENV    : production
+      MONGO_URL   : mongodb://shared-mongo:27017/statistics
+      RABBITMQ_URL: amqp://rabbitmq
+    depends_on:
+      - shared-mongo
+      - rabbitmq
+    networks: [saas-network]
+
+  # --------------------------------------------------
+  # Institution Service  (API + Rabbit consumer)
+  # --------------------------------------------------
+  institution-service:
+    build: ./institution-service          # ⬅️  φάκελος με Dockerfile
+    container_name: institution-service
+    restart: unless-stopped
+    environment:
+      NODE_ENV     : development
+      PORT         : 5000                 # same port που ακούει το server.js
+      MONGO_URI    : mongodb://shared-mongo:27017/institution-db
+      RABBITMQ_URL : amqp://rabbitmq      # για τον consumer.js
+    ports:
+      - "8105:5000"                       # hostPort:containerPort
+    depends_on:
+      - shared-mongo
+      - rabbitmq
+    networks: [saas-network]
+
+  # --------------------------------------------------
   # Orchestrator
   # --------------------------------------------------
   orchestrator:
