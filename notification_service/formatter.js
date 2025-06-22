@@ -8,12 +8,12 @@ function formatNotification(event) {
       message = 'Your new grade has been posted to the ClearSky platform. Log in to view your performance.';
       break;
 
-    case 'REVIEW_REQUESTED':
+    case 'REVIEW_REQUEST_CREATED':
       title = '📝 Review Request Submitted';
       message = 'Your request for review has been submitted. You will be notified once it has been processed.';
       break;
 
-    case 'REVIEW_REPLIED':
+    case 'REVIEW_REPLY':
       title = '💬 Reply to Your Review';
       message = 'A response has been posted to your review. Visit the platform to read the reply.';
       break;

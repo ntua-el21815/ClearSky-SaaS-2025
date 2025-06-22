@@ -3,14 +3,14 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'apost5110@gmail.com',
-    pass: 'tqjf uamh lgew bluo' // App Password
+    user: 'clearskyntua@gmail.com',
+    pass: 'mqtp tarq kply eaxl' // App Password
   }
 });
 
 async function sendEmail(to, subject, htmlContent) {  // άλλαξε εδώ
   const mailOptions = {
-    from: '"ClearSky" <apost5110@gmail.com>',
+    from: '"ClearSky" <clearskyntua@gmail.com>',
     to,
     subject,
     html: htmlContent  // Χρησιμοποιούμε το htmlContent σωστά
