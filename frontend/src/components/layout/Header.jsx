@@ -1,5 +1,5 @@
 import React from "react";
-import { useAuth } from '../contexts/authcontext';
+import { useAuth } from "../../contexts/authcontext";
 
 export default function Header() {
   const { logout } = useAuth();

@@ -1,6 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LoginPage from './pages/loginpage_1';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from './pages/login';
 import StudentDashboard from './pages/student/grade_statistics';
 import StudentCourses from './pages/student/my_courses';
 import GradeReviewRequest from './pages/student/grade_review_request';
@@ -16,12 +16,16 @@ import InstitutionDashboard from './pages/institution/institution_dashboard';
 import RegisterInstitution from './pages/institution/register_institution';
 import UserManagement from './pages/institution/user_management';
 import PurchaseCredits from './pages/institution/purchace_credits';
-import Unauthorized from './pages/Unauthorized';
+import Unauthorized from './pages/unauthorized';
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 function App() {
   return (
     <Router>
   <Routes>
+    {/* default landing page */}
++   <Route path="/" element={<Navigate replace to="/login" />} />
+
     <Route path="/login" element={<LoginPage />} />
     <Route path="/unauthorized" element={<Unauthorized />} />
 
