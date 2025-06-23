@@ -126,19 +126,44 @@ app.post('/api/credits/institution/:institutionId/add', async (req, res) => {
   }
 });
 
+// Forward GET /users/:id/courses to user management service
 app.get('/api/users/:id/courses', async (req, res) => {
-  const { id } = req.params;
-
   try {
-    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${id}/courses`);
-
+    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${req.params.id}/courses`);
     res.status(response.status).json(response.data);
   } catch (error) {
-    console.error(`❌ Error fetching courses for student ${id}:`, error.message);
+    console.error('❌ Error fetching student courses:', error.message);
     res.status(error.response?.status || 500).json({
-      success: false,
-      error: 'Failed to fetch student courses',
-      details: error.response?.data || error.message
+      message: 'Failed to get student courses',
+      error: error.response?.data || error.message
+    });
+  }
+});
+
+// Forward GET /users/:id/instructor-courses
+app.get('/api/users/:id/instructor-courses', async (req, res) => {
+  try {
+    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${req.params.id}/instructor-courses`);
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('❌ Error fetching instructor courses:', error.message);
+    res.status(error.response?.status || 500).json({
+      message: 'Failed to get instructor courses',
+      error: error.response?.data || error.message
+    });
+  }
+});
+
+// Forward GET /users/count/by-institution/:institutionId
+app.get('/api/users/count/by-institution/:institutionId', async (req, res) => {
+  try {
+    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/count/by-institution/${req.params.institutionId}`);
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('❌ Error fetching user count by institution:', error.message);
+    res.status(error.response?.status || 500).json({
+      message: 'Failed to get user count by institution',
+      error: error.response?.data || error.message
     });
   }
 });
