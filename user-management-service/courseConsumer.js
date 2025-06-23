@@ -56,24 +56,26 @@ async function startCourseConsumer() {
   process.exit(1);
 }
 
-async function upsertCourse({ instructorId, courseId, courseName, academicPeriod }) {
-  // 1. Βρες τον instructor
-  const user = await User.findById(instructorId);
-  if (!user) throw new Error("Instructor not found");
+async function upsertCourse({ userId, courseId, courseName, academicPeriod }) {
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
   if (user.role !== "instructor") throw new Error("User is not instructor");
 
-  // 2. Έλεγξε αν το μάθημα υπάρχει ήδη
+  // ensure courses field is initialized (just in case)
+  if (!Array.isArray(user.courses)) {
+    user.courses = [];
+  }
+
   const exists = user.courses.some(
     c => c.courseId === courseId &&
-         (academicPeriod ? c.academicPeriod === academicPeriod : true)
+         (!academicPeriod || c.academicPeriod === academicPeriod)
   );
-  if (exists) return;   // αποφεύγουμε duplicates
+  if (exists) return;
 
-  // 3. Πρόσθεσε
   user.courses.push({ courseId, courseName, academicPeriod });
   await user.save();
 
-  console.log(`[UM] Added ${courseId} (${academicPeriod ?? "—"}) to ${instructorId}`);
+  console.log(`[UM] Added ${courseId} (${academicPeriod ?? "—"}) to instructor ${userId}`);
 }
 
 module.exports = startCourseConsumer;
