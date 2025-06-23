@@ -81,8 +81,6 @@ services:
 
   grade-mongodb:
     image: mongo:latest
-    ports:
-      - "27017:27017"
     container_name: grade-mongodb
     volumes:
       - grade-mongo-data:/data/db\
@@ -131,7 +129,7 @@ services:
       - "8500:8500"
     environment:
       - PORT=8500
-      - MONGODB_URI=mongodb://notification-mongodb:27017/notification?authSource=admin
+      - MONGO_URL=mongodb://notification-mongodb:27017/notification?authSource=admin
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
     depends_on:
       - rabbitmq
@@ -160,6 +158,7 @@ services:
     networks: 
       - institution-network
       - clearsky-network  
+    restart: "no"
 
   institution-service:
     build: ./institution-service
@@ -250,6 +249,18 @@ services:
       - clearsky-network
     restart: unless-stopped
 
+  user-auth-service-seeder:
+    build: ./user-auth-service
+    container_name: user-auth-service-seeder
+    command: ["node", "scripts/seed-users.js"]  # τρέχει μόνο το seed script
+    environment:
+      - MONGO_URI=mongodb://user-auth-mongodb:27017/user-auth?authSource=admin
+    depends_on:
+      - user-auth-mongodb
+    networks:
+     - user-auth-network
+    restart: "no"                             # τρέχει μία φορά & σταματά
+
   user-auth-service:
     build: ./user-auth-service
     container_name: user-auth-service
@@ -266,12 +277,26 @@ services:
   
   user-auth-mongodb:
     image: mongo:latest
+    ports:
+      - "27017:27017"
     container_name: user-auth-mongodb
     volumes:
       - user-auth-mongo-data:/data/db
     networks:
       - user-auth-network
     restart: unless-stopped
+
+  user-rep-seeder:
+    build: ./user-management-service          # ξαναχρησιμοποιεί το ίδιο Dockerfile
+    container_name: user-rep-seeder
+    command: ["node", "seedRep.js"]           # τρέχει μόνο το seed script
+    environment:
+      - MONGO_URI=mongodb://user-management-mongodb:27017/userflow
+    depends_on:
+      - user-management-mongodb
+    networks:
+     - user-management-network
+    restart: "no"                             # τρέχει μία φορά & σταματά
 
   user-management-service:
     build: ./user-management-service
@@ -302,10 +327,10 @@ services:
     container_name: frontend
     ports:
       - "80:80"
-    environment:
-      - VITE_REVIEW_API_URL=http://review-orchestrator:8082
-      - VITE_USER_API_URL=http://userflow-orchestrator:8100
-      - VITE_GRADE_API_URL=http://grade-orchestrator:8081
+    depends_on:
+      - review-orchestrator
+      - userflow-orchestrator
+      - grade-orchestrator
     networks:
       - clearsky-network
     restart: unless-stopped

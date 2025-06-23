@@ -14,9 +14,9 @@ ARG VITE_USER_API_URL
 ARG VITE_REVIEW_API_URL
 ARG VITE_GRADE_API_URL
 
-ENV VITE_USER_API_URL=${VITE_USER_API_URL} \
-    VITE_REVIEW_API_URL=${VITE_REVIEW_API_URL} \
-    VITE_GRADE_API_URL=${VITE_GRADE_API_URL}
+ENV VITE_REVIEW_API_URL=http://localhost:8082 \
+    VITE_USER_API_URL=http://localhost:8100 \
+    VITE_GRADE_API_URL=http://localhost:8081
 
 # Δημιουργία build (στο /app/dist)
 RUN npm run build

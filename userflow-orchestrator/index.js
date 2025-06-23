@@ -19,8 +19,15 @@ const CREDIT_SERVICE_URL = process.env.CREDIT_SERVICE_URL || 'http://localhost:3
 
 // Auth orchestration endpoint
 app.post('/api/auth', async (req, res) => {
-  const { token, email, password } = req.body;
 
+  let token, email, password;
+  if (req.body && typeof req.body === 'object') {
+    if ('token' in req.body) token = req.body.token;
+    if ('email' in req.body) email = req.body.email;
+    if ('password' in req.body) password = req.body.password;
+  }
+
+  console.log('🔍 Auth request received:', { token, email, password });
   try {
     if (token) {
       try {
