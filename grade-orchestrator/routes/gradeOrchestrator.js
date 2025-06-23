@@ -16,6 +16,8 @@ const CREDIT_API = (process.env.CREDIT_SERVICE_URL || '')
   .replace(/\/$/, '') + '/api/credits';
 const GRADE_API  = (process.env.GRADE_SERVICE_URL  || '')
   .replace(/\/$/, '') + '/gradeRoutes';
+const STATISTICS_API = (process.env.STATISTICS_SERVICE_URL || '')
+  .replace(/\/$/, '');
 const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
 
 /* ---------- RabbitMQ bootstrap with retry ---------- */
@@ -270,7 +272,30 @@ router.get('/api/grades/student', async (req, res) => {
 });
 
 
+//λήψη όλων των στατιστικών
+router.get('/api/statistics/all', async (req, res) => {
+  try {
+    const response = await axios.get(`${STATISTICS_API}/statistics/all`);
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      ...formatAxiosError(err, 'Failed to fetch all statistics')
+    });
+  }
+});
 
-
+//στατιστικά ανά μάθημα
+router.get('/api/statistics/course/:courseId', async (req, res) => {
+  try {
+    const response = await axios.get(`${STATISTICS_API}/statistics/course/${req.params.courseId}`);
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      ...formatAxiosError(err, 'Failed to fetch statistics for course')
+    });
+  }
+});
 
 module.exports = router;
