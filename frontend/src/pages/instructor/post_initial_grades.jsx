@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { uploadGradeSubmission } from '../../services/gradeService';
 import { useAuth }    from '../../contexts/authcontext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from "../../components/layout/index";
@@ -24,8 +23,8 @@ export default function PostInitialGrades() {
   const uploadInitial = useMutation(uploadGradeSubmission);
 
   useEffect(() => {
-    const userId = Cookies.get('userId'); 
-    if (!userId || user.role !== 'instructor') navigate('/login');
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user || user.role !== 'instructor') navigate('/login');
   }, [navigate]);
 
   if (credits === 0) {

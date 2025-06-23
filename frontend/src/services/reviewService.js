@@ -1,19 +1,6 @@
 // src/services/reviewService.js
 import { reviewAPI } from '../api/index';
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-export async function getReviewStatus(courseId) {
-  const { data } = await reviewAPI.get(`/reviews/student/${courseId}`);
-  return data;                     // → { status, instructorResponse }
-}
-
-export async function submitReview(courseId, message) {
-  return reviewAPI.post('/reviews', { courseId, message });
-}
-=======
-=======
->>>>>>> origin/Harris
 
 export async function createReviewRequest({
     courseId,
@@ -47,7 +34,3 @@ export async function replyToReviewRequest(reviewId, payload) {
   );
   return data;            // → { success:true, message: '...' }
 }
-<<<<<<< HEAD
->>>>>>> origin/Harris
-=======
->>>>>>> origin/Harris

@@ -1,18 +1,235 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClearSky - Simple Frontend</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>clearSKY - Simplified</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Hide all views by default */
+        .view {
+            display: none;
+        }
+        /* Custom animation for the notification toast */
+        @keyframes toast-in {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .toast-in {
+            animation: toast-in 0.5s ease-out forwards;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <!-- Login Section -->
-        <div id="login-section" class="section">
-            <div class="card">
-                <h1>ClearSky Login</h1>
-                <div id="login-error" class="error hidden"></div>
-                <form id="login-form">
-                    <div class="form-group
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Header / Navigation Bar -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-cloud text-2xl text-blue-500"></i>
+                <h1 class="text-xl font-bold text-gray-700">clearSKY</h1>
+            </div>
+            <div id="nav-links" class="hidden md:flex items-center space-x-4">
+                 <!-- Dynamic nav links will be injected here -->
+            </div>
+            <div id="user-info" class="flex items-center space-x-4">
+                 <!-- User info and logout will be injected here -->
+            </div>
+             <button id="mobile-menu-button" class="md:hidden">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+            <!-- Mobile nav links will be injected here -->
+        </div>
+    </header>
+
+    <main id="app" class="container mx-auto p-4 md:p-6">
+
+        <!-- Login View -->
+        <div id="login-view" class="view max-w-md mx-auto bg-white p-8 mt-10 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-6">Welcome to clearSKY</h2>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="user@example.com" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition duration-300">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Login
+                </button>
+            </form>
+        </div>
+        
+        <!-- Student Dashboard View -->
+        <div id="student-dashboard-view" class="view">
+             <h2 class="text-3xl font-bold mb-6">Student Dashboard</h2>
+             <div id="student-courses-container" class="bg-white p-6 rounded-lg shadow-md">
+                 <h3 class="text-xl font-semibold mb-4">My Courses & Grades</h3>
+                 <div id="student-courses-list" class="space-y-4"></div>
+             </div>
+        </div>
+
+        <!-- Instructor Dashboard View -->
+        <div id="instructor-dashboard-view" class="view">
+            <h2 class="text-3xl font-bold mb-6">Instructor Dashboard</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Post Grades -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Post Grades</h3>
+                    <form id="post-grades-form">
+                        <div class="mb-4">
+                            <label for="course-id" class="block text-sm font-medium text-gray-700 mb-1">Course ID</label>
+                            <input type="text" id="course-id" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="e.g., SOFT-101" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="grades-file" class="block text-sm font-medium text-gray-700 mb-1">Grades File (.xlsx)</label>
+                            <input type="file" id="grades-file" accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+                        </div>
+                         <div class="mb-4">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" id="is-final-checkbox" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-offset-0 focus:ring-blue-200 focus:ring-opacity-50">
+                                <span class="ml-2 text-sm text-gray-600">This is the final grading</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-upload mr-2"></i>Upload Grades</button>
+                    </form>
+                </div>
+                <!-- Review Requests -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Grade Review Requests</h3>
+                    <div id="instructor-reviews-list" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Institution Dashboard View -->
+        <div id="institution-dashboard-view" class="view">
+            <h2 class="text-3xl font-bold mb-6">Institution Dashboard</h2>
+             <div class="grid md:grid-cols-2 gap-6">
+                 <!-- User Management -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">User Management</h3>
+                    <form id="add-user-form">
+                        <input type="text" id="add-user-fullname" placeholder="Full Name" class="w-full mb-2 p-2 border rounded" required>
+                        <input type="email" id="add-user-email" placeholder="Email" class="w-full mb-2 p-2 border rounded" required>
+                        <input type="password" id="add-user-password" placeholder="Password" class="w-full mb-2 p-2 border rounded" required>
+                        <input type="text" id="add-user-code" placeholder="User Code (e.g., student ID)" class="w-full mb-2 p-2 border rounded" required>
+                        <select id="add-user-role" class="w-full mb-4 p-2 border rounded" required>
+                            <option value="">Select Role...</option>
+                            <option value="student">Student</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-user-plus mr-2"></i>Add User</button>
+                    </form>
+                </div>
+                 <!-- Purchase Credits -->
+                 <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Manage Credits</h3>
+                     <p class="mb-4">Credits are used each time an instructor uploads an initial grades file.</p>
+                    <form id="purchase-credits-form">
+                        <input type="number" id="credits-amount" placeholder="Number of credits" class="w-full mb-2 p-2 border rounded" min="1" required>
+                        <button type="submit" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-credit-card mr-2"></i>Purchase Credits</button>
+                    </form>
+                 </div>
+            </div>
+        </div>
+
+    </main>
+    
+    <!-- Generic Modal for Replies, Reviews, etc. -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+        <div id="modal-content" class="bg-white rounded-lg shadow-xl p-6 w-11/12 md:w-1/2 lg:w-1/3">
+            <!-- Modal content will be injected here -->
+        </div>
+    </div>
+    
+    <!-- Notification Toast -->
+    <div id="toast" class="hidden fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-5 rounded-lg shadow-lg">
+        <!-- Toast message will be injected here -->
+    </div>
+
+    <!-- Loading Spinner Overlay -->
+    <div id="loader" class="hidden fixed inset-0 bg-white bg-opacity-75 z-50 flex justify-center items-center">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+const USER_API = "localhost:8100"
+const GRADE_API = "localhost:8081"
+const REVIEW_API = "localhost:8082"
+const API_BASE_URL = (() => {
+    // Determine which API base URL to use based on the endpoint
+    // Usage: apiFetch('/api/auth', { ... }) will use USER_API, etc.
+    return {
+        getUrl: (endpoint) => {
+            if (endpoint.startsWith('/api/auth') || endpoint.startsWith('/api/signup') || endpoint.startsWith('/api/credits')) {
+                return `http://${USER_API}`;
+            }
+            if (endpoint.startsWith('/api/grade-submissions')) {
+                return `http://${GRADE_API}`;
+            }
+            if (endpoint.startsWith('/api/review-requests')) {
+                return `http://${REVIEW_API}`;
+            }
+            // Default to USER_API if not matched
+            return `http://${USER_API}`;
+        }
+    };
+})();
+
+// --- PATCHED apiFetch TO USE THE CORRECT BASE URL ---
+const apiFetch = async (endpoint, options = {}) => {
+    showLoader(true);
+    try {
+        const headers = {
+            ...options.headers,
+        };
+        if (appState.token) {
+            headers['Authorization'] = `Bearer ${appState.token}`;
+        }
+        if (!(options.body instanceof FormData)) {
+             headers['Content-Type'] = 'application/json';
+        }
+
+        const baseUrl = API_BASE_URL.getUrl(endpoint);
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+            ...options,
+            headers,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'An unknown error occurred' }));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        // Handle responses that might not have a body (e.g., 201, 204)
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            return await response.json();
+        } 
+        return; // Return undefined for non-JSON responses
+        
+    } catch (error) {
+        console.error(`API Fetch Error (${endpoint}):`, error);
+        showToast(error.message, true);
+        throw error;
+    } finally {
+        showLoader(false);
+    }
+};
