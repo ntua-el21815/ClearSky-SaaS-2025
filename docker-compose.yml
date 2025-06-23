@@ -94,6 +94,18 @@ services:
     networks: [saas-network]
 
   # --------------------------------------------------
+  # Institution Seeder
+  # --------------------------------------------------
+  institution-seeder:
+    build: ./institution-service
+    container_name: institution-seeder
+    command: ["node", "seedInstitution.js"]
+    environment:
+      MONGO_URI: mongodb://shared-mongo:27017/institution-db
+    depends_on: [shared-mongo]
+    networks: [saas-network]
+
+  # --------------------------------------------------
   # Orchestrator
   # --------------------------------------------------
   orchestrator:

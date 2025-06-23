@@ -169,7 +169,7 @@ router.post(
         const emails = [
           ...new Set(
             (inner.grades || [])
-              .map(s => (s['Ακαδημαϊκό E-mail'] || s.email || '').trim())
+              .map(s => (s.academicalEmail || s.email || '').trim())
               .filter(Boolean)
           )
         ];
@@ -188,11 +188,11 @@ router.post(
         const meta = inner.metadata || {};
 
         const courseMsg = {
-          'Περίοδος δήλωσης': meta['Περίοδος δήλωσης'] || null,
-          'Μάθημα'          : meta['Μάθημα']             || null,
-          'Κωδικός μαθήματος': meta['Κωδικός μαθήματος'] || null,
+          academicPeriod : meta.academicPeriod  || null,
+          courseName     : meta.courseName      || null,
+          courseId       : meta.courseId        || null,
           institutionId,
-          userId
+          instructorId   : userId
         };
 
         mqChannel.sendToQueue(

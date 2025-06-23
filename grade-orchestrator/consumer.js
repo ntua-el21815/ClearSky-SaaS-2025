@@ -21,13 +21,13 @@ const QUEUE      = 'courses';
 
       const course = await Course.create({
         courseId       : payload.courseId,
-        courseName     : payload.courseName,
+        name           : payload.courseName,
         academicPeriod : payload.academicPeriod,
         institutionId  : payload.institutionId,
-        instructorId   : payload.instructionId            // optional
+        instructorId   : payload.instructorId            // optional
       });
 
-      console.log(`✅  saved course ${course.courseId} (${course.courseName})`);
+      console.log(`✅  saved course ${course.courseId} (${course.name})`);
       channel.ack(msg);
 
     } catch (err) {
