@@ -29,8 +29,8 @@ export default function PostInitialGrades() {
   );
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || user.role !== 'instructor') navigate('/login');
+    const userId = Cookies.get('userId'); 
+    if (!userId || user.role !== 'instructor') navigate('/login');
   }, [navigate]);
 
   if (credits === 0) {

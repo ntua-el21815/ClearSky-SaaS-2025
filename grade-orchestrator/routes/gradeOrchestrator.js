@@ -16,6 +16,8 @@ const CREDIT_API = (process.env.CREDIT_SERVICE_URL || '')
   .replace(/\/$/, '') + '/api/credits';
 const GRADE_API  = (process.env.GRADE_SERVICE_URL  || '')
   .replace(/\/$/, '') + '/gradeRoutes';
+const STATISTICS_API = (process.env.STATISTICS_SERVICE_URL || 'http://statistics-service:3002')
+  .replace(/\/$/, '');
 
 const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
 
@@ -215,5 +217,52 @@ router.post(
     });
   }
 );
+
+/* ================================================= *
+ *  COURSE STATISTICS ENDPOINT                       *
+ * ================================================= */
+router.get('/api/course/:courseId/statistics', async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Course ID is required'
+      });
+    }
+
+    console.log(`[orchestrator] Fetching statistics for course: ${courseId}`);
+
+    // Call statistics service
+    const statsResponse = await axios.get(
+      `${STATISTICS_API}/statistics/course/${courseId}`,
+      { timeout: 10000 }
+    );
+
+    return res.json({
+      success: true,
+      data: statsResponse.data
+    });
+
+  } catch (err) {
+    console.error('[orchestrator] Error fetching course statistics:', err.message);
+    
+    const errorInfo = formatAxiosError(err, 'Failed to fetch course statistics');
+    
+    if (err.response?.status === 404) {
+      return res.status(404).json({
+        success: false,
+        error: 'No statistics found for this course'
+      });
+    }
+
+    return res.status(errorInfo.status || 500).json({
+      success: false,
+      error: errorInfo.msg,
+      details: errorInfo.details
+    });
+  }
+});
 
 module.exports = router;

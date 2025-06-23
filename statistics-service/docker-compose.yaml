@@ -16,7 +16,7 @@ services:
       - "5672:5672"
       - "15672:15672"
 
-  statistics-service:  # ✅ FIXED: moved inside services
+  statistics-service:  
     build: .
     container_name: statistics-service
     ports:

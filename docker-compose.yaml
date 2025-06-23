@@ -243,6 +243,7 @@ services:
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
       - CREDIT_SERVICE_URL=http://credit-service:8102
       - GRADE_SERVICE_URL=http://grade-service:8200
+      - STATISTICS_SERVICE_URL=http://statistics-service:8300
     depends_on:
       - rabbitmq
       - grade-service

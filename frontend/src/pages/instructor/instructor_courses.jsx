@@ -2,10 +2,10 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from "../../components/layout/index";
 
-const mockInstructor = {
-  name: 'Dr. Maria Ioannidou',
-  email: 'instructor@example.com'
-};
+// const mockInstructor = {
+//   name: 'Dr. Maria Ioannidou',
+//   email: 'instructor@example.com'
+// };
 
 const mockCourses = [
   { name: 'Advanced Mathematics', examPeriod: 'Fall 2024', students: 45 }
@@ -29,21 +29,6 @@ export default function InstructorCourses() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Instructor Dashboard</h1>
             <p className="text-gray-600">Manage courses, grades, and student reviews</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <p className="text-sm text-gray-500">Total Students</p>
-              <p className="text-2xl font-semibold">105</p>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <p className="text-sm text-gray-500">Pending Reviews</p>
-              <p className="text-2xl font-semibold">3</p>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <p className="text-sm text-gray-500">Active Courses</p>
-              <p className="text-2xl font-semibold">3</p>
-            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
