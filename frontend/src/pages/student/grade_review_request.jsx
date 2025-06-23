@@ -8,7 +8,7 @@ import Layout from '../../components/layout';
 import Button from '../../components/Button';
 
 export default function GradeReviewRequest() {
-  const { user } = useAuth();             // ⭐ παίρνουμε student info
+  const { user } = useAuth();             // παίρνουμε student info
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();

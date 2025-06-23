@@ -13,27 +13,11 @@ export default function StudentDashboard() {
   const [selected, setSelected]       = useState(null);
   const [loading, setLoading]         = useState(true);
   const [error,   setError]           = useState(null);
-  const courseId = 3205;
-  
+
   useEffect(() => {
-    fetchStudentStatistics(courseId)
+    fetchStudentStatistics()
       .then(setCourses)
-      .catch((err) => {
-        console.error('Error fetching student statistics:', err);
-        
-        // Handle different types of errors
-        if (err.response) {
-          // Server responded with error status
-          const errorMessage = err.response.data?.message || err.response.data?.error || `Server error: ${err.response.status}`;
-          setError(errorMessage);
-        } else if (err.request) {
-          // Network error - no response received
-          setError('Network error: Unable to connect to server. Please check your connection.');
-        } else {
-          // Other error (e.g., request setup)
-          setError(err.message || 'An unexpected error occurred');
-        }
-      })
+      .catch((err) => setError(err.response?.data || err.message))
       .finally(() => setLoading(false));
   }, []);
 
@@ -50,21 +34,7 @@ export default function StudentDashboard() {
 
   /* ───── UI ───── */
   if (loading) return <Layout><p className="p-8">Loading…</p></Layout>;
-  if (error) return (
-    <Layout>
-      <div className="p-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h2 className="text-red-800 font-semibold mb-2">Error Loading Statistics</h2>
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition text-sm">
-            Retry
-          </button>
-        </div>
-      </div>
-    </Layout>
-  );
+  if (error)   return <Layout><p className="p-8 text-red-600">⚠ {error}</p></Layout>;
 
   return (
     <Layout>
@@ -75,7 +45,7 @@ export default function StudentDashboard() {
             <p className="text-gray-600">Click on a course to view its grading distribution.</p>
           </div>
           <button
-            onClick={() => navigate('/student/courses')}
+            onClick={() => navigate('/student/my_courses')}
             className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded transition text-sm shadow">
             Go to My Courses
           </button>

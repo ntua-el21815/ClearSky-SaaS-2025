@@ -19,81 +19,44 @@ export default function InstitutionDashboard() {
   const navigate = useNavigate();
 
   /* ----------- state ----------- */
-  const [stats,   setStats]         = useState(null);
+  const [stats,   setStats]         = useState(null);   // credits, users, …
   const [courses, setCourses]       = useState([]);
-  const [selected, setSelected]     = useState(null);
+  const [selected, setSelected]     = useState(null);   // επιλεγμένο μάθημα (object)
   const [search,  setSearch]        = useState('');
   const [period,  setPeriod]        = useState('');
   const [loading, setLoading]       = useState(true);
   const [error,   setError]         = useState(null);
-  const [chartError, setChartError] = useState('');
 
   /* ----------- mount ----------- */
   useEffect(() => {
     Promise.all([fetchInstitutionStats(), fetchInstitutionCourses()])
-      .then(([s, c]) => { 
-        setStats(s || {}); 
-        setCourses(c || []); 
-        setError(null);
-      })
-      .catch((err) => {
-        console.error('Error fetching dashboard data:', err);
-        const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to load dashboard data';
-        setError(errorMessage);
-      })
-      .finally(() => setLoading(false));
+      .then(([s, c]) => { setStats(s); setCourses(c); })
+      .catch((err)   => setError(err.response?.data || err.message))
+      .finally(()    => setLoading(false));
   }, []);
 
   /* ----------- helpers ----------- */
-  const renderChart = (label, data) => {
-    try {
-      if (!data || !Array.isArray(data)) {
-        return <p className="text-gray-500 text-sm">No chart data available</p>;
-      }
-      return (
-        <Bar data={{
-          labels: Array.from({ length: 11 }, (_, i) => i),
-          datasets: [{ label, data, backgroundColor: '#0A2472' }]
-        }} options={{ responsive:true, plugins:{ legend:{ display:false } },
-                     scales:{ y:{ beginAtZero:true } } }} />
-      );
-    } catch (err) {
-      console.error('Error rendering chart:', err);
-      return <p className="text-red-500 text-sm">Error displaying chart</p>;
-    }
-  };
+  const renderChart = (label, data) => (
+    <Bar data={{
+      labels: Array.from({ length: 11 }, (_, i) => i),
+      datasets: [{ label, data, backgroundColor: '#0A2472' }]
+    }} options={{ responsive:true, plugins:{ legend:{ display:false } },
+                 scales:{ y:{ beginAtZero:true } } }} />
+  );
 
   const handleSelect = async (course) => {
+    setSelected(null);                        // καθάρισε πριν το loading
     try {
-      setSelected(null);
-      setChartError('');
       const full = await fetchCourseStats(course.courseId);
       setSelected({ ...course, stats: full });
     } catch (err) {
-      console.error('Error fetching course stats:', err);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to load course statistics';
-      setChartError(errorMessage);
+      alert(err.response?.data?.error || err.message);
     }
   };
 
   /* ----------- UI states ----------- */
-  if (loading) return <Layout><p className="p-8">Loading dashboard...</p></Layout>;
-  
-  if (error) return (
-    <Layout>
-      <div className="p-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h2 className="text-red-800 font-semibold mb-2">Error Loading Dashboard</h2>
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition text-sm">
-            Retry
-          </button>
-        </div>
-      </div>
-    </Layout>
-  );
+  if (loading) return <Layout><p className="p-8">Loading…</p></Layout>;
+  if (error)   return <Layout><p className="p-8 text-red-600">⚠ {error}</p></Layout>;
 
   /* ----------- render ----------- */
   return (
@@ -107,11 +70,11 @@ export default function InstitutionDashboard() {
 
         {/* aggregate stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <InfoCard title="Available Credits" value={stats?.credits || 0} />
-          <InfoCard title="Total Users"       value={stats?.users || 0}   />
-          <InfoCard title="Active Courses"    value={stats?.activeCourses || 0} />
-          <InfoCard title="Institution"       value={stats?.institution?.name || 'Not configured'}
-                                           sub={stats?.institution?.city || ''} />
+          <InfoCard title="Available Credits" value={stats.credits} />
+          <InfoCard title="Total Users"       value={stats.users}   />
+          <InfoCard title="Active Courses"    value={stats.activeCourses} />
+          <InfoCard title="Institution"       value={stats.institution.name}
+                                           sub={stats.institution.city} />
         </div>
 
         {/* action cards */}
@@ -160,10 +123,13 @@ export default function InstitutionDashboard() {
 
             {/* ---- chart ---- */}
             <div>
-              {chartError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded text-sm">
-                  {chartError}
-                </div>
+              {selected?.stats && (
+                <>
+                  <h3 className="text-md font-semibold text-gray-800 mb-2">
+                    {selected.name} ({selected.examPeriod}) – Statistics
+                  </h3>
+                  {renderChart('Total Grades Distribution', selected.stats.total)}
+                </>
               )}
               {selected?.stats && !chartError && (
                 <>

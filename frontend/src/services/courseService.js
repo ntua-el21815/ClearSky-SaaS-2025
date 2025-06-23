@@ -4,6 +4,7 @@ import { gradeAPI, reviewAPI } from '../api/index';
 export async function fetchStudentCourses() {
   const { data } = await gradeAPI.get('/grades/courses');
   return data;         // array
+<<<<<<< HEAD
 }
 
 /* ===== REVIEW STATUS ===== */
@@ -16,4 +17,6 @@ export async function getReviewStatus(courseId) {
 export async function submitReview(courseId, message) {
   const { data } = await reviewAPI.post('/reviews', { courseId, message });
   return data;         // whatever the API στέλνει (π.χ. 201 + obj)
+=======
+>>>>>>> origin/Harris
 }

@@ -32,7 +32,7 @@ function App() {
     {/* Student */}
     <Route element={<ProtectedRoute roles={['student']} />}>
       <Route path="/student/grade_statistics" element={<StudentDashboard />} />
-      <Route path="/student/courses"         element={<StudentCourses />} />
+      <Route path="/student/my_courses"         element={<MyCourses />} />
       <Route path="/student/grade_review_request" element={<GradeReviewRequest />} />
       <Route path="/student/personal_grades" element={<PersonalGrades />} />
       <Route path="/student/review_status"   element={<ReviewStatus />} />

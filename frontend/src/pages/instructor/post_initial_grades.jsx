@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { gradeAPI }   from '../../api';
+import { uploadGradeSubmission } from '../../services/gradeService';
 import { useAuth }    from '../../contexts/authcontext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from "../../components/layout/index";
@@ -21,12 +21,7 @@ export default function PostInitialGrades() {
   const [credits, setCredits] = useState(3);
   const [registeredCourses, setRegisteredCourses] = useState([]);
 
-  /* ───────── upload mutation ───────── */
-  const uploadInitial = useMutation((formData) =>
-    gradeAPI.post('/grade-submissions', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-  );
+  const uploadInitial = useMutation(uploadGradeSubmission);
 
   useEffect(() => {
     const userId = Cookies.get('userId'); 
@@ -99,22 +94,22 @@ export default function PostInitialGrades() {
       setRegisteredCourses((prev) => [...prev, courseInfo.name]);
     }
 
-    // ---- build multipart body ----
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('institutionId', user.institutionId);
-      fd.append('userId', user.id);
-      fd.append('final', 'false');
-
-      uploadInitial.mutate(fd, {
-        onSuccess: () => {
-         alert('Initial grades uploaded successfully');
+      uploadInitial.mutate(
+        {
+          file,
+          institutionId: user.institutionId,
+          userId:        user.id,
+          final:         false          // initial submission
+        },
+        {
+          onSuccess: () => {
+          alert('Initial grades uploaded successfully');
           navigate('/instructor/dashboard');
         },
         onError: (e) =>
-          alert(e.response?.data?.error || 'Upload failed'),
-      });
-  };
+          alert(e.response?.data?.error || 'Upload failed')
+        }
+      );
 
   return (
     <Layout>
@@ -232,4 +227,5 @@ export default function PostInitialGrades() {
       </div>
     </Layout>
   );
+}
 }

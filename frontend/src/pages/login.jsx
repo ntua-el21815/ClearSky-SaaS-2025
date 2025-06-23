@@ -14,10 +14,6 @@ export default function LoginPage() {
     if (loading) return;                // περιμένουμε να φορτώσει
     if (!user)  return;                 // δεν είμαι logged-in => μένω στη login
 
-    // Debug logging
-    console.log('User data:', user);
-    console.log('User role:', user.role);
-
     switch (user.role) {
       case "student":
         navigate("/student/grade_statistics");
@@ -26,11 +22,9 @@ export default function LoginPage() {
         navigate("/instructor/dashboard");
         break;
       case "institution":
-      case "institution_rep": // Add fallback for different role naming
         navigate("/institution/dashboard");
         break;
       default:
-        console.log('Unknown role, staying on login');
         navigate("/login");
     }
   }, [user, loading, navigate]);        // εξαρτήσεις

@@ -20,11 +20,7 @@ export default function PostFinalGrades() {
   const [confirmed, setConfirmed] = useState(false);
 
   /* ───────── upload mutation ───────── */
-  const uploadFinal = useMutation((formData) =>
-    gradeAPI.post('/grade-submissions', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-  );
+  const uploadFinal = useMutation(uploadGradeFile);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
