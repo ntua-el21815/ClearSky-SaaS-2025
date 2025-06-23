@@ -1,9 +1,5 @@
-architecture/SaaS 25-27.vpp.bak_000f
-architecture/SaaS 25-27.vux
-
-.env
-
-node_modules
+# dependencies
+/node_modules
 
 # build
 /dist
@@ -33,9 +29,3 @@ yarn-error.log*
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
-node_modules
-.env
-
-.package-lock.json
-
-rabbitmq_data/

@@ -1,0 +1,279 @@
+openapi: 3.0.3
+info:
+  title: Credit Service API
+  description: API for managing institution credits, including balance checking, credit addition, usage tracking, and payment processing
+  version: 1.0.0
+  
+servers:
+  - url: /api/credits
+    description: Credit service base path
+
+paths:
+  /institution/{institutionId}/balance:
+    get:
+      summary: Get credit balance for an institution
+      description: Retrieves the current credit balance for a specific institution
+      parameters:
+        - name: institutionId
+          in: path
+          required: true
+          description: Unique identifier of the institution
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Credit balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditBalance'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+  /institution/{institutionId}/add:
+    post:
+      summary: Add credits to an institution
+      description: Processes a payment and adds credits to an institution's account
+      parameters:
+        - name: institutionId
+          in: path
+          required: true
+          description: Unique identifier of the institution
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credits
+              properties:
+                credits:
+                  type: number
+                  description: Number of credits to add
+                  example: 100
+      responses:
+        '200':
+          description: Credits added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResult'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+  /institution/{institutionId}/use:
+    post:
+      summary: Use credits for an institution
+      description: Deducts credits from an institution's account for a specific operation
+      parameters:
+        - name: institutionId
+          in: path
+          required: true
+          description: Unique identifier of the institution
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credits
+                - operation
+              properties:
+                credits:
+                  type: number
+                  description: Number of credits to use
+                  example: 5
+                operation:
+                  type: string
+                  description: Type of operation being performed
+                  example: "GENERATE_QUIZ"
+                courseId:
+                  type: string
+                  description: Optional ID of the course related to this operation
+                  example: "course123"
+      responses:
+        '200':
+          description: Credits used successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditUsageResult'
+        '400':
+          description: Invalid request or insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+  /institution/{institutionId}/usage:
+    get:
+      summary: Get credit usage history for an institution
+      description: Retrieves the history of credit usage for a specific institution
+      parameters:
+        - name: institutionId
+          in: path
+          required: true
+          description: Unique identifier of the institution
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Credit usage history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreditUsageLog'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+components:
+  schemas:
+    CreditBalance:
+      type: object
+      properties:
+        institutionId:
+          type: string
+          description: Unique identifier of the institution
+        totalCredits:
+          type: number
+          description: Total credits added to the institution
+        usedCredits:
+          type: number
+          description: Total credits used by the institution
+        availableCredits:
+          type: number
+          description: Remaining available credits
+      example:
+        institutionId: "inst123"
+        totalCredits: 500
+        usedCredits: 150
+        availableCredits: 350
+        
+    CreditUsageResult:
+      type: object
+      properties:
+        institutionId:
+          type: string
+          description: Unique identifier of the institution
+        totalCredits:
+          type: number
+          description: Total credits added to the institution
+        usedCredits:
+          type: number
+          description: Total credits used by the institution
+        availableCredits:
+          type: number
+          description: Remaining available credits
+        creditsUsed:
+          type: number
+          description: Credits used in this operation
+      example:
+        institutionId: "inst123"
+        totalCredits: 500
+        usedCredits: 155
+        availableCredits: 345
+        creditsUsed: 5
+        
+    PaymentResult:
+      type: object
+      properties:
+        transactionId:
+          type: string
+          description: Unique identifier for the payment transaction
+        institutionId:
+          type: string
+          description: Unique identifier of the institution
+        numOfCredits:
+          type: number
+          description: Number of credits added
+        status:
+          type: string
+          description: Status of the payment (PENDING, COMPLETED, FAILED, REFUNDED)
+          enum: [PENDING, COMPLETED, FAILED, REFUNDED]
+        creditBalance:
+          type: number
+          description: Updated credit balance after transaction
+        reasonForDecline:
+          type: string
+          description: Reason why payment was declined (if applicable)
+          nullable: true
+      example:
+        transactionId: "61234b7a1234567890abcdef"
+        institutionId: "inst123"
+        numOfCredits: 100
+        status: "COMPLETED"
+        creditBalance: 350
+        reasonForDecline: null
+        
+    CreditUsageLog:
+      type: object
+      properties:
+        institutionId:
+          type: string
+          description: Unique identifier of the institution
+        creditsUsed:
+          type: number
+          description: Number of credits used in this operation
+        operation:
+          type: string
+          description: Type of operation performed
+        courseId:
+          type: string
+          description: ID of the course related to this operation (if applicable)
+          nullable: true
+        usedAt:
+          type: string
+          format: date-time
+          description: Timestamp when credits were used
+      example:
+        institutionId: "inst123"
+        creditsUsed: 5
+        operation: "GENERATE_QUIZ"
+        courseId: "course123"
+        usedAt: "2023-08-15T14:30:45.123Z"
+        
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+        error:
+          type: string
+          description: Detailed error information
+          nullable: true
+      example:
+        message: "Failed to get credit balance"
+        error: "Database connection error"

@@ -1,0 +1,386 @@
+services:
+  # --- Infrastructure ---
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: clearsky-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./rabbit-mq/rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbit-mq/rabbitmq_definitions.json:/etc/rabbitmq/definitions.json
+      - ./rabbit-mq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    environment:
+      RABBITMQ_DEFAULT_VHOST: "/"
+      RABBITMQ_LOAD_DEFINITIONS: /etc/rabbitmq/definitions.json
+    networks:
+      - clearsky-network
+
+  # --- Review Service ---
+  review-service:
+    build: ./review-service
+    container_name: review-service
+    ports:
+      - "8400:8400"
+    environment:
+      - PORT=8400
+      - MONGODB_URI=mongodb://review-mongodb:27017/review?authSource=admin
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+    depends_on:
+      - review-mongodb
+    networks:
+      - review-network
+      - clearsky-network
+    restart: unless-stopped
+
+  review-mongodb:
+    image: mongo:latest
+    container_name: review-mongodb
+    volumes:
+      - review-mongo-data:/data/db
+    networks:
+      - review-network
+    restart: unless-stopped
+
+  # --- Credit Service ---
+  institution-credit-service:
+    build: ./credit-service
+    container_name: institution-credit-service
+    ports:
+      - "8102:8102"
+    environment:
+      - PORT=8102
+      - MONGODB_URI=mongodb://credit-mongodb:27017/credits
+    depends_on:
+      - credit-mongodb
+    networks:
+      - credits-network
+      - clearsky-network
+
+  credit-mongodb:
+    image: mongo:latest
+    container_name: credit-mongodb
+    volumes:
+      - credit-mongo-data:/data/db
+    networks:
+      - credits-network
+
+  # --- Grade Service ---
+  grade-service:
+    build: ./grade-service
+    container_name: grade-service
+    ports:
+      - "8200:8200"
+    environment:
+      - PORT=8200
+      - MONGO_URI=mongodb://grade-mongodb:27017/grades
+    depends_on:
+      - grade-mongodb
+    networks:
+      - grades-network
+      - clearsky-network
+
+  grade-mongodb:
+    image: mongo:latest
+    container_name: grade-mongodb
+    volumes:
+      - grade-mongo-data:/data/db\
+    networks:
+      - grades-network
+
+  # --- Orchestrator ---
+  review-orchestrator:
+    build: ./review-orchestrator
+    container_name: review-orchestrator
+    ports:
+      - "8082:8082"
+    environment:
+      - NODE_ENV=development
+      - PORT=8082
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+      - REVIEW_SERVICE_URL=http://review-service:8400/api/reviews
+    depends_on:
+      - rabbitmq
+      - review-service
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+
+  # --- API Gateway ---
+  krakend:
+    image: devopsfaith/krakend:2.7
+    container_name: krakend_api_gateway
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./krakend-api-gateway/krakend.json:/etc/krakend/krakend.json:ro
+    depends_on:
+      - review-service
+      - institution-credit-service
+      - grade-service
+      - review-orchestrator
+      # Add other backend services here as they are created
+    networks:
+      - clearsky-network
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    ports:
+      - "8500:8500"
+    environment:
+      - PORT=8500
+      - MONGO_URL=mongodb://notification-mongodb:27017/notification?authSource=admin
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+    depends_on:
+      - rabbitmq
+    networks:
+      - clearsky-network
+      - notification-network
+    restart: unless-stopped
+
+  notification-mongodb:
+    image: mongo:latest
+    container_name: notification-mongodb
+    volumes:
+      - notification-mongo-data:/data/db
+    networks:
+      - notification-network
+    restart: unless-stopped
+  
+  institution-seeder:
+    build: ./institution-service
+    container_name: institution-seeder
+    command: ["node", "seedInstitution.js"]
+    environment:
+      MONGO_URI: mongodb://institution-mongodb:27017/institution-db?authSource=admin
+    depends_on: 
+      - institution-mongodb
+    networks: 
+      - institution-network
+      - clearsky-network  
+    restart: "no"
+
+  institution-service:
+    build: ./institution-service
+    container_name: institution-service
+    ports:
+      - "8101:8101"
+    environment:
+      - PORT=8101
+      - MONGO_URI=mongodb://institution-mongodb:27017/institution-db?authSource=admin
+    depends_on:
+      - institution-mongodb
+    networks:
+      - institution-network
+      - clearsky-network
+
+  institution-mongodb:
+    image: mongo:latest
+    container_name: institution-mongodb
+    volumes:
+      - institution-mongo-data:/data/db
+    networks:
+      - institution-network
+    restart: unless-stopped
+
+  userflow-orchestrator:
+    build: ./userflow-orchestrator
+    container_name: userflow-orchestrator
+    ports:
+      - "8100:8100"
+    environment:
+      - NODE_ENV=development
+      - PORT=8100
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+      - USER_AUTH_SERVICE_URL=http://user-auth-service:5002
+      - CREDIT_SERVICE_URL=http://institution-credit-service:8102
+      - USER_MANAGEMENT_SERVICE_URL=http://user-management-service:5001
+    depends_on:
+      - rabbitmq
+      - institution-service
+      - institution-credit-service
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+
+  statistics-service:
+    build: 
+      context: ./statistics-service
+    container_name: statistics-service
+    ports:
+      - "8300:8300"
+    environment:
+      - PORT=8300
+      - MONGO_URL=mongodb://statistics-mongodb:27017/statistics?authSource=admin
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+    depends_on:
+      - statistics-mongodb
+      - rabbitmq
+    networks:
+      - clearsky-network
+      - statistics-network
+    restart: unless-stopped
+
+  statistics-mongodb:
+    image: mongo:latest
+    container_name: statistics-mongodb
+    volumes:
+      - statistics-mongo-data:/data/db
+    networks:
+      - statistics-network
+    restart: unless-stopped
+
+  grade-orchestrator:
+    build: 
+      context: ./grade-orchestrator
+    container_name: grade-orchestrator
+    ports:
+      - "8081:8081"
+    environment:
+      - NODE_ENV=development
+      - PORT=8081
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+      - CREDIT_SERVICE_URL=http://credit-service:8102
+      - GRADE_SERVICE_URL=http://grade-service:8200
+      - STATISTICS_SERVICE_URL=http://statistics-service:8300
+    depends_on:
+      - rabbitmq
+      - grade-service
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+
+  user-auth-service-seeder:
+    build: ./user-auth-service
+    container_name: user-auth-service-seeder
+    command: ["node", "scripts/seed-users.js"]  # τρέχει μόνο το seed script
+    environment:
+      - MONGO_URI=mongodb://user-auth-mongodb:27017/user-auth?authSource=admin
+    depends_on:
+      - user-auth-mongodb
+    networks:
+     - user-auth-network
+    restart: "no"                             # τρέχει μία φορά & σταματά
+
+  user-auth-service:
+    build: ./user-auth-service
+    container_name: user-auth-service
+    ports:
+      - "5002:5002"
+    environment:
+      - PORT=5002
+      - MONGO_URI=mongodb://user-auth-mongodb:27017/user-auth?authSource=admin
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+    depends_on:
+      - user-auth-mongodb
+      - rabbitmq
+    networks:
+      - clearsky-network
+      - user-auth-network
+  
+  user-auth-mongodb:
+    image: mongo:latest
+    ports:
+      - "27018:27017"  # Expose MongoDB on port 27018
+    container_name: user-auth-mongodb
+    volumes:
+      - user-auth-mongo-data:/data/db
+    networks:
+      - user-auth-network
+    restart: unless-stopped
+
+  user-rep-seeder:
+    build: ./user-management-service          # ξαναχρησιμοποιεί το ίδιο Dockerfile
+    container_name: user-rep-seeder
+    command: ["node", "seedRep.js"]           # τρέχει μόνο το seed script
+    environment:
+      - MONGO_URI=mongodb://user-management-mongodb:27017/userflow
+    depends_on:
+      - user-management-mongodb
+    networks:
+     - user-management-network
+    restart: "no"                             # τρέχει μία φορά & σταματά
+
+  user-management-service:
+    build: ./user-management-service
+    container_name: user-management-service
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - MONGO_URI=mongodb://user-management-mongodb:27017/userflow?authSource=admin
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+    depends_on:
+      - user-management-mongodb
+      - rabbitmq
+      - user-auth-service
+    networks:
+      - user-management-network
+      - clearsky-network
+  
+  user-management-mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"  
+    container_name: userflow-mongodb
+    volumes:
+      - userflow-mongo-data:/data/db
+    networks:
+      - clearsky-network
+      - user-management-network
+    restart: unless-stopped
+  
+  # frontend:
+  #   build: ./frontend
+  #   container_name: frontend
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - review-orchestrator
+  #     - userflow-orchestrator
+  #     - grade-orchestrator
+  #   networks:
+  #     - clearsky-network
+  #   restart: unless-stopped
+
+  # --- Alternative Frontend (Simple HTML/CSS/JS) ---
+  frontend-alt:
+    build: ./frontend-alt
+    container_name: frontend-alt
+    ports:
+      - "3001:80"
+    networks:
+      - clearsky-network
+    
+  
+networks:
+  clearsky-network:
+    driver: bridge
+  review-network:
+    driver: bridge
+  credits-network:
+    driver: bridge
+  grades-network:
+    driver: bridge
+  institution-network:
+    driver: bridge
+  statistics-network:
+    driver: bridge
+  user-auth-network:
+    driver: bridge
+  user-management-network:
+    driver: bridge
+  notification-network:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
+  review-mongo-data:
+  credit-mongo-data:
+  grade-mongo-data:
+  institution-mongo-data:
+  statistics-mongo-data:
+  notification-mongo-data:
+  userflow-mongo-data:
+  user-auth-mongo-data:
