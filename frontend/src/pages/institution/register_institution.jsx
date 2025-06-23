@@ -4,38 +4,57 @@ import Layout from "../../components/layout";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
 
-const mockUniversities = [
-  'National Technical University of Athens',
-  'University of Thessaloniki',
-  'University of Patras'
-];
-
 export default function RegisterInstitution() {
   const navigate = useNavigate();
-  const [universities, setUniversities] = useState(mockUniversities);
   const [form, setForm] = useState({ name: '', location: '', email: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || user.role !== 'institution') {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || user.role !== 'institution') {
+        navigate('/login');
+      }
+    } catch (err) {
+      console.error('Error reading user data:', err);
+      setError('Unable to load user data. Please log in again.');
       navigate('/login');
     }
   }, [navigate]);
 
-  const handleSubmit = () => {
-    const exists = universities.some(u => u.toLowerCase() === form.name.toLowerCase());
-    if (!exists) {
-      setUniversities([...universities, form.name]);
+  const handleSubmit = async () => {
+    try {
+      setError('');
+      setLoading(true);
+      
+      if (!form.name || !form.location || !form.email) {
+        setError('All fields are required.');
+        return;
+      }
+
+      if (!form.email.includes('@')) {
+        setError('Please enter a valid email address.');
+        return;
+      }
+
+      // TODO: Replace with actual API call
+      // await institutionAPI.post('/register', form);
+      
+      // For now, store in localStorage
+      localStorage.setItem('institution', JSON.stringify({
+        name: form.name,
+        location: form.location,
+        email: form.email
+      }));
+
+      navigate('/institution/dashboard');
+    } catch (err) {
+      console.error('Error registering institution:', err);
+      setError(err.response?.data?.message || 'Failed to register institution. Please try again.');
+    } finally {
+      setLoading(false);
     }
-
-    localStorage.setItem('institution', JSON.stringify({
-      name: form.name,
-      location: form.location,
-      email: form.email
-    }));
-
-    alert(`Institution '${form.name}' registered successfully.`);
-    navigate('/institution/dashboard');
   };
 
   return (
@@ -44,6 +63,12 @@ export default function RegisterInstitution() {
         <div className="max-w-xl mx-auto bg-white shadow rounded-xl p-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Register Your Institution</h1>
           <p className="text-gray-600 mb-6">Provide details to register your academic institution.</p>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded">
+              {error}
+            </div>
+          )}
 
           <div className="mb-4">
             <label className="block mb-1 font-medium text-gray-700">Institution Name</label>
@@ -74,7 +99,9 @@ export default function RegisterInstitution() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={handleSubmit}>Register Institution</Button>
+            <Button onClick={handleSubmit} disabled={loading}>
+              {loading ? 'Registering...' : 'Register Institution'}
+            </Button>
             <Button variant="secondary" onClick={() => navigate('/institution/dashboard')}>
               Back to Dashboard
             </Button>

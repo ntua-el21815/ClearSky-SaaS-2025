@@ -7,12 +7,12 @@ import GoogleAuthBlock from "../components/GoogleAuthBlock";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();   // ✅ Getting state from context
+  const { user, loading } = useAuth();
 
-  /* Redirect when we know if there's a logged-in user */
+  /* Redirect μόλις μάθουμε αν υπάρχει logged-in χρήστης */
   useEffect(() => {
-    if (loading) return;                // Wait for loading to finish
-    if (!user) return;                 // Not logged-in => stay on login
+    if (loading) return;                // περιμένουμε να φορτώσει
+    if (!user)  return;                 // δεν είμαι logged-in => μένω στη login
 
     switch (user.role) {
       case "student":
@@ -27,7 +27,7 @@ export default function LoginPage() {
       default:
         navigate("/login");
     }
-  }, [user, loading, navigate]);        // Dependencies
+  }, [user, loading, navigate]);        // εξαρτήσεις
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center px-4">
@@ -40,7 +40,7 @@ export default function LoginPage() {
           Sign in to access your account
         </p>
 
-        {/* Form & Google login */}
+        {/* φόρμα & google login */}
         <LoginForm />
         <GoogleAuthBlock />
       </div>

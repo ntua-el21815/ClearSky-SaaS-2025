@@ -1,10 +1,10 @@
-# ----------- 1. BUILD STAGE -----------
-FROM node:20-alpine AS build
+# Build stage
+FROM node:22 AS build
 WORKDIR /app
-
-# Αντιγραφή dependencies
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
 # Αντιγραφή υπόλοιπων αρχείων
 COPY . .
@@ -24,12 +24,31 @@ RUN npm run build
 
 # ----------- 2. RUNTIME STAGE -----------
 FROM nginx:alpine
-
-# Αντιγραφή των built αρχείων στο σωστό path του NGINX
 COPY --from=build /app/dist /usr/share/nginx/html
-
-# Προσθήκη custom config για React Router
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Fixed nginx config for SPA with proper asset handling
+RUN echo 'server { \
+    listen 80; \
+    server_name localhost; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    \
+    # Handle static assets first \
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
+        expires 1y; \
+        add_header Cache-Control "public, immutable"; \
+        try_files $uri =404; \
+    } \
+    \
+    # Handle assets directory \
+    location /assets/ { \
+        try_files $uri =404; \
+    } \
+    \
+    # Handle all other requests (SPA routing) \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

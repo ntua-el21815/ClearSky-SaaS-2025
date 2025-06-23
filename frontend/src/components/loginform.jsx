@@ -9,6 +9,7 @@ export default function LoginForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log('[loginform] submit', { email, password });
     login(email, password);
   };
 

@@ -17,12 +17,10 @@ export const createReview = async (req, res) => {
       typeof studentId !== 'string' ||
       typeof courseId !== 'string' ||
       typeof gradeId !== 'string' ||
-      typeof studentRegistrationNumber !== 'string' ||
       typeof reason !== 'string' ||
       !studentId ||
       !courseId ||
       !gradeId ||
-      !studentRegistrationNumber ||
       !reason
     ) {
       return res.status(400).json({ message: 'Invalid input data' });
@@ -38,7 +36,7 @@ export const createReview = async (req, res) => {
       studentId: studentId.trim(),
       courseId: courseId.trim(),
       gradeId: gradeId.trim(),
-      studentRegistrationNumber: studentRegistrationNumber.trim(),
+      studentRegistrationNumber: studentRegistrationNumber ? studentRegistrationNumber.trim() : null,
       reason: reason.trim(),
     });
 

@@ -79,10 +79,10 @@ app.post('/api/review-requests', async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!studentId || !courseId || !gradeId || !studentRegistrationNumber || !reason) {
+    if (!studentId || !courseId || !gradeId || !reason) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: studentId, courseId, gradeId, studentRegistrationNumber, reason'
+        error: 'Missing required fields: studentId, courseId, gradeId, reason'
       });
     }
 
@@ -93,7 +93,7 @@ app.post('/api/review-requests', async (req, res) => {
       studentId,
       courseId,
       gradeId,
-      studentRegistrationNumber,
+      studentRegistrationNumber : studentRegistrationNumber || null,
       reason,
       status: 'PENDING',
       requestedAt: new Date().toISOString()

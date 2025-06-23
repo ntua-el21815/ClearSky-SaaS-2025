@@ -1,6 +1,6 @@
 // src/services/authservice.js
 import Cookies from 'js-cookie';
-import { userAPI } from '../api';
+import { userAPI } from '../api/index';
 
 /* ----------------- helpers ----------------- */
 function saveSession({ token, refreshToken, user }) {

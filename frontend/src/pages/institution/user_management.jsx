@@ -14,38 +14,84 @@ export default function UserManagement() {
   });
   const [users, setUsers] = useState([]);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || user.role !== 'institution') {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || user.role !== 'institution') {
+        navigate('/login');
+      }
+      // TODO: Fetch users from API
+      fetchUsers();
+    } catch (err) {
+      console.error('Error reading user data:', err);
+      setError('Unable to load user data. Please log in again.');
       navigate('/login');
     }
   }, [navigate]);
 
-  const handleAddUser = () => {
-    if (!form.username || !form.password || !form.id) {
-      setMessage('All fields are required.');
-      return;
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      // TODO: Replace with actual API call
+      // const response = await userAPI.get('/institution/users');
+      // setUsers(response.data);
+      setUsers([]);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setError('Failed to load users. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    const exists = users.some(u => u.username === form.username);
-    if (exists) {
-      setMessage('User already exists. Use Change Password to modify password.');
-      return;
-    }
-    setUsers([...users, { ...form }]);
-    setMessage(`User '${form.username}' added successfully.`);
   };
 
-  const handleChangePassword = () => {
-    const index = users.findIndex(u => u.username === form.username);
-    if (index === -1) {
-      setMessage('User not found.');
-      return;
+  const handleAddUser = async () => {
+    try {
+      setError('');
+      setMessage('');
+      if (!form.username || !form.password || !form.id) {
+        setError('All fields are required.');
+        return;
+      }
+      
+      setLoading(true);
+      // TODO: Replace with actual API call
+      // await userAPI.post('/institution/users', form);
+      
+      setMessage(`User '${form.username}' added successfully.`);
+      setForm({ ...form, username: '', password: '', id: '' });
+      await fetchUsers(); // Refresh the list
+    } catch (err) {
+      console.error('Error adding user:', err);
+      setError(err.response?.data?.message || 'Failed to add user. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    const updated = [...users];
-    updated[index].password = form.password;
-    setUsers(updated);
-    setMessage(`Password updated for '${form.username}'.`);
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      setError('');
+      setMessage('');
+      if (!form.username || !form.password) {
+        setError('Username and password are required.');
+        return;
+      }
+      
+      setLoading(true);
+      // TODO: Replace with actual API call
+      // await userAPI.put(`/institution/users/${form.username}/password`, { password: form.password });
+      
+      setMessage(`Password updated for '${form.username}'.`);
+      setForm({ ...form, password: '' });
+    } catch (err) {
+      console.error('Error changing password:', err);
+      setError(err.response?.data?.message || 'Failed to change password. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,8 +101,14 @@ export default function UserManagement() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">User Management</h1>
           <p className="text-gray-600 mb-6">Manage institution users and credentials.</p>
 
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded">
+              {error}
+            </div>
+          )}
+
           {message && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded">
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded">
               {message}
             </div>
           )}
@@ -103,9 +155,39 @@ export default function UserManagement() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={handleAddUser}>Add User</Button>
-            <Button variant="secondary" onClick={handleChangePassword}>Change Password</Button>
-            <Button variant="secondary" onClick={() => navigate('/institution/dashboard')}>Back to Dashboard</Button>
+            <Button onClick={handleAddUser} disabled={loading}>
+              {loading ? 'Adding...' : 'Add User'}
+            </Button>
+            <Button variant="secondary" onClick={handleChangePassword} disabled={loading}>
+              {loading ? 'Updating...' : 'Change Password'}
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/institution/dashboard')}>
+              Back to Dashboard
+            </Button>
+          </div>
+
+          {/* Users List */}
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Current Users</h3>
+            {loading ? (
+              <p className="text-gray-500">Loading users...</p>
+            ) : users.length === 0 ? (
+              <p className="text-gray-500">No users found. Add your first user above.</p>
+            ) : (
+              <div className="space-y-2">
+                {users.map((user, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded border">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-medium">{user.username}</span>
+                        <span className="text-sm text-gray-500 ml-2">({user.role})</span>
+                      </div>
+                      <span className="text-xs text-gray-400">ID: {user.id}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

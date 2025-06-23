@@ -16,6 +16,7 @@ export function AuthProvider({ children }) {
 
   /* ───────── LOGIN (email/password) ───────── */
   async function login(email, password) {
+    console.log('[context] login called', email);
     try {
       const res = await loginWithCredentials(email, password);
       if (!res.success) throw new Error('Login failed');

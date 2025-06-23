@@ -14,12 +14,12 @@ const mockCourses = [
 export default function InstructorCourses() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || user.role !== 'instructor') {
-      navigate('/login');
-    }
-  }, [navigate]);
+  // useEffect(() => {
+  //   const user = JSON.parse(localStorage.getItem('user'));
+  //   if (!user || user.role !== 'instructor') {
+  //     navigate('/login');
+  //   }
+  // }, [navigate]);
 
   return (
     <Layout>
