@@ -14,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 const USER_AUTH_SERVICE_URL = process.env.USER_AUTH_SERVICE_URL || 'http://localhost:5000';
+const USER_MANAGEMENT_SERVICE_URL = process.env.USER_MANAGEMENT_SERVICE_URL || 'http://localhost:5001';
 const CREDIT_SERVICE_URL = process.env.CREDIT_SERVICE_URL || 'http://localhost:3000';
 
 // Auth orchestration endpoint
@@ -76,7 +77,7 @@ app.post('/api/signup', async (req, res) => {
   }
 
   try {
-    const registerResponse = await axios.post(`${USER_AUTH_SERVICE_URL}/auth/register`, {
+    const registerResponse = await axios.post(`${USER_MANAGEMENT_SERVICE_URL}/users/register`, {
       email,
       password,
       fullName,
