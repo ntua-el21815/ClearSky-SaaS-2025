@@ -9,4 +9,7 @@ COPY . .
 
 EXPOSE 5002
 
-CMD ["node", "app.js"]
+# Install concurrently to run both the API and the consumer
+RUN npm install -g concurrently
+
+CMD ["concurrently", "node app.js", "node consumer/consumer.js"]

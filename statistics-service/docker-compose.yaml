@@ -1,8 +1,6 @@
 version: '3.8'
 
 services:
-<<<<<<< HEAD
-=======
   mongo:
     image: mongo
     container_name: mongo
@@ -11,7 +9,6 @@ services:
     volumes:
       - mongo-data:/data/db
 
->>>>>>> origin/lia
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -19,29 +16,6 @@ services:
       - "5672:5672"
       - "15672:15672"
 
-<<<<<<< HEAD
-  mongo:
-    image: mongo
-    container_name: mongo
-    ports:
-      - "27017:27017"
-
-  notification-service:
-    build: .
-    container_name: notification-service
-    depends_on:
-      - rabbitmq
-      - mongo
-    environment:
-      - RABBITMQ_URL=amqp://rabbitmq
-      - MONGO_URL=mongodb://mongo:27017/notifications
-      - GMAIL_USER=clearskyntua@gmail.com
-      - GMAIL_PASS=mqtp tarq kply eaxl
-    volumes:
-      - .:/app
-    working_dir: /app
-    command: node index.js
-=======
   statistics-service:  # ✅ FIXED: moved inside services
     build: .
     container_name: statistics-service
@@ -60,4 +34,3 @@ services:
 
 volumes:
   mongo-data:
->>>>>>> origin/lia

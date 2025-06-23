@@ -14,11 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 const USER_AUTH_SERVICE_URL = process.env.USER_AUTH_SERVICE_URL || 'http://localhost:5000';
-<<<<<<< HEAD
 const USER_MANAGEMENT_SERVICE_URL = process.env.USER_MANAGEMENT_SERVICE_URL || 'http://localhost:6000';
-=======
-const USER_MANAGEMENT_SERVICE_URL = process.env.USER_MANAGEMENT_SERVICE_URL || 'http://localhost:5001';
->>>>>>> origin/lia
 const CREDIT_SERVICE_URL = process.env.CREDIT_SERVICE_URL || 'http://localhost:3000';
 
 // Auth orchestration endpoint
@@ -78,9 +74,9 @@ app.post('/api/auth', async (req, res) => {
 });
 
 app.post('/api/signup', async (req, res) => {
-  const { email, password, fullName, role, userCode } = req.body;
+  const { email, password, fullName, role, userCode, institutionId } = req.body;
 
-  if (!email || !password || !fullName || !role || !userCode) {
+  if (!email || !password || !fullName || !role || !userCode || !institutionId) {
     return res.status(400).json({
       success: false,
       error: 'Missing required fields: email, password, fullName, role, userCode'
@@ -93,12 +89,19 @@ app.post('/api/signup', async (req, res) => {
       password,
       fullName,
       role,
-      userCode
+      userCode,
+      institutionId
     }, { timeout: 5000 });
 
-    // Publish to RabbitMQ (userId + role)
-    await publishUserCreated(registerResponse.data.user);
-
+    // Publish to RabbitMQ all the user data (including password)
+    await publishUserCreated({
+      email,
+      password, // Include password for user creation
+      fullName,
+      role,
+      institutionId: registerResponse.data.institutionId || null
+    });
+    
     return res.status(201).json({
       success: true,
       message: 'Signup successful',

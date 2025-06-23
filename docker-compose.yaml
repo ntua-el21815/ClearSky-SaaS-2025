@@ -269,8 +269,10 @@ services:
     environment:
       - PORT=5002
       - MONGO_URI=mongodb://user-auth-mongodb:27017/user-auth?authSource=admin
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
     depends_on:
       - user-auth-mongodb
+      - rabbitmq
     networks:
       - clearsky-network
       - user-auth-network
