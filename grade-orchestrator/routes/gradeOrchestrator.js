@@ -16,7 +16,6 @@ const CREDIT_API = (process.env.CREDIT_SERVICE_URL || '')
   .replace(/\/$/, '') + '/api/credits';
 const GRADE_API  = (process.env.GRADE_SERVICE_URL  || '')
   .replace(/\/$/, '') + '/gradeRoutes';
-
 const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
 
 /* ---------- RabbitMQ bootstrap with retry ---------- */
@@ -33,7 +32,7 @@ async function connectRabbitMQ (attempt = 1) {
     await mqChannel.assertQueue('statistics',    { durable: true });
     await mqChannel.assertQueue('notifications', { durable: true });
     await mqChannel.assertQueue('courses',       { durable: true });   // 🆕 new queue
-
+    await mqChannel.assertQueue('coursesAuth',  { durable: true });
     console.log('[orchestrator] 🟢 RabbitMQ channel ready');
 
     conn.on('close', () => {
@@ -200,6 +199,26 @@ router.post(
           Buffer.from(JSON.stringify(courseMsg)),
           { persistent:true }
         );
+
+
+      /* 4. course authorization → coursesAuth  (🆕) */
+      try {
+        const instructorIdFinal = userId;  // για τώρα, instructor είναι ο uploader
+
+        mqChannel.sendToQueue(
+          'coursesAuth',
+          Buffer.from(JSON.stringify({
+            courseId: meta.courseId,
+            courseName: meta.courseName,
+            academicPeriod: meta.academicPeriod,         // αυτό έρχεται από το grade-service
+            instructorId: instructorIdFinal
+          })),
+          { persistent: true }
+        );
+        console.log('[orchestrator] 🔐 courseAuth sent to coursesAuth queue');
+      } catch (err) {
+        console.error('[orchestrator] failed to publish coursesAuth:', err.message);
+      }
 
         console.log('[orchestrator] 📚 course info sent to courses queue');
       } catch (err) {
