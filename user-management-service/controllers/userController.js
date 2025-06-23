@@ -80,9 +80,9 @@ exports.assignUserCode = async (req, res) => {
 
 
 exports.registerUser = async (req, res) => {
-  const { email, password, fullName, role, institutionId, userCode } = req.body;
+  const { email, password, fullName, role } = req.body;
 
-  if (!email || !password || !role || !fullName || institutionId === undefined || userCode === undefined) {
+  if (!email || !password || !role) {
     return res.status(400).json({ message: "Missing fields" });
   }
 
@@ -92,7 +92,7 @@ exports.registerUser = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const newUser = new User({ email, fullName, role, password: hashed, institutionId, userCode });
+    const newUser = new User({ email, fullName, role, password: hashed });
     await newUser.save();
 
     // const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, {
@@ -105,8 +105,6 @@ exports.registerUser = async (req, res) => {
         email: newUser.email,
         fullName: newUser.fullName,
         role: newUser.role,
-        password: hashed,
-        institutionId: newUser.institutionId
       },
     });
   } catch (err) {
@@ -114,3 +112,47 @@ exports.registerUser = async (req, res) => {
     console.error(err);
   }
 };
+
+// GET /users/:id/courses
+exports.getCoursesForStudent = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("courses role");
+    if (!user)      return res.status(404).json({ message: "User not found" });
+    if (user.role !== "student")
+      return res.status(400).json({ message: "Not a student" });
+
+    res.json({ studentId: user._id, courses: user.courses });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// GET /users/:id/instructor-courses
+exports.getCoursesForInstructor = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("courses role");
+    if (!user)               return res.status(404).json({ message: "User not found" });
+    if (user.role !== "instructor")
+      return res.status(400).json({ message: "Not an instructor" });
+
+    const courseIds = user.courses.map(c =>
+      typeof c === "string" ? c : c.courseId
+    );
+
+    res.json({ instructorId: user._id, courses: courseIds });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// GET /users/count/by-institution/:institutionId
+exports.getUserCountByInstitution = async (req, res) => {
+  try {
+    const institutionId = req.params.institutionId;
+    const count = await User.countDocuments({ institutionId });
+    res.json({ institutionId, count });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+

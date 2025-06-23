@@ -9,6 +9,10 @@ COPY . .
 
 EXPOSE 8500
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+# which function the container will start
+>>>>>>> origin/Harris
 =======
 # which function the container will start
 >>>>>>> origin/Harris

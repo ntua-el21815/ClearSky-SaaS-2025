@@ -131,14 +131,6 @@ export default function InstitutionDashboard() {
                   {renderChart('Total Grades Distribution', selected.stats.total)}
                 </>
               )}
-              {selected?.stats && !chartError && (
-                <>
-                  <h3 className="text-md font-semibold text-gray-800 mb-2">
-                    {selected.name} ({selected.examPeriod}) – Statistics
-                  </h3>
-                  {renderChart('Total Grades Distribution', selected.stats.total)}
-                </>
-              )}
             </div>
           </div>
         </div>
