@@ -49,13 +49,13 @@ async function startConsumer(attempt = 1) {
 
         const gradesArray  = wrapper?.grades;
         const courseId =
-          wrapper?.['Κωδικός μαθήματος'] ||
-          wrapper?.metadata?.['Κωδικός μαθήματος'] ||
+          wrapper?.['courseId'] ||
+          wrapper?.metadata?.['courseId'] ||
           'UNKNOWN';
 
         const gradeSheetId =
-          wrapper?.['Περίοδος δήλωσης'] ||
-          wrapper?.metadata?.['Περίοδος δήλωσης'] ||
+          wrapper?.['academicPeriod'] ||
+          wrapper?.metadata?.['academicPeriod'] ||
           'UNKNOWN';
 
         if (!Array.isArray(gradesArray)) {
@@ -66,8 +66,8 @@ async function startConsumer(attempt = 1) {
 
         /* -------- transform & calculate statistics -------- */
         const transformed = gradesArray.map(stu => ({
-          studentId   : stu['Αριθμός Μητρώου'],
-          finalGrade  : stu['Βαθμολογία'],
+          studentId   : stu['studentId'],
+          finalGrade  : stu['grade'],
           questionsRaw: Object.fromEntries(
             Object.entries(stu.responses || {})
                   .map(([k, v]) => [`Q${k.padStart(2, '0')}`, v])
