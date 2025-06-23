@@ -126,6 +126,24 @@ app.post('/api/credits/institution/:institutionId/add', async (req, res) => {
   }
 });
 
+app.get('/api/users/:id/courses', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${id}/courses`);
+
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error(`❌ Error fetching courses for student ${id}:`, error.message);
+    res.status(error.response?.status || 500).json({
+      success: false,
+      error: 'Failed to fetch student courses',
+      details: error.response?.data || error.message
+    });
+  }
+});
+
+
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', service: 'auth-orchestrator', timestamp: new Date().toISOString() });
 });
