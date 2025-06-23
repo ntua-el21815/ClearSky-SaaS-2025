@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -170,10 +170,9 @@
 
 <script>
 // --- STATE & CONFIG ---
-// URLs for the different orchestrator services
-const USERFLOW_ORCHESTRATOR_URL = 'http://localhost:8100';
-const GRADE_ORCHESTRATOR_URL = 'http://localhost:8081';
-const REVIEW_ORCHESTRATOR_URL = 'http://localhost:8082';
+const USER_API = "localhost:8100"
+const GRADE_API = "localhost:8081"
+const REVIEW_API = "localhost:8082"
 
 const appState = {
     user: null,
@@ -240,7 +239,7 @@ const closeModal = () => {
 };
 
 // --- API HELPERS ---
-const apiFetch = async (url, options = {}) => {
+const apiFetch = async (endpoint, options = {}) => {
     showLoader(true);
     try {
         const headers = {
@@ -253,7 +252,7 @@ const apiFetch = async (url, options = {}) => {
              headers['Content-Type'] = 'application/json';
         }
 
-        const response = await fetch(url, {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
             headers,
         });
@@ -263,14 +262,15 @@ const apiFetch = async (url, options = {}) => {
             throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         
+        // Handle responses that might not have a body (e.g., 201, 204)
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
             return await response.json();
         } 
-        return;
+        return; // Return undefined for non-JSON responses
         
     } catch (error) {
-        console.error(`API Fetch Error (${url}):`, error);
+        console.error(`API Fetch Error (${endpoint}):`, error);
         showToast(error.message, true);
         throw error;
     } finally {
@@ -285,7 +285,7 @@ const handleLogin = async (event) => {
     const password = document.getElementById('password').value;
 
     try {
-        const data = await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/auth`, {
+        const data = await apiFetch('/api/auth', {
             method: 'POST',
             body: JSON.stringify({ email, password }),
         });
@@ -293,6 +293,7 @@ const handleLogin = async (event) => {
         appState.user = data.user;
         appState.token = data.token;
         
+        // Save to session storage for persistence across reloads
         sessionStorage.setItem('clearSkyUser', JSON.stringify(appState.user));
         sessionStorage.setItem('clearSkyToken', appState.token);
 
@@ -368,48 +369,32 @@ const updateUIForUser = () => {
 // Student Logic
 const loadStudentCourses = async () => {
     try {
-        const response = await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/users/${appState.user.id}/courses`);
-        const courses = response.data; // Assuming courses are in response.data
-
-        if (!courses || courses.length === 0) {
-             studentCoursesList.innerHTML = `
-                <div class="text-gray-500 text-center p-4 border-2 border-dashed rounded-lg">
-                    <p>No courses with grades have been posted for you yet.</p>
-                </div>
-            `;
-        } else {
-             studentCoursesList.innerHTML = courses.map(course => `
-                <div class="border p-4 rounded-lg bg-gray-50 flex justify-between items-center">
-                    <div>
-                        <p class="font-bold text-lg">${course.name || 'Unnamed Course'}</p>
-                        <p class="text-sm text-gray-600">Period: ${course.period || 'N/A'} | Status: <span class="font-semibold">${course.status || 'N/A'}</span></p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xl font-bold text-blue-600">${course.grade || 'Pending'}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-    } catch (error) {
-        studentCoursesList.innerHTML = `<p class="text-red-500 text-center">Could not load your course data.</p>`;
-    } finally {
-        // Add the review request form regardless of whether courses were found
-        studentCoursesList.innerHTML += `
-            <div class="mt-6 border-t pt-6">
+        // NOTE: The backend routes seem to be missing an endpoint to get courses by user ID.
+        // This is a placeholder for when that functionality exists.
+        // For now, we will show a message.
+        // const courses = await apiFetch(`/api/users/${appState.user.id}/courses`);
+        studentCoursesList.innerHTML = `
+            <div class="text-gray-500 text-center p-4 border-2 border-dashed rounded-lg">
+                <p>Course data is not yet available.</p>
+                <p class="text-sm mt-2">When your instructor posts grades for a course you are enrolled in, it will appear here.</p>
+            </div>
+            <div class="mt-6">
                 ${createReviewRequestForm()}
             </div>
         `;
         document.getElementById('grade-review-form').addEventListener('submit', handleGradeReviewRequest);
+    } catch (error) {
+        studentCoursesList.innerHTML = `<p class="text-red-500">Could not load course data.</p>`;
     }
 };
 
 const createReviewRequestForm = () => {
     return `
-        <h3 class="text-xl font-semibold mb-4">Request a Grade Review</h3>
+        <h3 class="text-xl font-semibold mb-4 border-t pt-6">Request a Grade Review</h3>
         <form id="grade-review-form">
              <div class="grid md:grid-cols-2 gap-4 mb-4">
                 <input type="text" name="courseId" placeholder="Course ID (e.g., SOFT-101)" class="w-full p-2 border rounded" required>
-                <input type="text" name="gradeId" placeholder="Grade ID (from grades file)" class="w-full p-2 border rounded" required>
+                <input type="text" name="gradeId" placeholder="Grade ID (if known)" class="w-full p-2 border rounded" required>
              </div>
              <textarea name="reason" placeholder="Please provide a detailed reason for your review request..." class="w-full mb-4 p-2 border rounded" rows="4" required></textarea>
              <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-paper-plane mr-2"></i>Submit Review Request</button>
@@ -431,7 +416,7 @@ const handleGradeReviewRequest = async (event) => {
     };
 
     try {
-        await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests`, {
+        await apiFetch('/api/review-requests', {
             method: 'POST',
             body: JSON.stringify(requestData)
         });
@@ -462,7 +447,7 @@ const handlePostGrades = async (event) => {
     formData.append('userId', appState.user.id);
 
     try {
-        await apiFetch(`${GRADE_ORCHESTRATOR_URL}/api/grade-submissions`, {
+        const response = await apiFetch('/api/grade-submissions', {
             method: 'POST',
             body: formData,
         });
@@ -475,7 +460,7 @@ const handlePostGrades = async (event) => {
 
 const loadInstructorReviews = async () => {
     try {
-        const response = await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests?status=PENDING`);
+        const response = await apiFetch('/api/review-requests?status=PENDING');
         const reviews = response.data;
         if (!reviews || reviews.length === 0) {
             instructorReviewsList.innerHTML = `<p class="text-gray-500">No pending review requests.</p>`;
@@ -529,12 +514,13 @@ const handleReviewReply = async (event) => {
         reviewedGrade: formData.get('reviewedGrade') || undefined,
     };
     
-    if (!replyData.reviewedGrade) {
+    // Filter out undefined reviewedGrade
+    if (replyData.reviewedGrade === undefined) {
         delete replyData.reviewedGrade;
     }
 
     try {
-        await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests/${reviewId}/reply`, {
+        await apiFetch(`/api/review-requests/${reviewId}/reply`, {
             method: 'POST',
             body: JSON.stringify(replyData)
         });
@@ -561,7 +547,7 @@ const handleAddUser = async (event) => {
     };
 
     try {
-        await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/signup`, {
+        await apiFetch('/api/signup', {
             method: 'POST',
             body: JSON.stringify(userData),
         });
@@ -581,7 +567,7 @@ const handlePurchaseCredits = async (event) => {
     }
 
     try {
-        await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/credits/institution/${appState.user.institutionId}/add`, {
+        await apiFetch(`/api/credits/institution/${appState.user.institutionId}/add`, {
             method: 'POST',
             body: JSON.stringify({ credits: parseInt(credits) }),
         });

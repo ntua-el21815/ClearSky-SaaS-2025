@@ -319,7 +319,7 @@ services:
   user-management-mongodb:
     image: mongo:latest
     ports:
-      - "27017:27017"  # Expose MongoDB on port 27018
+      - "27017:27017"  
     container_name: userflow-mongodb
     volumes:
       - userflow-mongo-data:/data/db
@@ -340,6 +340,15 @@ services:
     networks:
       - clearsky-network
     restart: unless-stopped
+
+  # --- Alternative Frontend (Simple HTML/CSS/JS) ---
+  frontend-alt:
+    build: ./frontend-alt
+    container_name: frontend-alt
+    ports:
+      - "3001:80"
+    networks:
+      - clearsky-network
     
   
 networks:
