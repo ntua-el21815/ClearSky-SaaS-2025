@@ -8,7 +8,6 @@ const connectDB = require('./db');
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
 const QUEUE_NAME   = 'statistics';
-const RESULT_QUEUE = 'statistics_results';
 
 const MAX_RETRIES   = 12;
 const RETRY_DELAY_MS = 5_000;
@@ -29,7 +28,6 @@ async function startConsumer(attempt = 1) {
     const ch   = await conn.createChannel();
 
     await ch.assertQueue(QUEUE_NAME,   { durable: true });
-    await ch.assertQueue(RESULT_QUEUE, { durable: true });
     ch.prefetch(1);
 
     console.log('🟢 statistics-service connected to RabbitMQ, waiting for messages…');
@@ -84,13 +82,6 @@ async function startConsumer(attempt = 1) {
           gradeSheetId,
           ...stats
         });
-
-        /* -------- publish results -------- */
-        ch.sendToQueue(
-          RESULT_QUEUE,
-          Buffer.from(JSON.stringify({ courseId, gradeSheetId, stats })),
-          { persistent: true }
-        );
 
         console.log(`✅ Statistics saved for ${courseId} (ID: ${saved._id})`);
         ch.ack(msg);
