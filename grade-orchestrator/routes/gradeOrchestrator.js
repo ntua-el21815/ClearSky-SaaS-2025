@@ -205,13 +205,22 @@ router.post(
       try {
         const instructorIdFinal = userId;  // για τώρα, instructor είναι ο uploader
 
+        const studentIds = [
+          ...new Set(
+            (inner.grades || [])
+              .map(g => g.studentId)      // ← field exists in the return JSON
+              .filter(Boolean)            // drop null / ''
+            )
+          ];
+
         mqChannel.sendToQueue(
           'coursesAuth',
           Buffer.from(JSON.stringify({
             courseId: meta.courseId,
             courseName: meta.courseName,
             academicPeriod: meta.academicPeriod,         // αυτό έρχεται από το grade-service
-            instructorId: instructorIdFinal
+            instructorId: instructorIdFinal,
+            studentIds
           })),
           { persistent: true }
         );
