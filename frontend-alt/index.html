@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -72,9 +72,42 @@
                 <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition duration-300">
                     <i class="fas fa-sign-in-alt mr-2"></i>Login
                 </button>
+                 <p class="text-center text-sm text-gray-600 mt-4">
+                    New Institution? <a href="#" id="show-register-inst-link" class="font-medium text-blue-600 hover:text-blue-500">Register here</a>.
+                </p>
             </form>
         </div>
         
+        <!-- Register Institution View -->
+        <div id="register-institution-view" class="view max-w-lg mx-auto bg-white p-8 mt-10 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-6">Register Your Institution</h2>
+            <form id="register-institution-form">
+                <div class="mb-4">
+                    <label for="inst-name" class="block text-sm font-medium text-gray-700 mb-1">Institution Name</label>
+                    <input type="text" id="inst-name" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                </div>
+                 <h3 class="text-lg font-semibold mb-2 mt-6">Administrator Details</h3>
+                 <div class="grid md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label for="inst-admin-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input type="text" id="inst-admin-name" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="inst-admin-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="inst-admin-email" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                    </div>
+                 </div>
+                 <div class="mb-6">
+                    <label for="inst-admin-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="inst-admin-password" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                </div>
+                <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-university mr-2"></i>Register Institution</button>
+                <p class="text-center text-sm text-gray-600 mt-4">
+                    Already have an account? <a href="#" id="show-login-link" class="font-medium text-blue-600 hover:text-blue-500">Login here</a>.
+                </p>
+            </form>
+        </div>
+
         <!-- Student Dashboard View -->
         <div id="student-dashboard-view" class="view">
              <h2 class="text-3xl font-bold mb-6">Student Dashboard</h2>
@@ -120,7 +153,7 @@
         <!-- Institution Dashboard View -->
         <div id="institution-dashboard-view" class="view">
             <h2 class="text-3xl font-bold mb-6">Institution Dashboard</h2>
-             <div class="grid md:grid-cols-2 gap-6">
+             <div class="grid md:grid-cols-2 gap-6 mb-6">
                  <!-- User Management -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h3 class="text-xl font-semibold mb-4">User Management</h3>
@@ -147,6 +180,13 @@
                     </form>
                  </div>
             </div>
+             <!-- Institution Statistics -->
+            <div id="institution-stats-container" class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-xl font-semibold mb-4">Institution-Wide Statistics</h3>
+                <div id="institution-stats-content">
+                    <!-- Statistics will be loaded here -->
+                </div>
+            </div>
         </div>
 
     </main>
@@ -170,9 +210,9 @@
 
 <script>
 // --- STATE & CONFIG ---
-const USER_API = "localhost:8100"
-const GRADE_API = "localhost:8081"
-const REVIEW_API = "localhost:8082"
+const USERFLOW_ORCHESTRATOR_URL = 'http://localhost:8100';
+const GRADE_ORCHESTRATOR_URL = 'http://localhost:8081';
+const REVIEW_ORCHESTRATOR_URL = 'http://localhost:8082';
 
 const appState = {
     user: null,
@@ -182,6 +222,10 @@ const appState = {
 // --- DOM ELEMENTS ---
 const views = document.querySelectorAll('.view');
 const loginForm = document.getElementById('login-form');
+const showRegisterInstLink = document.getElementById('show-register-inst-link');
+const showLoginLink = document.getElementById('show-login-link');
+const registerInstitutionForm = document.getElementById('register-institution-form');
+
 const navLinks = document.getElementById('nav-links');
 const mobileMenu = document.getElementById('mobile-menu');
 const mobileMenuButton = document.getElementById('mobile-menu-button');
@@ -201,7 +245,7 @@ const studentCoursesList = document.getElementById('student-courses-list');
 // Institution Elements
 const addUserForm = document.getElementById('add-user-form');
 const purchaseCreditsForm = document.getElementById('purchase-credits-form');
-
+const institutionStatsContent = document.getElementById('institution-stats-content');
 
 // --- UI HELPERS ---
 const showView = (viewId) => {
@@ -239,7 +283,7 @@ const closeModal = () => {
 };
 
 // --- API HELPERS ---
-const apiFetch = async (endpoint, options = {}) => {
+const apiFetch = async (url, options = {}) => {
     showLoader(true);
     try {
         const headers = {
@@ -252,7 +296,7 @@ const apiFetch = async (endpoint, options = {}) => {
              headers['Content-Type'] = 'application/json';
         }
 
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        const response = await fetch(url, {
             ...options,
             headers,
         });
@@ -262,15 +306,14 @@ const apiFetch = async (endpoint, options = {}) => {
             throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         
-        // Handle responses that might not have a body (e.g., 201, 204)
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
             return await response.json();
         } 
-        return; // Return undefined for non-JSON responses
+        return;
         
     } catch (error) {
-        console.error(`API Fetch Error (${endpoint}):`, error);
+        console.error(`API Fetch Error (${url}):`, error);
         showToast(error.message, true);
         throw error;
     } finally {
@@ -278,14 +321,14 @@ const apiFetch = async (endpoint, options = {}) => {
     }
 };
 
-// --- AUTHENTICATION LOGIC ---
+// --- AUTHENTICATION & NAVIGATION LOGIC ---
 const handleLogin = async (event) => {
     event.preventDefault();
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
     try {
-        const data = await apiFetch('/api/auth', {
+        const data = await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/auth`, {
             method: 'POST',
             body: JSON.stringify({ email, password }),
         });
@@ -293,7 +336,6 @@ const handleLogin = async (event) => {
         appState.user = data.user;
         appState.token = data.token;
         
-        // Save to session storage for persistence across reloads
         sessionStorage.setItem('clearSkyUser', JSON.stringify(appState.user));
         sessionStorage.setItem('clearSkyToken', appState.token);
 
@@ -301,6 +343,31 @@ const handleLogin = async (event) => {
 
     } catch (error) {
         console.error('Login failed');
+    }
+};
+
+const handleRegisterInstitution = async (event) => {
+    event.preventDefault();
+    const registrationData = {
+        institutionName: document.getElementById('inst-name').value,
+        adminUser: {
+            fullName: document.getElementById('inst-admin-name').value,
+            email: document.getElementById('inst-admin-email').value,
+            password: document.getElementById('inst-admin-password').value,
+        }
+    };
+    
+    try {
+        // This endpoint is hypothetical based on SRS, assuming userflow orchestrator handles it
+        const data = await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/institutions`, {
+            method: 'POST',
+            body: JSON.stringify(registrationData),
+        });
+        showToast('Institution registered successfully! Please log in.');
+        showView('login-view');
+        registerInstitutionForm.reset();
+    } catch (error) {
+        console.error('Institution registration failed.');
     }
 };
 
@@ -356,7 +423,13 @@ const updateUIForUser = () => {
             loadInstructorReviews();
             break;
         case 'institution':
-            showView('institution-dashboard-view');
+            // If user is institution role but doesn't have an assigned institutionId, prompt to register.
+            if (!appState.user.institutionId) {
+                showView('register-institution-view');
+            } else {
+                showView('institution-dashboard-view');
+                loadInstitutionStats();
+            }
             break;
         default:
             showView('login-view');
@@ -368,33 +441,49 @@ const updateUIForUser = () => {
 
 // Student Logic
 const loadStudentCourses = async () => {
+    studentCoursesList.innerHTML = ''; // Clear previous content
     try {
-        // NOTE: The backend routes seem to be missing an endpoint to get courses by user ID.
-        // This is a placeholder for when that functionality exists.
-        // For now, we will show a message.
-        // const courses = await apiFetch(`/api/users/${appState.user.id}/courses`);
-        studentCoursesList.innerHTML = `
-            <div class="text-gray-500 text-center p-4 border-2 border-dashed rounded-lg">
-                <p>Course data is not yet available.</p>
-                <p class="text-sm mt-2">When your instructor posts grades for a course you are enrolled in, it will appear here.</p>
-            </div>
-            <div class="mt-6">
+        const response = await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/users/${appState.user.id}/courses`);
+        const courses = response.data; 
+
+        if (!courses || courses.length === 0) {
+             studentCoursesList.innerHTML = `
+                <div class="text-gray-500 text-center p-4 border-2 border-dashed rounded-lg">
+                    <p>No courses with grades have been posted for you yet.</p>
+                </div>
+            `;
+        } else {
+             studentCoursesList.innerHTML = courses.map(course => `
+                <div class="border p-4 rounded-lg bg-gray-50 flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-lg">${course.name || 'Unnamed Course'}</p>
+                        <p class="text-sm text-gray-600">Period: ${course.period || 'N/A'} | Status: <span class="font-semibold">${course.status || 'N/A'}</span></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xl font-bold text-blue-600">${course.grade || 'Pending'}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        studentCoursesList.innerHTML = `<p class="text-red-500 text-center">Could not load your course data.</p>`;
+    } finally {
+        studentCoursesList.innerHTML += `
+            <div class="mt-6 border-t pt-6">
                 ${createReviewRequestForm()}
             </div>
         `;
         document.getElementById('grade-review-form').addEventListener('submit', handleGradeReviewRequest);
-    } catch (error) {
-        studentCoursesList.innerHTML = `<p class="text-red-500">Could not load course data.</p>`;
     }
 };
 
 const createReviewRequestForm = () => {
     return `
-        <h3 class="text-xl font-semibold mb-4 border-t pt-6">Request a Grade Review</h3>
+        <h3 class="text-xl font-semibold mb-4">Request a Grade Review</h3>
         <form id="grade-review-form">
              <div class="grid md:grid-cols-2 gap-4 mb-4">
                 <input type="text" name="courseId" placeholder="Course ID (e.g., SOFT-101)" class="w-full p-2 border rounded" required>
-                <input type="text" name="gradeId" placeholder="Grade ID (if known)" class="w-full p-2 border rounded" required>
+                <input type="text" name="gradeId" placeholder="Grade ID (from grades file)" class="w-full p-2 border rounded" required>
              </div>
              <textarea name="reason" placeholder="Please provide a detailed reason for your review request..." class="w-full mb-4 p-2 border rounded" rows="4" required></textarea>
              <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-paper-plane mr-2"></i>Submit Review Request</button>
@@ -416,7 +505,7 @@ const handleGradeReviewRequest = async (event) => {
     };
 
     try {
-        await apiFetch('/api/review-requests', {
+        await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests`, {
             method: 'POST',
             body: JSON.stringify(requestData)
         });
@@ -443,11 +532,15 @@ const handlePostGrades = async (event) => {
     formData.append('file', fileInput.files[0]);
     formData.append('courseId', courseId);
     formData.append('final', isFinal);
+    let institutionId = fetch(`${USERFLOW_ORCHESTRATOR_URL}/api/users/${appState.user.id}`)
+        .then(response => response.json())
+        .then(data => data.institutionId)
+        .catch(() => null);
     formData.append('institutionId', appState.user.institutionId);
     formData.append('userId', appState.user.id);
 
     try {
-        const response = await apiFetch('/api/grade-submissions', {
+        await apiFetch(`${GRADE_ORCHESTRATOR_URL}/api/grade-submissions`, {
             method: 'POST',
             body: formData,
         });
@@ -460,7 +553,7 @@ const handlePostGrades = async (event) => {
 
 const loadInstructorReviews = async () => {
     try {
-        const response = await apiFetch('/api/review-requests?status=PENDING');
+        const response = await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests?status=PENDING`);
         const reviews = response.data;
         if (!reviews || reviews.length === 0) {
             instructorReviewsList.innerHTML = `<p class="text-gray-500">No pending review requests.</p>`;
@@ -514,13 +607,12 @@ const handleReviewReply = async (event) => {
         reviewedGrade: formData.get('reviewedGrade') || undefined,
     };
     
-    // Filter out undefined reviewedGrade
-    if (replyData.reviewedGrade === undefined) {
+    if (!replyData.reviewedGrade) {
         delete replyData.reviewedGrade;
     }
 
     try {
-        await apiFetch(`/api/review-requests/${reviewId}/reply`, {
+        await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests/${reviewId}/reply`, {
             method: 'POST',
             body: JSON.stringify(replyData)
         });
@@ -547,7 +639,7 @@ const handleAddUser = async (event) => {
     };
 
     try {
-        await apiFetch('/api/signup', {
+        await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/signup`, {
             method: 'POST',
             body: JSON.stringify(userData),
         });
@@ -567,7 +659,7 @@ const handlePurchaseCredits = async (event) => {
     }
 
     try {
-        await apiFetch(`/api/credits/institution/${appState.user.institutionId}/add`, {
+        await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/credits/institution/${appState.user.institutionId}/add`, {
             method: 'POST',
             body: JSON.stringify({ credits: parseInt(credits) }),
         });
@@ -578,10 +670,56 @@ const handlePurchaseCredits = async (event) => {
     }
 };
 
+const loadInstitutionStats = async () => {
+    institutionStatsContent.innerHTML = `<p class="text-gray-500">Loading statistics...</p>`;
+    try {
+        // This endpoint is hypothetical based on SRS, assuming grade orchestrator provides it
+        const response = await apiFetch(`${GRADE_ORCHESTRATOR_URL}/api/statistics/institution/${appState.user.institutionId}`);
+        const stats = response.data;
+
+        if (!stats || stats.length === 0) {
+            institutionStatsContent.innerHTML = `<p class="text-gray-500 text-center p-4 border-2 border-dashed rounded-lg">No grading data available for the institution yet.</p>`;
+            return;
+        }
+        
+        // A placeholder to render stats. A real implementation would use a charting library.
+        institutionStatsContent.innerHTML = `
+            <div class="grid md:grid-cols-3 gap-4 text-center">
+                <div class="bg-blue-100 p-4 rounded-lg">
+                    <p class="text-3xl font-bold">${stats.totalCourses || 0}</p>
+                    <p class="text-sm text-blue-800">Total Courses</p>
+                </div>
+                <div class="bg-green-100 p-4 rounded-lg">
+                     <p class="text-3xl font-bold">${stats.totalStudents || 0}</p>
+                    <p class="text-sm text-green-800">Total Students Graded</p>
+                </div>
+                <div class="bg-yellow-100 p-4 rounded-lg">
+                    <p class="text-3xl font-bold">${stats.averageGrade || 'N/A'}</p>
+                    <p class="text-sm text-yellow-800">Average Grade</p>
+                </div>
+            </div>
+        `;
+
+    } catch (error) {
+        institutionStatsContent.innerHTML = `<p class="text-red-500 text-center">Could not load institution statistics.</p>`;
+    }
+};
+
 
 // --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', checkSession);
 loginForm.addEventListener('submit', handleLogin);
+registerInstitutionForm.addEventListener('submit', handleRegisterInstitution);
+
+showRegisterInstLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('register-institution-view');
+});
+showLoginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('login-view');
+});
+
 modal.addEventListener('click', (e) => {
     if (e.target.id === 'modal') closeModal();
 });

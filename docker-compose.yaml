@@ -310,8 +310,11 @@ services:
     environment:
       - PORT=5001
       - MONGO_URI=mongodb://user-management-mongodb:27017/userflow?authSource=admin
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
     depends_on:
       - user-management-mongodb
+      - rabbitmq
+      - user-auth-service
     networks:
       - user-management-network
       - clearsky-network
@@ -328,18 +331,18 @@ services:
       - user-management-network
     restart: unless-stopped
   
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - review-orchestrator
-      - userflow-orchestrator
-      - grade-orchestrator
-    networks:
-      - clearsky-network
-    restart: unless-stopped
+  # frontend:
+  #   build: ./frontend
+  #   container_name: frontend
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - review-orchestrator
+  #     - userflow-orchestrator
+  #     - grade-orchestrator
+  #   networks:
+  #     - clearsky-network
+  #   restart: unless-stopped
 
   # --- Alternative Frontend (Simple HTML/CSS/JS) ---
   frontend-alt:

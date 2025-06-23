@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './pages/login';
 import StudentDashboard from './pages/student/grade_statistics';
 import StudentCourses from './pages/student/my_courses';
-import GradeReviewRequest from './pages/student/grade_review_request';
 import PersonalGrades from './pages/student/personal_grades';
 import ReviewStatus from './pages/student/review_status';
 import InstructorCourses from './pages/instructor/instructor_courses';

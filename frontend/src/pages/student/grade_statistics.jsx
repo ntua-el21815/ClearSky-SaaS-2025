@@ -4,35 +4,37 @@ import { Bar } from 'react-chartjs-2';
 import 'chart.js/auto';
 
 import Layout from '../../components/layout';
-import { fetchStudentStatistics } from '../../services/gradeService';
+import { fetchAllStatistics } from '../../services/gradeService';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
 
-  const [courses, setCourses]         = useState([]);
-  const [selected, setSelected]       = useState(null);
-  const [loading, setLoading]         = useState(true);
-  const [error,   setError]           = useState(null);
+  const [courses, setCourses]   = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
 
   useEffect(() => {
-    fetchStudentStatistics()
+    fetchAllStatistics()
       .then(setCourses)
-      .catch((err) => setError(err.response?.data || err.message))
+      .catch((err) => setError(err.message || 'Failed to load'))
       .finally(() => setLoading(false));
   }, []);
 
-  /* ───── helpers ───── */
   const renderChart = (label, data, color = '#1d4ed8') => (
     <Bar
       data={{
         labels: Array.from({ length: 11 }, (_, i) => i),
         datasets: [{ label, data, backgroundColor: color }]
       }}
-      options={{ responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }}
+      options={{
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }}
     />
   );
 
-  /* ───── UI ───── */
   if (loading) return <Layout><p className="p-8">Loading…</p></Layout>;
   if (error)   return <Layout><p className="p-8 text-red-600">⚠ {error}</p></Layout>;
 
@@ -45,13 +47,12 @@ export default function StudentDashboard() {
             <p className="text-gray-600">Click on a course to view its grading distribution.</p>
           </div>
           <button
-            onClick={() => navigate('/student/my_courses')}
+            onClick={() => navigate('/student/courses')}
             className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded transition text-sm shadow">
             Go to My Courses
           </button>
         </div>
 
-        {/* --- πίνακας μαθημάτων --- */}
         <table className="w-full table-auto border mb-4 bg-white shadow rounded-xl overflow-hidden">
           <thead className="bg-gray-100 text-sm">
             <tr>
@@ -66,7 +67,7 @@ export default function StudentDashboard() {
               <tr key={c.courseId}
                   className="cursor-pointer hover:bg-gray-50 transition"
                   onClick={() => setSelected(c)}>
-                <td className="border px-4 py-2 text-sm">{c.name}</td>
+                <td className="border px-4 py-2 text-sm">{c.courseName}</td>
                 <td className="border px-4 py-2 text-sm">{c.examPeriod}</td>
                 <td className="border px-4 py-2 text-sm">{c.initialDate || '-'}</td>
                 <td className="border px-4 py-2 text-sm">{c.finalDate   || '-'}</td>
@@ -75,7 +76,6 @@ export default function StudentDashboard() {
           </tbody>
         </table>
 
-        {/* --- charts --- */}
         {selected?.stats && (
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 bg-white border border-blue-200 rounded-xl shadow-md p-4">

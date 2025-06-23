@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { uploadGradeFile } from '../../services/gradeService'; 
 import { useAuth }    from '../../contexts/authcontext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from "../../components/layout/index";
@@ -20,7 +21,7 @@ export default function PostInitialGrades() {
   const [credits, setCredits] = useState(3);
   const [registeredCourses, setRegisteredCourses] = useState([]);
 
-  const uploadInitial = useMutation(uploadGradeSubmission);
+  const uploadInitial = useMutation(uploadGradeFile);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));

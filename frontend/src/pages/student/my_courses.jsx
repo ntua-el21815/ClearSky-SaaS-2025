@@ -37,7 +37,6 @@ export default function MyCourses() {
     if (!reason) return alert('Write your reason first!');
 
     try {
-      // gradeId → αν δεν έχετε στο object, βάλτε null ή προσαρμόστε
       const { review } = await createReviewRequest({
         courseId: c.courseId,
         gradeId : c.gradeId ?? null,
