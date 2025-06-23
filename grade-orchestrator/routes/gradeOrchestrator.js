@@ -67,9 +67,7 @@ function formatAxiosError (err, defaultMsg) {
   return { fromService:false, status:500, msg:defaultMsg, details:err.message };
 }
 
-/* ================================================= *
- *  MAIN ENDPOINT                                    *
- * ================================================= */
+//grade upload
 router.post(
   '/api/grade-submissions',
   upload.single('file'),
@@ -243,5 +241,36 @@ router.post(
     });
   }
 );
+
+router.get('/api/grades/by-course', async (req, res) => {
+  try {
+    const response = await axios.get(`${GRADE_API}`, { params: req.query });
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      ...formatAxiosError(err, 'Failed to fetch grades by course')
+    });
+  }
+});
+
+
+router.get('/api/grades/student', async (req, res) => {
+  try {
+    const response = await axios.get(`${GRADE_API}/student`, {
+      params: req.query
+    });
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      ...formatAxiosError(err, 'Failed to fetch student grades')
+    });
+  }
+});
+
+
+
+
 
 module.exports = router;
