@@ -36,7 +36,8 @@ const publishUserCreated = async (user) => {
     email: user.email,
     role: user.role,
     userCode: user.userCode,
-    password: user.password // include with care — possibly hashed already?
+    password: user.password, // include with care — possibly hashed already?
+    institutionId: user.institutionId
   };
 
   channel.publish(EXCHANGE_NAME, '', Buffer.from(JSON.stringify(message)));

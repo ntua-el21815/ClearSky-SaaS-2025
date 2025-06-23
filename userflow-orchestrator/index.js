@@ -67,9 +67,9 @@ app.post('/api/auth', async (req, res) => {
 });
 
 app.post('/api/signup', async (req, res) => {
-  const { email, password, fullName, role, userCode } = req.body;
+  const { email, password, fullName, role, userCode, institutionId } = req.body;
 
-  if (!email || !password || !fullName || !role || !userCode) {
+  if (!email || !password || !fullName || !role || !userCode || !institutionId) {
     return res.status(400).json({
       success: false,
       error: 'Missing required fields: email, password, fullName, role, userCode'
@@ -82,7 +82,8 @@ app.post('/api/signup', async (req, res) => {
       password,
       fullName,
       role,
-      userCode
+      userCode,
+      institutionId
     }, { timeout: 5000 });
 
     // Publish to RabbitMQ (userId + role)
