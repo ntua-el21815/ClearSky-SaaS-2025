@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  statistics-service:  # ✅ FIXED: moved inside services
+    build: .
+    container_name: statistics-service
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mongo
+      - rabbitmq
+    environment:
+      - MONGO_URL=mongodb://mongo:27017/statistics
+      - RABBITMQ_URL=amqp://rabbitmq
+    volumes:
+      - .:/app
+    working_dir: /app
+    #command: node server.js
+
+volumes:
+  mongo-data:

@@ -59,3 +59,20 @@ exports.calculateStatisticsFromInput = async (req, res) => {
     return res.status(500).json({ error: 'Failed to calculate statistics' });
   }
 };
+
+
+exports.getStatisticsByCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    if (!courseId) return res.status(400).json({ error: 'Missing courseId' });
+
+    const stats = await CourseStatistics.find({ courseId }).sort({ calculatedAt: -1 });
+
+    if (!stats.length) return res.status(404).json({ error: 'No statistics found for this courseId' });
+
+    res.json(stats[0]); // return latest one
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch course statistics' });
+  }
+};
