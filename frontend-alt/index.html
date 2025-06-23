@@ -170,31 +170,77 @@
 
 <script>
 // --- STATE & CONFIG ---
-const USER_API = "localhost:8100"
-const GRADE_API = "localhost:8081"
-const REVIEW_API = "localhost:8082"
-const API_BASE_URL = (() => {
-    // Determine which API base URL to use based on the endpoint
-    // Usage: apiFetch('/api/auth', { ... }) will use USER_API, etc.
-    return {
-        getUrl: (endpoint) => {
-            if (endpoint.startsWith('/api/auth') || endpoint.startsWith('/api/signup') || endpoint.startsWith('/api/credits')) {
-                return `http://${USER_API}`;
-            }
-            if (endpoint.startsWith('/api/grade-submissions')) {
-                return `http://${GRADE_API}`;
-            }
-            if (endpoint.startsWith('/api/review-requests')) {
-                return `http://${REVIEW_API}`;
-            }
-            // Default to USER_API if not matched
-            return `http://${USER_API}`;
-        }
-    };
-})();
+// URLs for the different orchestrator services
+const USERFLOW_ORCHESTRATOR_URL = 'http://localhost:8100';
+const GRADE_ORCHESTRATOR_URL = 'http://localhost:8081';
+const REVIEW_ORCHESTRATOR_URL = 'http://localhost:8082';
 
-// --- PATCHED apiFetch TO USE THE CORRECT BASE URL ---
-const apiFetch = async (endpoint, options = {}) => {
+const appState = {
+    user: null,
+    token: null,
+};
+
+// --- DOM ELEMENTS ---
+const views = document.querySelectorAll('.view');
+const loginForm = document.getElementById('login-form');
+const navLinks = document.getElementById('nav-links');
+const mobileMenu = document.getElementById('mobile-menu');
+const mobileMenuButton = document.getElementById('mobile-menu-button');
+const userInfo = document.getElementById('user-info');
+const loader = document.getElementById('loader');
+const modal = document.getElementById('modal');
+const modalContent = document.getElementById('modal-content');
+const toast = document.getElementById('toast');
+
+// Instructor Elements
+const postGradesForm = document.getElementById('post-grades-form');
+const instructorReviewsList = document.getElementById('instructor-reviews-list');
+
+// Student Elements
+const studentCoursesList = document.getElementById('student-courses-list');
+
+// Institution Elements
+const addUserForm = document.getElementById('add-user-form');
+const purchaseCreditsForm = document.getElementById('purchase-credits-form');
+
+
+// --- UI HELPERS ---
+const showView = (viewId) => {
+    views.forEach(view => view.style.display = 'none');
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.style.display = 'block';
+    } else {
+        console.error(`View with id ${viewId} not found.`);
+        document.getElementById('login-view').style.display = 'block';
+    }
+};
+
+const showLoader = (show) => {
+    loader.style.display = show ? 'flex' : 'none';
+};
+
+const showToast = (message, isError = false) => {
+    toast.textContent = message;
+    toast.className = `fixed bottom-5 right-5 py-3 px-5 rounded-lg shadow-lg text-white toast-in ${isError ? 'bg-red-500' : 'bg-green-600'}`;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 4000);
+};
+
+const showModal = (htmlContent) => {
+    modalContent.innerHTML = htmlContent;
+    modal.style.display = 'flex';
+};
+
+const closeModal = () => {
+    modal.style.display = 'none';
+    modalContent.innerHTML = '';
+};
+
+// --- API HELPERS ---
+const apiFetch = async (url, options = {}) => {
     showLoader(true);
     try {
         const headers = {
@@ -207,8 +253,7 @@ const apiFetch = async (endpoint, options = {}) => {
              headers['Content-Type'] = 'application/json';
         }
 
-        const baseUrl = API_BASE_URL.getUrl(endpoint);
-        const response = await fetch(`${baseUrl}${endpoint}`, {
+        const response = await fetch(url, {
             ...options,
             headers,
         });
@@ -218,18 +263,351 @@ const apiFetch = async (endpoint, options = {}) => {
             throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         
-        // Handle responses that might not have a body (e.g., 201, 204)
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
             return await response.json();
         } 
-        return; // Return undefined for non-JSON responses
+        return;
         
     } catch (error) {
-        console.error(`API Fetch Error (${endpoint}):`, error);
+        console.error(`API Fetch Error (${url}):`, error);
         showToast(error.message, true);
         throw error;
     } finally {
         showLoader(false);
     }
 };
+
+// --- AUTHENTICATION LOGIC ---
+const handleLogin = async (event) => {
+    event.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        const data = await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/auth`, {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+        });
+        
+        appState.user = data.user;
+        appState.token = data.token;
+        
+        sessionStorage.setItem('clearSkyUser', JSON.stringify(appState.user));
+        sessionStorage.setItem('clearSkyToken', appState.token);
+
+        updateUIForUser();
+
+    } catch (error) {
+        console.error('Login failed');
+    }
+};
+
+const handleLogout = () => {
+    appState.user = null;
+    appState.token = null;
+    sessionStorage.removeItem('clearSkyUser');
+    sessionStorage.removeItem('clearSkyToken');
+    updateUIForUser();
+};
+
+const checkSession = () => {
+    const user = sessionStorage.getItem('clearSkyUser');
+    const token = sessionStorage.getItem('clearSkyToken');
+    if (user && token) {
+        appState.user = JSON.parse(user);
+        appState.token = token;
+        updateUIForUser();
+    } else {
+        showView('login-view');
+    }
+};
+
+// --- UI UPDATES ---
+const updateUIForUser = () => {
+    navLinks.innerHTML = '';
+    mobileMenu.innerHTML = '';
+    userInfo.innerHTML = '';
+
+    if (!appState.user) {
+        showView('login-view');
+        document.getElementById('nav-links').classList.add('hidden');
+        return;
+    }
+
+    document.getElementById('nav-links').classList.remove('hidden');
+
+    userInfo.innerHTML = `
+        <span class="text-sm font-medium">Welcome, ${appState.user.fullName} (${appState.user.role})</span>
+        <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-2 px-3 rounded-md transition">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    `;
+    document.getElementById('logout-btn').addEventListener('click', handleLogout);
+
+    switch (appState.user.role) {
+        case 'student':
+            showView('student-dashboard-view');
+            loadStudentCourses();
+            break;
+        case 'instructor':
+            showView('instructor-dashboard-view');
+            loadInstructorReviews();
+            break;
+        case 'institution':
+            showView('institution-dashboard-view');
+            break;
+        default:
+            showView('login-view');
+            handleLogout();
+    }
+};
+
+// --- ROLE-SPECIFIC LOGIC ---
+
+// Student Logic
+const loadStudentCourses = async () => {
+    try {
+        const response = await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/users/${appState.user.id}/courses`);
+        const courses = response.data; // Assuming courses are in response.data
+
+        if (!courses || courses.length === 0) {
+             studentCoursesList.innerHTML = `
+                <div class="text-gray-500 text-center p-4 border-2 border-dashed rounded-lg">
+                    <p>No courses with grades have been posted for you yet.</p>
+                </div>
+            `;
+        } else {
+             studentCoursesList.innerHTML = courses.map(course => `
+                <div class="border p-4 rounded-lg bg-gray-50 flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-lg">${course.name || 'Unnamed Course'}</p>
+                        <p class="text-sm text-gray-600">Period: ${course.period || 'N/A'} | Status: <span class="font-semibold">${course.status || 'N/A'}</span></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xl font-bold text-blue-600">${course.grade || 'Pending'}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        studentCoursesList.innerHTML = `<p class="text-red-500 text-center">Could not load your course data.</p>`;
+    } finally {
+        // Add the review request form regardless of whether courses were found
+        studentCoursesList.innerHTML += `
+            <div class="mt-6 border-t pt-6">
+                ${createReviewRequestForm()}
+            </div>
+        `;
+        document.getElementById('grade-review-form').addEventListener('submit', handleGradeReviewRequest);
+    }
+};
+
+const createReviewRequestForm = () => {
+    return `
+        <h3 class="text-xl font-semibold mb-4">Request a Grade Review</h3>
+        <form id="grade-review-form">
+             <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <input type="text" name="courseId" placeholder="Course ID (e.g., SOFT-101)" class="w-full p-2 border rounded" required>
+                <input type="text" name="gradeId" placeholder="Grade ID (from grades file)" class="w-full p-2 border rounded" required>
+             </div>
+             <textarea name="reason" placeholder="Please provide a detailed reason for your review request..." class="w-full mb-4 p-2 border rounded" rows="4" required></textarea>
+             <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-paper-plane mr-2"></i>Submit Review Request</button>
+        </form>
+    `;
+};
+
+const handleGradeReviewRequest = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    const requestData = {
+        studentId: appState.user.id,
+        courseId: formData.get('courseId'),
+        gradeId: formData.get('gradeId'),
+        studentRegistrationNumber: appState.user.userCode,
+        reason: formData.get('reason'),
+    };
+
+    try {
+        await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests`, {
+            method: 'POST',
+            body: JSON.stringify(requestData)
+        });
+        showToast('Review request submitted successfully!');
+        form.reset();
+    } catch (error) {
+        console.error('Failed to submit review request');
+    }
+};
+
+// Instructor Logic
+const handlePostGrades = async (event) => {
+    event.preventDefault();
+    const courseId = document.getElementById('course-id').value;
+    const fileInput = document.getElementById('grades-file');
+    const isFinal = document.getElementById('is-final-checkbox').checked;
+
+    if (!fileInput.files.length) {
+        showToast('Please select a file to upload.', true);
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('courseId', courseId);
+    formData.append('final', isFinal);
+    formData.append('institutionId', appState.user.institutionId);
+    formData.append('userId', appState.user.id);
+
+    try {
+        await apiFetch(`${GRADE_ORCHESTRATOR_URL}/api/grade-submissions`, {
+            method: 'POST',
+            body: formData,
+        });
+        showToast('Grades uploaded successfully!');
+        postGradesForm.reset();
+    } catch (error) {
+        console.error('Grade upload failed');
+    }
+};
+
+const loadInstructorReviews = async () => {
+    try {
+        const response = await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests?status=PENDING`);
+        const reviews = response.data;
+        if (!reviews || reviews.length === 0) {
+            instructorReviewsList.innerHTML = `<p class="text-gray-500">No pending review requests.</p>`;
+            return;
+        }
+
+        instructorReviewsList.innerHTML = reviews.map(review => `
+            <div class="border p-4 rounded-lg bg-gray-50">
+                <p class="font-semibold">Course: <span class="font-normal">${review.courseId}</span></p>
+                <p class="font-semibold">Student: <span class="font-normal">${review.studentRegistrationNumber || 'N/A'}</span></p>
+                <p class="font-semibold mt-2">Reason:</p>
+                <p class="text-sm bg-white p-2 border rounded-md mt-1">${review.reason}</p>
+                <button data-review-id="${review.id}" class="reply-review-btn mt-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-md transition">Reply</button>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll('.reply-review-btn').forEach(button => {
+            button.addEventListener('click', (e) => showReplyModal(e.target.dataset.reviewId));
+        });
+
+    } catch (error) {
+        instructorReviewsList.innerHTML = `<p class="text-red-500">Could not load review requests.</p>`;
+    }
+};
+
+const showReplyModal = (reviewId) => {
+    const modalHTML = `
+        <h3 class="text-xl font-bold mb-4">Reply to Review Request</h3>
+        <form id="reply-form" data-review-id="${reviewId}">
+            <textarea name="instructorResponse" class="w-full p-2 border rounded mb-4" rows="4" placeholder="Your response..." required></textarea>
+            <input type="text" name="reviewedGrade" class="w-full p-2 border rounded mb-4" placeholder="New Grade (optional)">
+            <div class="flex justify-end space-x-3">
+                 <button type="button" id="cancel-reply" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition">Cancel</button>
+                 <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">Submit Reply</button>
+            </div>
+        </form>
+    `;
+    showModal(modalHTML);
+    document.getElementById('cancel-reply').addEventListener('click', closeModal);
+    document.getElementById('reply-form').addEventListener('submit', handleReviewReply);
+};
+
+const handleReviewReply = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const reviewId = form.dataset.reviewId;
+    const formData = new FormData(form);
+    
+    const replyData = {
+        instructorResponse: formData.get('instructorResponse'),
+        reviewedGrade: formData.get('reviewedGrade') || undefined,
+    };
+    
+    if (!replyData.reviewedGrade) {
+        delete replyData.reviewedGrade;
+    }
+
+    try {
+        await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests/${reviewId}/reply`, {
+            method: 'POST',
+            body: JSON.stringify(replyData)
+        });
+        showToast('Reply sent successfully!');
+        closeModal();
+        loadInstructorReviews(); // Refresh the list
+    } catch (error) {
+        console.error('Failed to send reply');
+    }
+};
+
+
+// Institution Logic
+const handleAddUser = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const userData = {
+        fullName: document.getElementById('add-user-fullname').value,
+        email: document.getElementById('add-user-email').value,
+        password: document.getElementById('add-user-password').value,
+        userCode: document.getElementById('add-user-code').value,
+        role: document.getElementById('add-user-role').value,
+        institutionId: appState.user.institutionId,
+    };
+
+    try {
+        await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/signup`, {
+            method: 'POST',
+            body: JSON.stringify(userData),
+        });
+        showToast(`User ${userData.fullName} created successfully!`);
+        form.reset();
+    } catch (error) {
+        console.error('Failed to add user');
+    }
+};
+
+const handlePurchaseCredits = async (event) => {
+    event.preventDefault();
+    const credits = document.getElementById('credits-amount').value;
+    if (credits <= 0) {
+        showToast('Please enter a positive number of credits.', true);
+        return;
+    }
+
+    try {
+        await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/credits/institution/${appState.user.institutionId}/add`, {
+            method: 'POST',
+            body: JSON.stringify({ credits: parseInt(credits) }),
+        });
+        showToast(`${credits} credits purchased successfully!`);
+        event.target.reset();
+    } catch (error) {
+        console.error('Failed to purchase credits');
+    }
+};
+
+
+// --- EVENT LISTENERS ---
+document.addEventListener('DOMContentLoaded', checkSession);
+loginForm.addEventListener('submit', handleLogin);
+modal.addEventListener('click', (e) => {
+    if (e.target.id === 'modal') closeModal();
+});
+mobileMenuButton.addEventListener('click', () => {
+    mobileMenu.classList.toggle('hidden');
+});
+
+// Role-specific form listeners
+postGradesForm.addEventListener('submit', handlePostGrades);
+addUserForm.addEventListener('submit', handleAddUser);
+purchaseCreditsForm.addEventListener('submit', handlePurchaseCredits);
+
+</script>
+</body>
+</html>
