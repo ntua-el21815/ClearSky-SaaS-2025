@@ -8,12 +8,5 @@ RUN npm install
 COPY . .
 
 EXPOSE 8500
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-# which function the container will start
->>>>>>> origin/Harris
-=======
-# which function the container will start
->>>>>>> origin/Harris
+
 CMD ["node", "index.js"]
