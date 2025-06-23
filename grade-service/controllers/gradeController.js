@@ -20,9 +20,9 @@ exports.uploadGrades = async (req, res) => {
     /* 3. Re-format grades */
     const formattedGrades = grades.map(row => {
       const {
-        "Αριθμός Μητρώου": id,
-        "Ονοματεπώνυμο"  : name,
-        "Ακαδημαϊκό E-mail": email,
+        "Αριθμός Μητρώου": studentId,
+        "Ονοματεπώνυμο"  : studentName,
+        "Ακαδημαϊκό E-mail": academicalEmail,
         "Βαθμολογία"     : grade,
         ...rest
       } = row;
@@ -32,8 +32,7 @@ exports.uploadGrades = async (req, res) => {
         if (/^q\d+$/i.test(k)) responses[k.replace(/[^\d]/g,'')] = v;
       });
 
-      return { "Αριθμός Μητρώου": id, "Ονοματεπώνυμο": name,
-               "Ακαδημαϊκό E-mail": email, "Βαθμολογία": grade, responses };
+      return {  studentId, studentName, academicalEmail, grade, responses };
     });
 
     /* 4. Build document */
@@ -41,13 +40,13 @@ exports.uploadGrades = async (req, res) => {
 
     /* 5. Delete previous upload for same course/period */
     const filter = {
-      "Περίοδος δήλωσης": metadata["Περίοδος δήλωσης"],
-      "Κλίμακα βαθμολόγησης": metadata["Κλίμακα βαθμολόγησης"],
-      final: isFinal ? { $in:[false,null] } : false
+      academicPeriod: metadata.academicPeriod,
+      ratingScale: metadata.ratingScale,
+      final: isFinal ? { $in: [false, null] } : false
     };
-    if (metadata["Μάθημα"])             filter["Μάθημα"]             = metadata["Μάθημα"];
-    if (metadata["Κωδικός μαθήματος"])  filter["Κωδικός μαθήματος"]  = metadata["Κωδικός μαθήματος"];
-    await GradeUpload.deleteMany(filter);
+    if (metadata.courseName) filter.courseName = metadata.courseName;
+    if (metadata.courseId) filter.courseId = metadata.courseId;
+
 
     /* 6. Save */
     const savedDoc = await GradeUpload.create(doc);
@@ -74,5 +73,39 @@ exports.uploadGrades = async (req, res) => {
   }
 };
 
-exports.getGradesByCourse = async (req, res) => { /* unchanged */ };
+exports.getGradesByCourse = async (req, res) => {
+  const { academicPeriod, courseId, final } = req.query;
 
+  if (!academicPeriod || !courseId) {
+    return res.status(400).json({ error: "Missing academicPeriod or courseId." });
+  }
+
+  const query = { academicPeriod, courseId };
+  if (final !== undefined) query.final = final === "true";
+
+  try {
+    const result = await GradeUpload.findOne(query).lean();
+    if (!result) return res.status(404).json({ message: "No grades found." });
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error fetching grades.");
+  }
+};
+
+
+exports.getStudentGradesById = async (req, res) => {
+  const { academicPeriod, courseId, studentId } = req.query;
+
+  if (!academicPeriod || !courseId || !studentId) {
+    return res.status(400).json({ error: "Missing academicPeriod, courseId or studentId." });
+  }
+
+  const course = await GradeUpload.findOne({ academicPeriod, courseId }).lean();
+  if (!course) return res.status(404).json({ error: "Course not found." });
+
+  const student = course.grades.find(g => g.studentId === studentId);
+  if (!student) return res.status(404).json({ error: "Student not found." });
+
+  res.json({ academicPeriod: course.academicPeriod, courseId: course.courseId, final: course.final, student });
+};
