@@ -99,7 +99,8 @@ app.post('/api/signup', async (req, res) => {
       password, // Include password for user creation
       fullName,
       role,
-      institutionId: registerResponse.data.institutionId || null
+      userCode,
+      institutionId
     });
     
     return res.status(201).json({

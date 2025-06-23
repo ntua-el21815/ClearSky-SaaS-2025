@@ -25,6 +25,7 @@ services:
     environment:
       - PORT=8400
       - MONGODB_URI=mongodb://review-mongodb:27017/review?authSource=admin
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
     depends_on:
       - review-mongodb
     networks:
@@ -280,7 +281,7 @@ services:
   user-auth-mongodb:
     image: mongo:latest
     ports:
-      - "27017:27017"
+      - "27018:27017"  # Expose MongoDB on port 27018
     container_name: user-auth-mongodb
     volumes:
       - user-auth-mongo-data:/data/db
@@ -316,6 +317,8 @@ services:
   
   user-management-mongodb:
     image: mongo:latest
+    ports:
+      - "27017:27017"  # Expose MongoDB on port 27018
     container_name: userflow-mongodb
     volumes:
       - userflow-mongo-data:/data/db
