@@ -13,9 +13,10 @@ export default function StudentDashboard() {
   const [selected, setSelected]       = useState(null);
   const [loading, setLoading]         = useState(true);
   const [error,   setError]           = useState(null);
-
+  const courseId = 3205;
+  
   useEffect(() => {
-    fetchStudentStatistics()
+    fetchStudentStatistics(courseId)
       .then(setCourses)
       .catch((err) => {
         console.error('Error fetching student statistics:', err);

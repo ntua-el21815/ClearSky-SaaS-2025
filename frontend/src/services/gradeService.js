@@ -1,8 +1,8 @@
 import { gradeAPI } from '../api/index';
 
-export async function fetchStudentStatistics() {
-  const { data } = await gradeAPI.get('/grades/statistics');  // interceptor ⇒ userId
-  return data;                                               // 200 => array
+export async function fetchStudentStatistics(courseId) {
+  const { data } = await gradeAPI.get(`api/course/${courseId}/statistics`);
+  return data;                                                // 200 => array
 }
 
 export async function fetchPersonalGrades(courseId) {
