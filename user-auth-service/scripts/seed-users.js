@@ -5,39 +5,39 @@ require('dotenv').config();
 
 const mockUsers = [
   {
-    fullName: 'John Student',
-    email: 'student@test.com',
-    password: 'password123',
+    fullName: 'Student 1',
+    email: 'student1@test.com',
+    password: '123456',
     role: 'student',
-    institutionId: 'inst-001'
+    institutionId: 'NTUA'
   },
   {
-    fullName: 'Jane Instructor',
-    email: 'instructor@test.com',
-    password: 'password123',
+    fullName: 'Instructor 1',
+    email: 'instructor1@test.com',
+    password: '123456',
     role: 'instructor',
-    institutionId: 'inst-001'
+    institutionId: 'NTUA'
   },
   {
-    fullName: 'Bob Representative',
+    fullName: 'Representative',
     email: 'institution@test.com',
-    password: 'password123',
+    password: '123456',
     role: 'institution_rep',
-    institutionId: 'inst-001'
+    institutionId: 'NTUA'
   },
   {
-    fullName: 'Alice Student Two',
+    fullName: 'Student 2',
     email: 'student2@test.com',
-    password: 'password123',
+    password: '123456',
     role: 'student',
-    institutionId: 'inst-002'
+    institutionId: 'NTUA'
   },
   {
-    fullName: 'Charlie Instructor Two',
+    fullName: 'Instructor 2',
     email: 'instructor2@test.com',
-    password: 'password123',
+    password: '123456',
     role: 'instructor',
-    institutionId: 'inst-002'
+    institutionId: 'NTUA'
   }
 ];
 

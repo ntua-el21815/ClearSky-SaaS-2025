@@ -3,30 +3,66 @@ const bcrypt    = require("bcryptjs");
 const connectDB = require("./config/db");
 const User      = require("./models/User");
 
-const REP = {
-  name : "rep",
-  email: "rep@ntua.gr",
-  role : "institution_rep",
-  password: "rep12345"
-};
+// Your provided mock users
+const mockUsers = [
+  {
+    fullName: 'Student 1',
+    email: 'student1@test.com',
+    password: '123456',
+    role: 'student',
+    institutionId: 'NTUA'
+  },
+  {
+    fullName: 'Instructor 1',
+    email: 'instructor1@test.com',
+    password: '123456',
+    role: 'instructor',
+    institutionId: 'NTUA'
+  },
+  {
+    fullName: 'Representative',
+    email: 'institution@test.com',
+    password: '123456',
+    role: 'institution_rep',
+    institutionId: 'NTUA'
+  },
+  {
+    fullName: 'Student 2',
+    email: 'student2@test.com',
+    password: '123456',
+    role: 'student',
+    institutionId: 'NTUA'
+  },
+  {
+    fullName: 'Instructor 2',
+    email: 'instructor2@test.com',
+    password: '123456',
+    role: 'instructor',
+    institutionId: 'NTUA'
+  }
+];
 
 (async () => {
   try {
     await connectDB();
 
-    // υπάρχει ήδη;
-    if (await User.findOne({ email: REP.email })) {
-      console.log("ℹ️  Representative already seeded.");
-      return process.exit(0);
+    for (const userData of mockUsers) {
+      const exists = await User.findOne({ email: userData.email });
+      if (exists) {
+        console.log(`ℹ️  User already exists: ${userData.email}`);
+        continue;
+      }
+
+      const hash = await bcrypt.hash(userData.password, 10);
+      await User.create({ ...userData, password: hash });
+
+      console.log(`✅  Created: ${userData.email} (${userData.role})`);
     }
 
-    const hash = await bcrypt.hash(REP.password, 10);
-    await User.create({ ...REP, password: hash });
-
-    console.log("✅  Institution representative seeded.");
+    console.log("🎉 All users seeded.");
     process.exit(0);
   } catch (err) {
-    console.error("❌  Seed rep failed:", err.message);
+    console.error("❌  Seeding failed:", err.message);
     process.exit(1);
   }
 })();

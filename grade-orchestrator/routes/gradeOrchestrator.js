@@ -20,6 +20,9 @@ const STATISTICS_API = (process.env.STATISTICS_SERVICE_URL || '')
   .replace(/\/$/, '');
 const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
 
+const USER_SERVICE_API = (process.env.USER_MANAGEMENT_SERVICE_URL || '').replace(/\/$/, '') + '/users';
+
+
 /* ---------- RabbitMQ bootstrap with retry ---------- */
 let mqChannel;
 const MAX_RETRIES   = 12;
@@ -75,9 +78,29 @@ router.post(
   upload.single('file'),
   async (req, res) => {
     /* pull params from client */
-    const { institutionId,
-            courseId  = 'unknown',
-            userId    = 'unknown' } = req.body;
+    // const { institutionId,
+    //         courseId  = 'unknown',
+    //         userId    = 'unknown' } = req.body;
+    const { userId, courseId = 'unknown' } = req.body;
+
+    if (!userId || !req.file) {
+      return res.status(400).json({ success:false, error:'Missing userId or file' });
+    }
+
+    // 1. Fetch institutionId from User Management Service
+    let institutionId;
+    try {
+      const userResp = await axios.get(`${USER_SERVICE_API}/${userId}`);
+      institutionId = userResp.data?.institutionId;
+      if (!institutionId) throw new Error('Missing institutionId in user record');
+    } catch (err) {
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.status(502).json({
+        success:false,
+        stage:'user-fetch',
+        ...formatAxiosError(err, 'Failed to fetch user or institutionId')
+      });
+    }
 
     const isFinal = (req.body.final === 'true' || req.body.final === true);
     const file    = req.file;

@@ -36,6 +36,8 @@ services:
   review-mongodb:
     image: mongo:latest
     container_name: review-mongodb
+    ports:
+    - "27020:27017"
     volumes:
       - review-mongo-data:/data/db
     networks:
@@ -60,6 +62,8 @@ services:
   credit-mongodb:
     image: mongo:latest
     container_name: credit-mongodb
+    ports:
+    - "27021:27017"
     volumes:
       - credit-mongo-data:/data/db
     networks:
@@ -83,8 +87,10 @@ services:
   grade-mongodb:
     image: mongo:latest
     container_name: grade-mongodb
+    ports:
+    - "27019:27017"
     volumes:
-      - grade-mongo-data:/data/db\
+      - grade-mongo-data:/data/db
     networks:
       - grades-network
 
@@ -142,6 +148,8 @@ services:
   notification-mongodb:
     image: mongo:latest
     container_name: notification-mongodb
+    ports:
+    - "27022:27017"
     volumes:
       - notification-mongo-data:/data/db
     networks:
@@ -178,6 +186,8 @@ services:
   institution-mongodb:
     image: mongo:latest
     container_name: institution-mongodb
+    ports:
+    - "27023:27017"
     volumes:
       - institution-mongo-data:/data/db
     networks:
@@ -225,6 +235,8 @@ services:
   statistics-mongodb:
     image: mongo:latest
     container_name: statistics-mongodb
+    ports:
+    - "27024:27017"
     volumes:
       - statistics-mongo-data:/data/db
     networks:
@@ -244,9 +256,11 @@ services:
       - CREDIT_SERVICE_URL=http://credit-service:8102
       - GRADE_SERVICE_URL=http://grade-service:8200
       - STATISTICS_SERVICE_URL=http://statistics-service:8300
+      - USER_MANAGEMENT_SERVICE_URL=http://user-management-service:5001
     depends_on:
       - rabbitmq
       - grade-service
+      - user-management-service
     networks:
       - clearsky-network
     restart: unless-stopped
