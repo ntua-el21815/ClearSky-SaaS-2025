@@ -1,0 +1,250 @@
+openapi: 3.0.3
+info:
+  title: Institution and Course Management API
+  version: 1.0.0
+  description: API for managing institutions and their courses.
+
+servers:
+  - url: http://localhost:8600/api
+    description: Local development server
+
+paths:
+  /institutions:
+    get:
+      summary: Get all institutions
+      operationId: getAllInstitutions
+      responses:
+        '200':
+          description: List of institutions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Institution'
+        '500':
+          description: Internal server error
+    post:
+      summary: Create a new institution
+      operationId: createInstitution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstitutionInput'
+      responses:
+        '201':
+          description: Institution created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Institution'
+        '400':
+          description: Bad request
+        '409':
+          description: Institution already exists
+
+  /institutions/{id}:
+    get:
+      summary: Get an institution by ID
+      operationId: getInstitution
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Institution details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Institution'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+    put:
+      summary: Update an institution
+      operationId: updateInstitution
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstitutionInput'
+      responses:
+        '200':
+          description: Institution updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Institution'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+
+  /institutions/{institutionId}/courses:
+    get:
+      summary: Get courses by institution
+      operationId: getCoursesByInstitution
+      parameters:
+        - in: path
+          name: institutionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Course'
+        '500':
+          description: Internal server error
+    post:
+      summary: Create a new course in an institution
+      operationId: createCourse
+      parameters:
+        - in: path
+          name: institutionId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseInput'
+      responses:
+        '201':
+          description: Course created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+        '400':
+          description: Bad request
+        '409':
+          description: Course already exists
+
+  /courses/{courseId}:
+    put:
+      summary: Update a course
+      operationId: updateCourse
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseUpdate'
+      responses:
+        '200':
+          description: Course updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+        '400':
+          description: Bad request
+        '404':
+          description: Course not found
+        '409':
+          description: Duplicate course
+
+components:
+  schemas:
+    Institution:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Institution ID
+        name:
+          type: string
+        location:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    InstitutionInput:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        location:
+          type: string
+
+    Course:
+      type: object
+      properties:
+        _id:
+          type: string
+        courseId:
+          type: string
+        courseName:
+          type: string
+        institutionId:
+          type: string
+        description:
+          type: string
+        academicPeriod:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CourseInput:
+      type: object
+      required:
+        - courseId
+      properties:
+        courseId:
+          type: string
+        courseName:
+          type: string
+        description:
+          type: string
+        academicPeriod:
+          type: string
+
+    CourseUpdate:
+      type: object
+      properties:
+        courseName:
+          type: string
+        description:
+          type: string
+        academicPeriod:
+          type: string

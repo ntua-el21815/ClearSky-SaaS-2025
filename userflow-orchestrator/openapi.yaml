@@ -1,0 +1,198 @@
+openapi: 3.0.3
+info:
+  title: Auth Orchestrator API
+  version: 1.0.0
+  description: Orchestration layer for authentication, signup, and cross-service user/credit handling.
+
+servers:
+  - url: http://localhost:4000/api
+    description: Local Orchestrator Server
+
+paths:
+  /auth:
+    post:
+      summary: Authenticate user (via token or credentials)
+      operationId: authenticateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  user:
+                    type: object
+                  token:
+                    type: string
+        '400':
+          description: Missing credentials
+        '401':
+          description: Invalid credentials or token
+        '500':
+          description: Server error
+
+  /signup:
+    post:
+      summary: Register a new user (via representative)
+      operationId: signupUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - fullName
+                - role
+                - userCode
+                - repId
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                fullName:
+                  type: string
+                role:
+                  type: string
+                userCode:
+                  type: string
+                repId:
+                  type: string
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  user:
+                    type: object
+                  token:
+                    type: string
+        '400':
+          description: Missing fields
+        '502':
+          description: Failed to fetch representative data
+        '500':
+          description: Registration failed
+
+  /credits/institution/{institutionId}/add:
+    post:
+      summary: Forward credit top-up request to credit service
+      operationId: forwardCreditTopUp
+      parameters:
+        - in: path
+          name: institutionId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credits
+              properties:
+                credits:
+                  type: number
+      responses:
+        '200':
+          description: Credit update successful
+        '500':
+          description: Failed to forward request
+
+  /users/{id}/courses:
+    get:
+      summary: Get courses for a student (proxy)
+      operationId: getStudentCourses
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of courses for the student
+        '500':
+          description: Failed to retrieve student courses
+
+  /users/{id}/instructor-courses:
+    get:
+      summary: Get courses for an instructor (proxy)
+      operationId: getInstructorCourses
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of courses for instructor
+        '500':
+          description: Failed to retrieve instructor courses
+
+  /users/count/by-institution/{institutionId}:
+    get:
+      summary: Get user count for an institution (proxy)
+      operationId: getUserCountByInstitution
+      parameters:
+        - in: path
+          name: institutionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Number of users in institution
+        '500':
+          description: Failed to retrieve count
+
+  /health:
+    get:
+      summary: Service health check
+      operationId: getHealthStatus
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
