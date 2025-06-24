@@ -16,9 +16,8 @@ const CREDIT_API = (process.env.CREDIT_SERVICE_URL || '')
   .replace(/\/$/, '') + '/api/credits';
 const GRADE_API  = (process.env.GRADE_SERVICE_URL  || '')
   .replace(/\/$/, '') + '/gradeRoutes';
-const STATISTICS_API = (process.env.STATISTICS_SERVICE_URL || 'http://statistics-service:3002')
+const STATISTICS_API = (process.env.STATISTICS_SERVICE_URL || '')
   .replace(/\/$/, '');
-
 const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
 
 /* ---------- RabbitMQ bootstrap with retry ---------- */
@@ -35,7 +34,7 @@ async function connectRabbitMQ (attempt = 1) {
     await mqChannel.assertQueue('statistics',    { durable: true });
     await mqChannel.assertQueue('notifications', { durable: true });
     await mqChannel.assertQueue('courses',       { durable: true });   // 🆕 new queue
-
+    await mqChannel.assertQueue('coursesAuth',  { durable: true });
     console.log('[orchestrator] 🟢 RabbitMQ channel ready');
 
     conn.on('close', () => {
@@ -70,9 +69,7 @@ function formatAxiosError (err, defaultMsg) {
   return { fromService:false, status:500, msg:defaultMsg, details:err.message };
 }
 
-/* ================================================= *
- *  MAIN ENDPOINT                                    *
- * ================================================= */
+//grade upload
 router.post(
   '/api/grade-submissions',
   upload.single('file'),
@@ -171,7 +168,7 @@ router.post(
         const emails = [
           ...new Set(
             (inner.grades || [])
-              .map(s => (s['Ακαδημαϊκό E-mail'] || s.email || '').trim())
+              .map(s => (s.academicalEmail || s.email || '').trim())
               .filter(Boolean)
           )
         ];
@@ -190,11 +187,11 @@ router.post(
         const meta = inner.metadata || {};
 
         const courseMsg = {
-          'Περίοδος δήλωσης': meta['Περίοδος δήλωσης'] || null,
-          'Μάθημα'          : meta['Μάθημα']             || null,
-          'Κωδικός μαθήματος': meta['Κωδικός μαθήματος'] || null,
+          academicPeriod : meta.academicPeriod  || null,
+          courseName     : meta.courseName      || null,
+          courseId       : meta.courseId        || null,
           institutionId,
-          userId
+          instructorId   : userId
         };
 
         mqChannel.sendToQueue(
@@ -202,6 +199,35 @@ router.post(
           Buffer.from(JSON.stringify(courseMsg)),
           { persistent:true }
         );
+
+
+      /* 4. course authorization → coursesAuth  (🆕) */
+      try {
+        const instructorIdFinal = userId;  // για τώρα, instructor είναι ο uploader
+
+        const studentIds = [
+          ...new Set(
+            (inner.grades || [])
+              .map(g => g.studentId)      // ← field exists in the return JSON
+              .filter(Boolean)            // drop null / ''
+            )
+          ];
+
+        mqChannel.sendToQueue(
+          'coursesAuth',
+          Buffer.from(JSON.stringify({
+            courseId: meta.courseId,
+            courseName: meta.courseName,
+            academicPeriod: meta.academicPeriod,         // αυτό έρχεται από το grade-service
+            instructorId: instructorIdFinal,
+            studentIds
+          })),
+          { persistent: true }
+        );
+        console.log('[orchestrator] 🔐 courseAuth sent to coursesAuth queue');
+      } catch (err) {
+        console.error('[orchestrator] failed to publish coursesAuth:', err.message);
+      }
 
         console.log('[orchestrator] 📚 course info sent to courses queue');
       } catch (err) {
@@ -217,5 +243,59 @@ router.post(
     });
   }
 );
+
+router.get('/api/grades/by-course', async (req, res) => {
+  try {
+    const response = await axios.get(`${GRADE_API}`, { params: req.query });
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      ...formatAxiosError(err, 'Failed to fetch grades by course')
+    });
+  }
+});
+
+
+router.get('/api/grades/student', async (req, res) => {
+  try {
+    const response = await axios.get(`${GRADE_API}/student`, {
+      params: req.query
+    });
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      ...formatAxiosError(err, 'Failed to fetch student grades')
+    });
+  }
+});
+
+
+//λήψη όλων των στατιστικών
+router.get('/api/statistics/all', async (req, res) => {
+  try {
+    const response = await axios.get(`${STATISTICS_API}/statistics/all`);
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      ...formatAxiosError(err, 'Failed to fetch all statistics')
+    });
+  }
+});
+
+//στατιστικά ανά μάθημα
+router.get('/api/statistics/course/:courseId', async (req, res) => {
+  try {
+    const response = await axios.get(`${STATISTICS_API}/statistics/course/${req.params.courseId}`);
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      ...formatAxiosError(err, 'Failed to fetch statistics for course')
+    });
+  }
+});
 
 module.exports = router;
