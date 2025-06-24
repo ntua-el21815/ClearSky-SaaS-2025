@@ -49,15 +49,14 @@ exports.parseExcel = (filePath) => {
   const first = raw[headersIdx + 1] || [];
   const metadata = {};
 
-  if (col("Περίοδος δήλωσης") !== -1) {
-    metadata["Περίοδος δήλωσης"] = first[col("Περίοδος δήλωσης")];
-  }
-  if (col("Τμήμα Τάξης") !== -1) {
-    metadata["Τμήμα Τάξης"] = first[col("Τμήμα Τάξης")];
-  }
-  if (col("Κλίμακα βαθμολόγησης") !== -1) {
-    metadata["Κλίμακα βαθμολόγησης"] = first[col("Κλίμακα βαθμολόγησης")];
-  }
+  if (col("Περίοδος δήλωσης") !== -1)
+    metadata.academicPeriod = first[col("Περίοδος δήλωσης")];
+
+  if (col("Τμήμα Τάξης") !== -1)
+    metadata._classField = first[col("Τμήμα Τάξης")];   // temp store
+
+  if (col("Κλίμακα βαθμολόγησης") !== -1)
+    metadata.ratingScale = first[col("Κλίμακα βαθμολόγησης")];
 
   /* -------- add weights w1..wN -------- */
   headers.forEach((h, i) => {
@@ -78,25 +77,26 @@ exports.parseExcel = (filePath) => {
      ✨  CUSTOM TRANSFORMATIONS
      ========================================================= */
   /* split Τμήμα Τάξης -> Μάθημα & Κωδ. μαθήματος */
-  if (metadata["Τμήμα Τάξης"]) {
-    const m = metadata["Τμήμα Τάξης"].match(/^(.*)\s+\((\d+)\)\s*$/);
+  if (metadata._classField) {
+    const m = metadata._classField.match(/^(.*)\s+\((\d+)\)\s*$/);
     if (m) {
-      metadata["Μάθημα"]            = m[1].trim();
-      metadata["Κωδικός μαθήματος"] = m[2];
+      metadata.courseName = m[1].trim();
+      metadata.courseId   = m[2];
     }
-    delete metadata["Τμήμα Τάξης"];        // optional removal
+    delete metadata._classField;
   }
 
-  /* normalise Περίοδος δήλωσης */
-  if (metadata["Περίοδος δήλωσης"]) {
-    metadata["Περίοδος δήλωσης"] =
-      metadata["Περίοδος δήλωσης"]
+  /* normalise academicPeriod (ΧΕΙΜΕΡΙΝΗ / ΕΑΡΙΝΗ) */
+  if (metadata.academicPeriod) {
+    metadata.academicPeriod =
+      metadata.academicPeriod
         .replace(/ΧΕΙΜ\s+\d{4}$/i, "ΧΕΙΜΕΡΙΝΗ")
         .replace(/ΕΑΡΙΝ\s+\d{4}$/i, "ΕΑΡΙΝΗ");
   }
 
-  console.log("metadata:", metadata);
+  console.log("metadata:", metadata);     // ➜ should now show English keys
   fs.unlinkSync(filePath);
+
   return { grades, metadata };
 };
 
