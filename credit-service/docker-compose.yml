@@ -1,0 +1,29 @@
+services:
+  institution-credit-service:
+    build: .
+    ports:
+      - "8102:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://credit-mongodb:27017/credits
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+    networks:
+      - clearsky-network
+
+  credit-mongodb:
+    image: mongo:latest
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - clearsky-network
+
+networks:
+  clearsky-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

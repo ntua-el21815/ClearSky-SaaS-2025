@@ -7,6 +7,8 @@ RUN npm install
 
 COPY . .
 
+EXPOSE 8300
+
 # Install concurrently to run both the API and the consumer
 RUN npm install -g concurrently
 

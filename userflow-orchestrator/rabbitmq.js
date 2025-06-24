@@ -35,6 +35,7 @@ const publishUserCreated = async (user) => {
     fullName: user.fullName,
     email: user.email,
     role: user.role,
+    institutionId: user.institutionId,
     userCode: user.userCode,
     password: user.password, // include with care — possibly hashed already?
     institutionId: user.institutionId

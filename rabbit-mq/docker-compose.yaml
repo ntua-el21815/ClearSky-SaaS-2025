@@ -1,0 +1,17 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: clearsky_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq_definitions.json:/etc/rabbitmq/definitions.json   # mount your definitions
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    environment:
+      RABBITMQ_DEFAULT_VHOST: "/"                                 # default vhost
+      RABBITMQ_LOAD_DEFINITIONS: /etc/rabbitmq/definitions.json    # auto‐load queues/etc.
+
+volumes:
+  rabbitmq_data:

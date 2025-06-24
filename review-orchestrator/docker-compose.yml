@@ -1,0 +1,24 @@
+services:
+  review-orchestrator:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - REVIEW_SERVICE_URL=${REVIEW_SERVICE_URL:-http://review-service:8400}
+    networks:
+      - clearsky-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  clearsky-network:
+    driver: bridge
+    external: true

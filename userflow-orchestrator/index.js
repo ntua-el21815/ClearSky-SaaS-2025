@@ -14,13 +14,20 @@ app.use(cors());
 app.use(express.json());
 
 const USER_AUTH_SERVICE_URL = process.env.USER_AUTH_SERVICE_URL || 'http://localhost:5000';
-const USER_MANAGEMENT_SERVICE_URL = process.env.USER_MANAGEMENT_SERVICE_URL || 'http://localhost:5001';
+const USER_MANAGEMENT_SERVICE_URL = process.env.USER_MANAGEMENT_SERVICE_URL || 'http://localhost:6000';
 const CREDIT_SERVICE_URL = process.env.CREDIT_SERVICE_URL || 'http://localhost:3000';
 
 // Auth orchestration endpoint
 app.post('/api/auth', async (req, res) => {
-  const { token, email, password } = req.body;
 
+  let token, email, password;
+  if (req.body && typeof req.body === 'object') {
+    if ('token' in req.body) token = req.body.token;
+    if ('email' in req.body) email = req.body.email;
+    if ('password' in req.body) password = req.body.password;
+  }
+
+  console.log('🔍 Auth request received:', { token, email, password });
   try {
     if (token) {
       try {
@@ -86,9 +93,16 @@ app.post('/api/signup', async (req, res) => {
       institutionId
     }, { timeout: 5000 });
 
-    // Publish to RabbitMQ (userId + role)
-    await publishUserCreated(registerResponse.data.user);
-
+    // Publish to RabbitMQ all the user data (including password)
+    await publishUserCreated({
+      email,
+      password, // Include password for user creation
+      fullName,
+      role,
+      userCode,
+      institutionId
+    });
+    
     return res.status(201).json({
       success: true,
       message: 'Signup successful',

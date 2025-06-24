@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>clearSKY - Simplified</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Hide all views by default */
+        .view {
+            display: none;
+        }
+        /* Custom animation for the notification toast */
+        @keyframes toast-in {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .toast-in {
+            animation: toast-in 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Header / Navigation Bar -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-cloud text-2xl text-blue-500"></i>
+                <h1 class="text-xl font-bold text-gray-700">clearSKY</h1>
+            </div>
+            <div id="nav-links" class="hidden md:flex items-center space-x-4">
+                 <!-- Dynamic nav links will be injected here -->
+            </div>
+            <div id="user-info" class="flex items-center space-x-4">
+                 <!-- User info and logout will be injected here -->
+            </div>
+             <button id="mobile-menu-button" class="md:hidden">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+            <!-- Mobile nav links will be injected here -->
+        </div>
+    </header>
+
+    <main id="app" class="container mx-auto p-4 md:p-6">
+
+        <!-- Login View -->
+        <div id="login-view" class="view max-w-md mx-auto bg-white p-8 mt-10 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-6">Welcome to clearSKY</h2>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="user@example.com" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition duration-300">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Login
+                </button>
+                 <p class="text-center text-sm text-gray-600 mt-4">
+                    New Institution? <a href="#" id="show-register-inst-link" class="font-medium text-blue-600 hover:text-blue-500">Register here</a>.
+                </p>
+            </form>
+        </div>
+        
+        <!-- Register Institution View -->
+        <div id="register-institution-view" class="view max-w-lg mx-auto bg-white p-8 mt-10 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-6">Register Your Institution</h2>
+            <form id="register-institution-form">
+                <div class="mb-4">
+                    <label for="inst-name" class="block text-sm font-medium text-gray-700 mb-1">Institution Name</label>
+                    <input type="text" id="inst-name" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                </div>
+                 <h3 class="text-lg font-semibold mb-2 mt-6">Administrator Details</h3>
+                 <div class="grid md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label for="inst-admin-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input type="text" id="inst-admin-name" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="inst-admin-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="inst-admin-email" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                    </div>
+                 </div>
+                 <div class="mb-6">
+                    <label for="inst-admin-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="inst-admin-password" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                </div>
+                <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-university mr-2"></i>Register Institution</button>
+                <p class="text-center text-sm text-gray-600 mt-4">
+                    Already have an account? <a href="#" id="show-login-link" class="font-medium text-blue-600 hover:text-blue-500">Login here</a>.
+                </p>
+            </form>
+        </div>
+
+        <!-- Student Dashboard View -->
+        <div id="student-dashboard-view" class="view">
+             <h2 class="text-3xl font-bold mb-6">Student Dashboard</h2>
+             <div id="student-courses-container" class="bg-white p-6 rounded-lg shadow-md">
+                 <h3 class="text-xl font-semibold mb-4">My Courses & Grades</h3>
+                 <div id="student-courses-list" class="space-y-4"></div>
+             </div>
+        </div>
+
+        <!-- Instructor Dashboard View -->
+        <div id="instructor-dashboard-view" class="view">
+            <h2 class="text-3xl font-bold mb-6">Instructor Dashboard</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Post Grades -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Post Grades</h3>
+                    <form id="post-grades-form">
+                        <div class="mb-4">
+                            <label for="course-id" class="block text-sm font-medium text-gray-700 mb-1">Course ID</label>
+                            <input type="text" id="course-id" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="e.g., SOFT-101" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="grades-file" class="block text-sm font-medium text-gray-700 mb-1">Grades File (.xlsx)</label>
+                            <input type="file" id="grades-file" accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+                        </div>
+                         <div class="mb-4">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" id="is-final-checkbox" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-offset-0 focus:ring-blue-200 focus:ring-opacity-50">
+                                <span class="ml-2 text-sm text-gray-600">This is the final grading</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-upload mr-2"></i>Upload Grades</button>
+                    </form>
+                </div>
+                <!-- Review Requests -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Grade Review Requests</h3>
+                    <div id="instructor-reviews-list" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Institution Dashboard View -->
+        <div id="institution-dashboard-view" class="view">
+            <h2 class="text-3xl font-bold mb-6">Institution Dashboard</h2>
+             <div class="grid md:grid-cols-2 gap-6 mb-6">
+                 <!-- User Management -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">User Management</h3>
+                    <form id="add-user-form">
+                        <input type="text" id="add-user-fullname" placeholder="Full Name" class="w-full mb-2 p-2 border rounded" required>
+                        <input type="email" id="add-user-email" placeholder="Email" class="w-full mb-2 p-2 border rounded" required>
+                        <input type="password" id="add-user-password" placeholder="Password" class="w-full mb-2 p-2 border rounded" required>
+                        <input type="text" id="add-user-code" placeholder="User Code (e.g., student ID)" class="w-full mb-2 p-2 border rounded" required>
+                        <select id="add-user-role" class="w-full mb-4 p-2 border rounded" required>
+                            <option value="">Select Role...</option>
+                            <option value="student">Student</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-user-plus mr-2"></i>Add User</button>
+                    </form>
+                </div>
+                 <!-- Purchase Credits -->
+                 <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Manage Credits</h3>
+                     <p class="mb-4">Credits are used each time an instructor uploads an initial grades file.</p>
+                    <form id="purchase-credits-form">
+                        <input type="number" id="credits-amount" placeholder="Number of credits" class="w-full mb-2 p-2 border rounded" min="1" required>
+                        <button type="submit" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-credit-card mr-2"></i>Purchase Credits</button>
+                    </form>
+                 </div>
+            </div>
+             <!-- Institution Statistics -->
+            <div id="institution-stats-container" class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-xl font-semibold mb-4">Institution-Wide Statistics</h3>
+                <div id="institution-stats-content">
+                    <!-- Statistics will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+    
+    <!-- Generic Modal for Replies, Reviews, etc. -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+        <div id="modal-content" class="bg-white rounded-lg shadow-xl p-6 w-11/12 md:w-1/2 lg:w-1/3">
+            <!-- Modal content will be injected here -->
+        </div>
+    </div>
+    
+    <!-- Notification Toast -->
+    <div id="toast" class="hidden fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-5 rounded-lg shadow-lg">
+        <!-- Toast message will be injected here -->
+    </div>
+
+    <!-- Loading Spinner Overlay -->
+    <div id="loader" class="hidden fixed inset-0 bg-white bg-opacity-75 z-50 flex justify-center items-center">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+const USERFLOW_ORCHESTRATOR_URL = 'http://localhost:8100';
+const GRADE_ORCHESTRATOR_URL = 'http://localhost:8081';
+const REVIEW_ORCHESTRATOR_URL = 'http://localhost:8082';
+
+const appState = {
+    user: null,
+    token: null,
+};
+
+// --- DOM ELEMENTS ---
+const views = document.querySelectorAll('.view');
+const loginForm = document.getElementById('login-form');
+const showRegisterInstLink = document.getElementById('show-register-inst-link');
+const showLoginLink = document.getElementById('show-login-link');
+const registerInstitutionForm = document.getElementById('register-institution-form');
+
+const navLinks = document.getElementById('nav-links');
+const mobileMenu = document.getElementById('mobile-menu');
+const mobileMenuButton = document.getElementById('mobile-menu-button');
+const userInfo = document.getElementById('user-info');
+const loader = document.getElementById('loader');
+const modal = document.getElementById('modal');
+const modalContent = document.getElementById('modal-content');
+const toast = document.getElementById('toast');
+
+// Instructor Elements
+const postGradesForm = document.getElementById('post-grades-form');
+const instructorReviewsList = document.getElementById('instructor-reviews-list');
+
+// Student Elements
+const studentCoursesList = document.getElementById('student-courses-list');
+
+// Institution Elements
+const addUserForm = document.getElementById('add-user-form');
+const purchaseCreditsForm = document.getElementById('purchase-credits-form');
+const institutionStatsContent = document.getElementById('institution-stats-content');
+
+// --- UI HELPERS ---
+const showView = (viewId) => {
+    views.forEach(view => view.style.display = 'none');
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.style.display = 'block';
+    } else {
+        console.error(`View with id ${viewId} not found.`);
+        document.getElementById('login-view').style.display = 'block';
+    }
+};
+
+const showLoader = (show) => {
+    loader.style.display = show ? 'flex' : 'none';
+};
+
+const showToast = (message, isError = false) => {
+    toast.textContent = message;
+    toast.className = `fixed bottom-5 right-5 py-3 px-5 rounded-lg shadow-lg text-white toast-in ${isError ? 'bg-red-500' : 'bg-green-600'}`;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 4000);
+};
+
+const showModal = (htmlContent) => {
+    modalContent.innerHTML = htmlContent;
+    modal.style.display = 'flex';
+};
+
+const closeModal = () => {
+    modal.style.display = 'none';
+    modalContent.innerHTML = '';
+};
+
+// --- API HELPERS ---
+const apiFetch = async (url, options = {}) => {
+    showLoader(true);
+    try {
+        const headers = {
+            ...options.headers,
+        };
+        if (appState.token) {
+            headers['Authorization'] = `Bearer ${appState.token}`;
+        }
+        if (!(options.body instanceof FormData)) {
+             headers['Content-Type'] = 'application/json';
+        }
+
+        const response = await fetch(url, {
+            ...options,
+            headers,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'An unknown error occurred' }));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            return await response.json();
+        } 
+        return;
+        
+    } catch (error) {
+        console.error(`API Fetch Error (${url}):`, error);
+        showToast(error.message, true);
+        throw error;
+    } finally {
+        showLoader(false);
+    }
+};
+
+// --- AUTHENTICATION & NAVIGATION LOGIC ---
+const handleLogin = async (event) => {
+    event.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        const data = await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/auth`, {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+        });
+        
+        appState.user = data.user;
+        appState.token = data.token;
+        
+        sessionStorage.setItem('clearSkyUser', JSON.stringify(appState.user));
+        sessionStorage.setItem('clearSkyToken', appState.token);
+
+        updateUIForUser();
+
+    } catch (error) {
+        console.error('Login failed');
+    }
+};
+
+const handleRegisterInstitution = async (event) => {
+    event.preventDefault();
+    const registrationData = {
+        institutionName: document.getElementById('inst-name').value,
+        adminUser: {
+            fullName: document.getElementById('inst-admin-name').value,
+            email: document.getElementById('inst-admin-email').value,
+            password: document.getElementById('inst-admin-password').value,
+        }
+    };
+    
+    try {
+        // This endpoint is hypothetical based on SRS, assuming userflow orchestrator handles it
+        const data = await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/institutions`, {
+            method: 'POST',
+            body: JSON.stringify(registrationData),
+        });
+        showToast('Institution registered successfully! Please log in.');
+        showView('login-view');
+        registerInstitutionForm.reset();
+    } catch (error) {
+        console.error('Institution registration failed.');
+    }
+};
+
+const handleLogout = () => {
+    appState.user = null;
+    appState.token = null;
+    sessionStorage.removeItem('clearSkyUser');
+    sessionStorage.removeItem('clearSkyToken');
+    updateUIForUser();
+};
+
+const checkSession = () => {
+    const user = sessionStorage.getItem('clearSkyUser');
+    const token = sessionStorage.getItem('clearSkyToken');
+    if (user && token) {
+        appState.user = JSON.parse(user);
+        appState.token = token;
+        updateUIForUser();
+    } else {
+        showView('login-view');
+    }
+};
+
+// --- UI UPDATES ---
+const updateUIForUser = () => {
+    navLinks.innerHTML = '';
+    mobileMenu.innerHTML = '';
+    userInfo.innerHTML = '';
+
+    if (!appState.user) {
+        showView('login-view');
+        document.getElementById('nav-links').classList.add('hidden');
+        return;
+    }
+
+    document.getElementById('nav-links').classList.remove('hidden');
+
+    userInfo.innerHTML = `
+        <span class="text-sm font-medium">Welcome, ${appState.user.fullName} (${appState.user.role})</span>
+        <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-2 px-3 rounded-md transition">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    `;
+    document.getElementById('logout-btn').addEventListener('click', handleLogout);
+
+    switch (appState.user.role) {
+        case 'student':
+            showView('student-dashboard-view');
+            loadStudentCourses();
+            break;
+        case 'instructor':
+            showView('instructor-dashboard-view');
+            loadInstructorReviews();
+            break;
+        case 'institution':
+            // If user is institution role but doesn't have an assigned institutionId, prompt to register.
+            if (!appState.user.institutionId) {
+                showView('register-institution-view');
+            } else {
+                showView('institution-dashboard-view');
+                loadInstitutionStats();
+            }
+            break;
+        default:
+            showView('login-view');
+            handleLogout();
+    }
+};
+
+// --- ROLE-SPECIFIC LOGIC ---
+
+// Student Logic
+const loadStudentCourses = async () => {
+    studentCoursesList.innerHTML = ''; // Clear previous content
+    try {
+        const response = await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/users/${appState.user.id}/courses`);
+        const courses = response.data; 
+
+        if (!courses || courses.length === 0) {
+             studentCoursesList.innerHTML = `
+                <div class="text-gray-500 text-center p-4 border-2 border-dashed rounded-lg">
+                    <p>No courses with grades have been posted for you yet.</p>
+                </div>
+            `;
+        } else {
+             studentCoursesList.innerHTML = courses.map(course => `
+                <div class="border p-4 rounded-lg bg-gray-50 flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-lg">${course.name || 'Unnamed Course'}</p>
+                        <p class="text-sm text-gray-600">Period: ${course.period || 'N/A'} | Status: <span class="font-semibold">${course.status || 'N/A'}</span></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xl font-bold text-blue-600">${course.grade || 'Pending'}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        studentCoursesList.innerHTML = `<p class="text-red-500 text-center">Could not load your course data.</p>`;
+    } finally {
+        studentCoursesList.innerHTML += `
+            <div class="mt-6 border-t pt-6">
+                ${createReviewRequestForm()}
+            </div>
+        `;
+        document.getElementById('grade-review-form').addEventListener('submit', handleGradeReviewRequest);
+    }
+};
+
+const createReviewRequestForm = () => {
+    return `
+        <h3 class="text-xl font-semibold mb-4">Request a Grade Review</h3>
+        <form id="grade-review-form">
+             <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <input type="text" name="courseId" placeholder="Course ID (e.g., SOFT-101)" class="w-full p-2 border rounded" required>
+                <input type="text" name="gradeId" placeholder="Grade ID (from grades file)" class="w-full p-2 border rounded" required>
+             </div>
+             <textarea name="reason" placeholder="Please provide a detailed reason for your review request..." class="w-full mb-4 p-2 border rounded" rows="4" required></textarea>
+             <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-md transition"><i class="fas fa-paper-plane mr-2"></i>Submit Review Request</button>
+        </form>
+    `;
+};
+
+const handleGradeReviewRequest = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    const requestData = {
+        studentId: appState.user.id,
+        courseId: formData.get('courseId'),
+        gradeId: formData.get('gradeId'),
+        studentRegistrationNumber: appState.user.userCode,
+        reason: formData.get('reason'),
+    };
+
+    try {
+        await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests`, {
+            method: 'POST',
+            body: JSON.stringify(requestData)
+        });
+        showToast('Review request submitted successfully!');
+        form.reset();
+    } catch (error) {
+        console.error('Failed to submit review request');
+    }
+};
+
+// Instructor Logic
+const handlePostGrades = async (event) => {
+    event.preventDefault();
+    const courseId = document.getElementById('course-id').value;
+    const fileInput = document.getElementById('grades-file');
+    const isFinal = document.getElementById('is-final-checkbox').checked;
+
+    if (!fileInput.files.length) {
+        showToast('Please select a file to upload.', true);
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('courseId', courseId);
+    formData.append('final', isFinal);
+    let institutionId = fetch(`${USERFLOW_ORCHESTRATOR_URL}/api/users/${appState.user.id}`)
+        .then(response => response.json())
+        .then(data => data.institutionId)
+        .catch(() => null);
+    formData.append('institutionId', appState.user.institutionId);
+    formData.append('userId', appState.user.id);
+
+    try {
+        await apiFetch(`${GRADE_ORCHESTRATOR_URL}/api/grade-submissions`, {
+            method: 'POST',
+            body: formData,
+        });
+        showToast('Grades uploaded successfully!');
+        postGradesForm.reset();
+    } catch (error) {
+        console.error('Grade upload failed');
+    }
+};
+
+const loadInstructorReviews = async () => {
+    try {
+        const response = await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests?status=PENDING`);
+        const reviews = response.data;
+        if (!reviews || reviews.length === 0) {
+            instructorReviewsList.innerHTML = `<p class="text-gray-500">No pending review requests.</p>`;
+            return;
+        }
+
+        instructorReviewsList.innerHTML = reviews.map(review => `
+            <div class="border p-4 rounded-lg bg-gray-50">
+                <p class="font-semibold">Course: <span class="font-normal">${review.courseId}</span></p>
+                <p class="font-semibold">Student: <span class="font-normal">${review.studentRegistrationNumber || 'N/A'}</span></p>
+                <p class="font-semibold mt-2">Reason:</p>
+                <p class="text-sm bg-white p-2 border rounded-md mt-1">${review.reason}</p>
+                <button data-review-id="${review.id}" class="reply-review-btn mt-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-md transition">Reply</button>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll('.reply-review-btn').forEach(button => {
+            button.addEventListener('click', (e) => showReplyModal(e.target.dataset.reviewId));
+        });
+
+    } catch (error) {
+        instructorReviewsList.innerHTML = `<p class="text-red-500">Could not load review requests.</p>`;
+    }
+};
+
+const showReplyModal = (reviewId) => {
+    const modalHTML = `
+        <h3 class="text-xl font-bold mb-4">Reply to Review Request</h3>
+        <form id="reply-form" data-review-id="${reviewId}">
+            <textarea name="instructorResponse" class="w-full p-2 border rounded mb-4" rows="4" placeholder="Your response..." required></textarea>
+            <input type="text" name="reviewedGrade" class="w-full p-2 border rounded mb-4" placeholder="New Grade (optional)">
+            <div class="flex justify-end space-x-3">
+                 <button type="button" id="cancel-reply" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition">Cancel</button>
+                 <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">Submit Reply</button>
+            </div>
+        </form>
+    `;
+    showModal(modalHTML);
+    document.getElementById('cancel-reply').addEventListener('click', closeModal);
+    document.getElementById('reply-form').addEventListener('submit', handleReviewReply);
+};
+
+const handleReviewReply = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const reviewId = form.dataset.reviewId;
+    const formData = new FormData(form);
+    
+    const replyData = {
+        instructorResponse: formData.get('instructorResponse'),
+        reviewedGrade: formData.get('reviewedGrade') || undefined,
+    };
+    
+    if (!replyData.reviewedGrade) {
+        delete replyData.reviewedGrade;
+    }
+
+    try {
+        await apiFetch(`${REVIEW_ORCHESTRATOR_URL}/api/review-requests/${reviewId}/reply`, {
+            method: 'POST',
+            body: JSON.stringify(replyData)
+        });
+        showToast('Reply sent successfully!');
+        closeModal();
+        loadInstructorReviews(); // Refresh the list
+    } catch (error) {
+        console.error('Failed to send reply');
+    }
+};
+
+
+// Institution Logic
+const handleAddUser = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const userData = {
+        fullName: document.getElementById('add-user-fullname').value,
+        email: document.getElementById('add-user-email').value,
+        password: document.getElementById('add-user-password').value,
+        userCode: document.getElementById('add-user-code').value,
+        role: document.getElementById('add-user-role').value,
+        institutionId: appState.user.institutionId,
+    };
+
+    try {
+        await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/signup`, {
+            method: 'POST',
+            body: JSON.stringify(userData),
+        });
+        showToast(`User ${userData.fullName} created successfully!`);
+        form.reset();
+    } catch (error) {
+        console.error('Failed to add user');
+    }
+};
+
+const handlePurchaseCredits = async (event) => {
+    event.preventDefault();
+    const credits = document.getElementById('credits-amount').value;
+    if (credits <= 0) {
+        showToast('Please enter a positive number of credits.', true);
+        return;
+    }
+
+    try {
+        await apiFetch(`${USERFLOW_ORCHESTRATOR_URL}/api/credits/institution/${appState.user.institutionId}/add`, {
+            method: 'POST',
+            body: JSON.stringify({ credits: parseInt(credits) }),
+        });
+        showToast(`${credits} credits purchased successfully!`);
+        event.target.reset();
+    } catch (error) {
+        console.error('Failed to purchase credits');
+    }
+};
+
+const loadInstitutionStats = async () => {
+    institutionStatsContent.innerHTML = `<p class="text-gray-500">Loading statistics...</p>`;
+    try {
+        // This endpoint is hypothetical based on SRS, assuming grade orchestrator provides it
+        const response = await apiFetch(`${GRADE_ORCHESTRATOR_URL}/api/statistics/institution/${appState.user.institutionId}`);
+        const stats = response.data;
+
+        if (!stats || stats.length === 0) {
+            institutionStatsContent.innerHTML = `<p class="text-gray-500 text-center p-4 border-2 border-dashed rounded-lg">No grading data available for the institution yet.</p>`;
+            return;
+        }
+        
+        // A placeholder to render stats. A real implementation would use a charting library.
+        institutionStatsContent.innerHTML = `
+            <div class="grid md:grid-cols-3 gap-4 text-center">
+                <div class="bg-blue-100 p-4 rounded-lg">
+                    <p class="text-3xl font-bold">${stats.totalCourses || 0}</p>
+                    <p class="text-sm text-blue-800">Total Courses</p>
+                </div>
+                <div class="bg-green-100 p-4 rounded-lg">
+                     <p class="text-3xl font-bold">${stats.totalStudents || 0}</p>
+                    <p class="text-sm text-green-800">Total Students Graded</p>
+                </div>
+                <div class="bg-yellow-100 p-4 rounded-lg">
+                    <p class="text-3xl font-bold">${stats.averageGrade || 'N/A'}</p>
+                    <p class="text-sm text-yellow-800">Average Grade</p>
+                </div>
+            </div>
+        `;
+
+    } catch (error) {
+        institutionStatsContent.innerHTML = `<p class="text-red-500 text-center">Could not load institution statistics.</p>`;
+    }
+};
+
+
+// --- EVENT LISTENERS ---
+document.addEventListener('DOMContentLoaded', checkSession);
+loginForm.addEventListener('submit', handleLogin);
+registerInstitutionForm.addEventListener('submit', handleRegisterInstitution);
+
+showRegisterInstLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('register-institution-view');
+});
+showLoginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('login-view');
+});
+
+modal.addEventListener('click', (e) => {
+    if (e.target.id === 'modal') closeModal();
+});
+mobileMenuButton.addEventListener('click', () => {
+    mobileMenu.classList.toggle('hidden');
+});
+
+// Role-specific form listeners
+postGradesForm.addEventListener('submit', handlePostGrades);
+addUserForm.addEventListener('submit', handleAddUser);
+purchaseCreditsForm.addEventListener('submit', handlePurchaseCredits);
+
+</script>
+</body>
+</html>
