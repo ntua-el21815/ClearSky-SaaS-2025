@@ -74,12 +74,34 @@ app.post('/api/auth', async (req, res) => {
 });
 
 app.post('/api/signup', async (req, res) => {
-  const { email, password, fullName, role, userCode, institutionId } = req.body;
+  const { email, password, fullName, role, userCode, repId } = req.body;
 
-  if (!email || !password || !fullName || !role || !userCode || !institutionId) {
+  if (!email || !password || !fullName || !role || !userCode || !repId) {
     return res.status(400).json({
       success: false,
-      error: 'Missing required fields: email, password, fullName, role, userCode'
+      error: 'Missing required fields: email, password, fullName, role, userCode, repId'
+    });
+  }
+
+  let institutionId;   // we will get this from the user-management via rep_id
+
+    try {
+    // Fetch the creator's institutionId using userId
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${repId}`, { timeout: 5000 });
+    institutionId = userResp.data?.institutionId;
+
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Creator user does not have an institutionId'
+      });
+    }
+  } catch (err) {
+    console.error('Failed to fetch creator user:', err.message);
+    return res.status(502).json({
+      success: false,
+      error: 'Failed to fetch creator user',
+      details: err.response?.data || err.message
     });
   }
 
