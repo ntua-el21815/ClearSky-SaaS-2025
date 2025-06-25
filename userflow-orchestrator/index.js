@@ -16,6 +16,7 @@ app.use(express.json());
 const USER_AUTH_SERVICE_URL = process.env.USER_AUTH_SERVICE_URL || 'http://localhost:5000';
 const USER_MANAGEMENT_SERVICE_URL = process.env.USER_MANAGEMENT_SERVICE_URL || 'http://localhost:6000';
 const CREDIT_SERVICE_URL = process.env.CREDIT_SERVICE_URL || 'http://localhost:3000';
+const INSTITUTION_SERVICE_URL = process.env.INSTITUTION_SERVICE_URL || 'http://localhost:7000';
 
 // Auth orchestration endpoint
 app.post('/api/auth', async (req, res) => {
@@ -277,6 +278,45 @@ app.get('/api/credits/by-user/:userCode/available', async (req, res) => {
     });
   }
 });
+
+// GET /api/institution/courses/by-user/:userCode
+app.get('/api/institution/courses/by-user/:userCode', async (req, res) => {
+  const { userCode } = req.params;
+
+  try {
+    // Step 1: Get institutionId from user-management service
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${userCode}`, {
+      timeout: 5000
+    });
+
+    const institutionId = userResp.data?.institutionId;
+
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User does not have an institutionId'
+      });
+    }
+
+    // Step 2: Call institution service to get courses by institutionId
+    const coursesResp = await axios.get(`${INSTITUTION_SERVICE_URL}/institutions/${institutionId}/courses`);
+
+    return res.status(200).json({
+      success: true,
+      institutionId,
+      courses: coursesResp.data
+    });
+
+  } catch (err) {
+    console.error('❌ Failed to fetch courses by userCode:', err.message);
+    return res.status(err.response?.status || 500).json({
+      success: false,
+      message: 'Failed to get courses for user\'s institution',
+      error: err.response?.data || err.message
+    });
+  }
+});
+
 
 
 app.get('/health', (req, res) => {
