@@ -1,117 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>ClearSky - Rep Dashboard</title>
+  <meta charset="UTF-8" />
+  <title>ClearSky - Institution Dashboard</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
       background-color: #f9fafb;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      padding: 2rem;
     }
 
-    .dashboard-card {
+    .dashboard-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .dashboard-header h1 {
+      font-size: 28px;
+      margin-bottom: 0.2rem;
+    }
+
+    .dashboard-header p {
+      color: #6b7280;
+      font-size: 16px;
+    }
+
+    .stats-container {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .stat-box {
       background: white;
-      padding: 2.5rem 2rem;
       border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-      width: 400px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 0.2rem;
+    }
+
+    .sections {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .section-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      flex: 1;
+      min-width: 220px;
       text-align: center;
     }
 
-    .logo-title-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .logo {
-      width: 44px;
-      height: 44px;
-      background-color: #0a2a66;
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .section-title {
+      font-size: 16px;
       font-weight: bold;
-      font-size: 22px;
+      margin-bottom: 0.3rem;
     }
 
-    .title {
-      font-size: 20px;
-      font-weight: bold;
-      margin: 0;
-    }
-
-    .subtitle {
+    .section-desc {
       font-size: 14px;
       color: #6b7280;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
 
-    .button-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 1rem;
-    }
-
-    .btn {
-      padding: 10px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-
-    .primary-btn {
+    .section-card button {
       background-color: #0a2a66;
       color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
     }
 
-    .primary-btn:hover {
+    .section-card button:hover {
       background-color: #083075;
     }
 
-    .danger-btn {
+    .logout-container {
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    .logout-btn {
       background-color: #e74c3c;
       color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 15px;
+      border-radius: 8px;
+      cursor: pointer;
     }
 
-    .danger-btn:hover {
+    .logout-btn:hover {
       background-color: #c0392b;
-    }
-
-    .info {
-      margin-top: 1rem;
-      font-size: 14px;
-      color: #4b5563;
     }
   </style>
 </head>
 <body>
-  <div class="dashboard-card">
-    <div class="logo-title-row">
-      <div class="logo">C</div>
-      <p class="title">ClearSky</p>
-    </div>
-    <p class="subtitle">Institution Representative Dashboard</p>
+  <div class="dashboard-header">
+    <h1>Institution Dashboard</h1>
+    <p>Manage your institution's grading platform</p>
+  </div>
 
-    <div class="button-container">
-      <button class="btn primary-btn" onclick="location.href='rep_grade_statistics.html'">📊 Grade Statistics</button>
-      <button class="btn primary-btn" onclick="location.href='rep_purchase_credits.html'">💳 Purchase Credits</button>
-      <button class="btn primary-btn" onclick="location.href='rep_user_management.html'">👥 User Management</button>
-      <button class="btn danger-btn" onclick="logout()">🚪 Logout</button>
+  <div class="stats-container">
+    <div class="stat-box">
+      <div class="stat-label">Available Credits</div>
+      <div class="stat-value" id="available-credits">Loading...</div>
+    </div>
+  </div>
+
+  <div class="sections">
+    <div class="section-card">
+      <div class="section-title">Grade Statistics</div>
+      <div class="section-desc">Analyze grading outcomes</div>
+      <button onclick="location.href='rep_grade_statistics.html'">Grade Statistics</button>
     </div>
 
-    <div class="info" id="user-info"></div>
+    <div class="section-card">
+      <div class="section-title">Credits Management</div>
+      <div class="section-desc">Purchase additional credits</div>
+      <button onclick="location.href='rep_purchase_credits.html'">Purchase Credits</button>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">User Administration</div>
+      <div class="section-desc">Manage users and permissions</div>
+      <button onclick="location.href='rep_user_management.html'">User Management</button>
+    </div>
+  </div>
+
+  <div class="logout-container">
+    <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 
   <script>
@@ -126,7 +163,7 @@
     }
 
     function deleteCookie(name) {
-      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
     }
 
     function logout() {
@@ -141,10 +178,25 @@
 
     if (!userId || role !== 'institution_rep') {
       window.location.href = 'login.html';
-    } else {
-      document.getElementById('user-info').textContent =
-        `Logged in as ${role} (User ID: ${userId})`;
     }
+
+    async function fetchCredits() {
+  try {
+    const response = await fetch(`http://localhost:8100/api/credits/by-user/${userId}/available`);
+    const result = await response.json();
+
+    if (response.ok && result.availableCredits !== undefined) {
+      document.getElementById('available-credits').textContent = result.availableCredits;
+    } else {
+      document.getElementById('available-credits').textContent = 'Error';
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById('available-credits').textContent = 'Error';
+  }
+}
+
+    fetchCredits();
   </script>
 </body>
 </html>
