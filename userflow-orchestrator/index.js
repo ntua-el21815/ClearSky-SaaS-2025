@@ -147,13 +147,13 @@ app.post('/api/signup', async (req, res) => {
 });
 
 
-app.post('/api/credits/user/:userId/add', async (req, res) => {
-  const { userId } = req.params;
+app.post('/api/credits/user-code/:userCode/add', async (req, res) => {
+  const { userCode } = req.params;
   const { credits } = req.body;
 
   try {
-    // Step 1: Get institutionId from user-management service
-    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${userId}`, {
+    // Step 1: Get institutionId from user-management service using userCode
+    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${userCode}`, {
       timeout: 5000
     });
 
@@ -182,6 +182,7 @@ app.post('/api/credits/user/:userId/add', async (req, res) => {
     });
   }
 });
+
 
 
 // Forward GET /users/:id/courses to user management service
