@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Auth Orchestrator API
-  version: 1.0.0
+  version: 1.1.0
   description: Orchestration layer for authentication, signup, and cross-service user/credit handling.
 
 servers:
@@ -104,8 +104,8 @@ paths:
 
   /credits/institution/{institutionId}/add:
     post:
-      summary: Forward credit top-up request to credit service
-      operationId: forwardCreditTopUp
+      summary: Add credits to institution (direct)
+      operationId: addCreditsToInstitution
       parameters:
         - in: path
           name: institutionId
@@ -128,6 +128,62 @@ paths:
           description: Credit update successful
         '500':
           description: Failed to forward request
+
+  /credits/user/{userId}/add:
+    post:
+      summary: Add credits to institution by user
+      operationId: addCreditsByUser
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credits
+              properties:
+                credits:
+                  type: number
+      responses:
+        '200':
+          description: Credit addition successful
+        '400':
+          description: User has no institutionId
+        '500':
+          description: Failed to process credit addition
+
+  /credits/by-user/{userId}/available:
+    get:
+      summary: Get available credits by userId
+      operationId: getAvailableCreditsByUser
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Credit balance returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  institutionId:
+                    type: string
+                  availableCredits:
+                    type: number
+        '400':
+          description: User has no institutionId
+        '500':
+          description: Failed to retrieve credit balance
 
   /users/{id}/courses:
     get:
@@ -163,7 +219,7 @@ paths:
 
   /users/count/by-institution/{institutionId}:
     get:
-      summary: Get user count for an institution (proxy)
+      summary: Get user count by institution ID
       operationId: getUserCountByInstitution
       parameters:
         - in: path
@@ -173,7 +229,25 @@ paths:
             type: string
       responses:
         '200':
-          description: Number of users in institution
+          description: User count returned
+        '500':
+          description: Failed to retrieve count
+
+  /users/count/by-user/{userId}:
+    get:
+      summary: Get user count by userId's institution
+      operationId: getUserCountByUser
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User count returned
+        '400':
+          description: User has no institutionId
         '500':
           description: Failed to retrieve count
 

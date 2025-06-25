@@ -1,12 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Purchase Credits</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background-color: #f9fafb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 2rem 2.5rem;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+      max-width: 400px;
+      width: 100%;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+    }
+
+    .sub {
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+    }
+
+    .credits {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #1e3a8a;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      font-weight: 500;
+    }
+
+    input {
+      margin-top: 5px;
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    button {
+      flex: 1;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .primary {
+      background-color: #1e3a8a;
+      color: white;
+    }
+
+    .secondary {
+      background-color: #f3f4f6;
+      color: #111827;
+      border: 1px solid #d1d5db;
+    }
+
+    .message {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <h2>Purchase Credits Page</h2>
-  <p id="user-info"></p>
-  <button onclick="logout()">Logout</button>
+  <div class="container">
+    <h2>Purchase Credits</h2>
+    <p class="sub">Add more credits to your institution's account.</p>
+    <p>Current Balance</p>
+    <div class="credits" id="credit-balance">Loading...</div>
+
+    <label for="credits">Credits to purchase:</label>
+    <input type="number" id="credits" min="1" placeholder="Enter number of credits" />
+
+    <div class="buttons">
+      <button class="primary" onclick="purchaseCredits()">Purchase Credits</button>
+      <button class="secondary" onclick="goBack()">Back to Dashboard</button>
+    </div>
+
+    <div class="message" id="message"></div>
+  </div>
 
   <script>
     function getCookie(name) {
@@ -18,15 +112,56 @@
       return null;
     }
 
-    function deleteCookie(name) {
-      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    function goBack() {
+      window.location.href = 'rep_dashboard.html';
     }
 
-    function logout() {
-      deleteCookie('user_id');
-      deleteCookie('role');
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
+    async function fetchCredits(userId) {
+      try {
+        const res = await fetch(`http://localhost:8100/api/credits/by-user/${userId}/available`);
+        const data = await res.json();
+        if (res.ok && data.availableCredits != null) {
+          document.getElementById('credit-balance').textContent = `${data.availableCredits} credits`;
+        } else {
+          document.getElementById('credit-balance').textContent = 'Unavailable';
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('credit-balance').textContent = 'Error';
+      }
+    }
+
+    async function purchaseCredits() {
+      const credits = parseInt(document.getElementById('credits').value);
+      const message = document.getElementById('message');
+      message.textContent = '';
+      if (!credits || credits < 1) {
+        message.style.color = 'red';
+        message.textContent = 'Please enter a valid number of credits.';
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:8100/api/credits/user/${userId}/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credits })
+        });
+
+        if (res.ok) {
+          message.style.color = 'green';
+          message.textContent = `✅ Successfully added ${credits} credits.`;
+          fetchCredits(userId); // refresh balance
+        } else {
+          const errData = await res.json();
+          message.style.color = 'red';
+          message.textContent = errData.message || '❌ Error while purchasing credits.';
+        }
+      } catch (err) {
+        console.error(err);
+        message.style.color = 'red';
+        message.textContent = 'Server error.';
+      }
     }
 
     const userId = getCookie('user_id');
@@ -35,8 +170,7 @@
     if (!userId || role !== 'institution_rep') {
       window.location.href = 'login.html';
     } else {
-      document.getElementById('user-info').textContent =
-        `Logged in as ${role} (User ID: ${userId})`;
+      fetchCredits(userId);
     }
   </script>
 </body>
