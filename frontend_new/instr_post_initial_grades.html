@@ -190,7 +190,7 @@
       formData.append('final', 'false'); // Because this is initial grade upload
 
       try {
-        const response = await fetch('http://localhost:8080/api/grade-submissions', {
+        const response = await fetch('http://localhost:8081/api/grade-submissions', {
           method: 'POST',
           body: formData
         });
@@ -202,7 +202,8 @@
           messageDiv.textContent = '✅ Upload successful!';
         } else {
           messageDiv.style.color = 'red';
-          messageDiv.textContent = '❌ Upload failed: ' + (result.error || 'Unknown error');
+          console.log('📦 Server responded with:', result);
+          messageDiv.textContent = '❌ Upload failed: ' + (result?.error || result?.message || 'Unknown error');
         }
       } catch (err) {
         console.error('❌ Error uploading:', err);
