@@ -256,7 +256,7 @@ services:
       - NODE_ENV=development
       - PORT=8081
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
-      - CREDIT_SERVICE_URL=http://credit-service:8102
+      - CREDIT_SERVICE_URL=http://instittution-credit-service:8102
       - GRADE_SERVICE_URL=http://grade-service:8200
       - STATISTICS_SERVICE_URL=http://statistics-service:8300
       - USER_MANAGEMENT_SERVICE_URL=http://user-management-service:5001
