@@ -11,7 +11,8 @@ const mockUsers = [
     email: "student1@test.com",
     password: "123456",
     role: "student",
-    institutionId: "NTUA"
+    institutionId: "NTUA",
+    userCode: '03185001'
   },
   {
     _id: "685bda768a59ccd6ddcffefe",
@@ -19,7 +20,8 @@ const mockUsers = [
     email: "instructor1@test.com",
     password: "123456",
     role: "instructor",
-    institutionId: "NTUA"
+    institutionId: "NTUA",
+    userCode: '03185002'
   },
   {
     _id: "685bda768a59ccd6ddcffeff",
@@ -27,7 +29,8 @@ const mockUsers = [
     email: "institution@test.com",
     password: "123456",
     role: "institution_rep",
-    institutionId: "NTUA"
+    institutionId: "NTUA",
+    userCode: '03185003'
   },
   {
     _id: "685bda768a59ccd6ddcfff00",
@@ -35,7 +38,8 @@ const mockUsers = [
     email: "student2@test.com",
     password: "123456",
     role: "student",
-    institutionId: "NTUA"
+    institutionId: "NTUA",
+    userCode: '03185004'
   },
   {
     _id: "685bda768a59ccd6ddcfff01",
@@ -43,7 +47,8 @@ const mockUsers = [
     email: "instructor2@test.com",
     password: "123456",
     role: "instructor",
-    institutionId: "NTUA"
+    institutionId: "NTUA",
+    userCode: '03185005'
   }
 ];
 

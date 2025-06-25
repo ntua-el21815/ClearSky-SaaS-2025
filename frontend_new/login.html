@@ -125,56 +125,59 @@
     }
 
     async function login() {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
-      const messageDiv = document.getElementById('message');
-      messageDiv.textContent = "";
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const messageDiv = document.getElementById('message');
+  messageDiv.textContent = "";
 
-      if (!email || !password) {
-        messageDiv.textContent = "Please enter email and password.";
-        return;
-      }
+  if (!email || !password) {
+    messageDiv.textContent = "Please enter email and password.";
+    return;
+  }
 
-      try {
-        const response = await fetch('http://localhost:8100/api/auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
+  try {
+    const response = await fetch('http://localhost:8100/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
 
-        const result = await response.json();
+    const result = await response.json();
 
-        if (result.success) {
-          const { token, user } = result;
-          localStorage.setItem('token', token);
-          setCookie('user_id', user.id, 7);
-          setCookie('role', user.role, 7);
+    if (result.success) {
+      const { token, user } = result;
+      localStorage.setItem('token', token);
 
-          if (user.role === 'student') {
-            window.location.href = 'student_grade_statistics.html';
-          } else if (user.role === 'instructor') {
-            window.location.href = 'instr_dashboard.html';
-          } else if (user.role === 'institution_rep') {
-            if (user.institutionId) {
-              window.location.href = 'rep_dashboard.html';
-            } else {
-              window.location.href = 'rep_register_institution.html';
-            }
-          } else {
-            messageDiv.style.color = "orange";
-            messageDiv.textContent = "Unknown role!";
-          }
+      // ✅ Αποθήκευση νέου πεδίου userCode
+      setCookie('userCode', user.userCode, 7);
+      setCookie('role', user.role, 7);
 
+      // ➤ Ανακατεύθυνση με βάση το ρόλο
+      if (user.role === 'student') {
+        window.location.href = 'student_grade_statistics.html';
+      } else if (user.role === 'instructor') {
+        window.location.href = 'instr_dashboard.html';
+      } else if (user.role === 'institution_rep') {
+        if (user.institutionId) {
+          window.location.href = 'rep_dashboard.html';
         } else {
-          messageDiv.style.color = "red";
-          messageDiv.textContent = result.error || "Login failed.";
+          window.location.href = 'rep_register_institution.html';
         }
-
-      } catch (err) {
-        console.error(err);
-        messageDiv.textContent = "Server error.";
+      } else {
+        messageDiv.style.color = "orange";
+        messageDiv.textContent = "Unknown role!";
       }
+
+    } else {
+      messageDiv.style.color = "red";
+      messageDiv.textContent = result.error || "Login failed.";
     }
+
+  } catch (err) {
+    console.error(err);
+    messageDiv.textContent = "Server error.";
+  }
+}
   </script>
 </body>
 </html>

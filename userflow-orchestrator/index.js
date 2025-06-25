@@ -74,18 +74,18 @@ app.post('/api/auth', async (req, res) => {
 });
 
 app.post('/api/signup', async (req, res) => {
-  const { email, password, fullName, role, userCode, repId } = req.body;
+  const { email, password, fullName, role, userCode, repCode } = req.body;
 
-  if (!email || !password || !fullName || !role || !userCode || !repId) {
+  if (!email || !password || !fullName || !role || !userCode || !repCode) {
     return res.status(400).json({
       success: false,
-      error: 'Missing required fields: email, password, fullName, role, userCode, repId'
+      error: 'Missing required fields: email, password, fullName, role, userCode, repCode'
     });
   }
 
   let institutionId;
   try {
-    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${repId}`, { timeout: 5000 });
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${repCode}`, { timeout: 5000 });
     institutionId = userResp.data?.institutionId;
 
     if (!institutionId) {
@@ -213,12 +213,12 @@ app.get('/api/users/:id/instructor-courses', async (req, res) => {
 });
 
 // get users for institution
-app.get('/api/users/count/by-user/:userId', async (req, res) => {
-  const { userId } = req.params;
+app.get('/api/users/count/by-user/:userCode', async (req, res) => {
+  const { userCode } = req.params;
 
   try {
     // Step 1: Get institutionId from user-management service
-    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${userId}`, {
+    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${userCode}`, {
       timeout: 5000
     });
 
@@ -244,13 +244,13 @@ app.get('/api/users/count/by-user/:userId', async (req, res) => {
   }
 });
 
-// GET available credits for institution using userId
-app.get('/api/credits/by-user/:userId/available', async (req, res) => {
-  const { userId } = req.params;
+// GET available credits for institution using user
+app.get('/api/credits/by-user/:userCode/available', async (req, res) => {
+  const { userCode } = req.params;
 
   try {
     // Step 1: Get institutionId from user-management
-    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${userId}`, {
+    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${userCode}`, {
       timeout: 5000
     });
 
@@ -276,8 +276,6 @@ app.get('/api/credits/by-user/:userId/available', async (req, res) => {
     });
   }
 });
-
-
 
 
 app.get('/health', (req, res) => {

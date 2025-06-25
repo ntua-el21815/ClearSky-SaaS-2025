@@ -80,9 +80,9 @@ exports.assignUserCode = async (req, res) => {
 
 
 exports.registerUser = async (req, res) => {
-  const { email, password, fullName, role, institutionId } = req.body;
+  const { email, password, fullName, role, institutionId, userCode } = req.body;
 
-  if (!email || !password || !role || !fullName || !institutionId) {
+  if (!email || !password || !role || !fullName || !institutionId || !userCode) {
     return res.status(400).json({ message: "Missing fields" });
   }
 
@@ -92,7 +92,7 @@ exports.registerUser = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const newUser = new User({ email, fullName, role, password: hashed, institutionId });
+    const newUser = new User({ email, fullName, role, password: hashed, institutionId, userCode });
     await newUser.save();
 
     // const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, {
@@ -105,6 +105,8 @@ exports.registerUser = async (req, res) => {
         email: newUser.email,
         fullName: newUser.fullName,
         role: newUser.role,
+        institutionId: institutionId,
+        userCode: userCode
       },
     });
   } catch (err) {

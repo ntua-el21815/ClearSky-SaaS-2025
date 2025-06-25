@@ -167,16 +167,16 @@
     }
 
     function logout() {
-      deleteCookie('user_id');
+      deleteCookie('userCode');
       deleteCookie('role');
       localStorage.removeItem('token');
       window.location.href = 'login.html';
     }
 
-    const userId = getCookie('user_id');
+    const userCode = getCookie('userCode');
     const role = getCookie('role');
 
-    if (!userId || role !== 'institution_rep') {
+    if (!userCode || role !== 'institution_rep') {
       window.location.href = 'login.html';
     }
 

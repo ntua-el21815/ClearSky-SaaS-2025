@@ -54,21 +54,21 @@ async function startConsumer() {
     if (!msg) return;
     try {
       const data = JSON.parse(msg.content.toString());
-      const { userId, email } = data;
+      const { userCode, email } = data;
 
-      if (!userId || !email) {
+      if (!userCode || !email) {
         console.warn('⚠️ Invalid user data received (fanout)');
         channel.ack(msg);
         return;
       }
 
       await UserEmail.updateOne(
-        { studentId: userId },
-        { studentId: userId, email },
+        { studentCode: userCode },
+        { studentCode: userCode, email },
         { upsert: true }
       );
 
-      console.log(`✅ Stored user (via fanout): ${userId} → ${email}`);
+      console.log(`✅ Stored user (via fanout): ${userCode} → ${email}`);
       channel.ack(msg);
     } catch (err) {
       console.error('❌ Fanout handler error:', err);

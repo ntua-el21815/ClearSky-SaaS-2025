@@ -1,4 +1,3 @@
-
 FROM node:22
 
 WORKDIR /app
@@ -10,4 +9,6 @@ COPY . .
 
 EXPOSE 8101
 
-CMD ["node", "server.js"]
+RUN npm install -g concurrently
+
+CMD ["concurrently", "node server.js", "node consumer.js"]
