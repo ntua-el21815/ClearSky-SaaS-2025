@@ -147,25 +147,42 @@ app.post('/api/signup', async (req, res) => {
 });
 
 
-app.post('/api/credits/institution/:institutionId/add', async (req, res) => {
-  const { institutionId } = req.params;
+app.post('/api/credits/user/:userId/add', async (req, res) => {
+  const { userId } = req.params;
   const { credits } = req.body;
 
   try {
+    // Step 1: Get institutionId from user-management service
+    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${userId}`, {
+      timeout: 5000
+    });
+
+    const institutionId = userResponse.data?.institutionId;
+
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User does not have an institutionId'
+      });
+    }
+
+    // Step 2: Forward the credit addition request to the credit service
     const response = await axios.post(
       `${CREDIT_SERVICE_URL}/api/credits/institution/${institutionId}/add`,
       { credits }
     );
 
     res.status(response.status).json(response.data);
+
   } catch (error) {
-    console.error('❌ Error forwarding credit payment:', error.message);
+    console.error('❌ Error processing credit addition:', error.message);
     res.status(error.response?.status || 500).json({
-      message: 'Failed to process credit payment',
+      message: 'Failed to add credits',
       error: error.response?.data || error.message
     });
   }
 });
+
 
 // Forward GET /users/:id/courses to user management service
 app.get('/api/users/:id/courses', async (req, res) => {
