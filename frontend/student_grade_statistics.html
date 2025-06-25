@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Grade Statistics</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2em;
+      background-color: #f9f9f9;
+    }
+    .logout-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .logout-btn:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <h2>Student Grade Statistics Page</h2>
+  <p id="user-info"></p>
+  <button class="logout-btn" onclick="logout()">Logout</button>
+
+  <script>
+    // 🧠 Cookie helpers
+    function getCookie(name) {
+      const cookieStr = document.cookie;
+      const cookies = cookieStr.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    function deleteCookie(name) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+
+    // ✅ Check for authentication
+    const userId = getCookie('user_id');
+    const role = getCookie('role');
+
+    if (!userId || !role) {
+      window.location.href = 'login.html';
+    } else {
+      document.getElementById('user-info').textContent =
+        `Logged in as ${role} (User ID: ${userId})`;
+    }
+
+    // 🔒 Logout function
+    function logout() {
+      deleteCookie('user_id');
+      deleteCookie('role');
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>

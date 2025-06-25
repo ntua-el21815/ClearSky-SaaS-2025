@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>clearSKY Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f1f1f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .login-container {
+      background-color: white;
+      padding: 2em;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    .login-container h2 {
+      text-align: center;
+    }
+    input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4285F4;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #357ae8;
+    }
+    .message {
+      text-align: center;
+      margin-top: 10px;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Password" required />
+    <button onclick="login()">Login</button>
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+  function setCookie(name, value, days) {
+    const expires = new Date(Date.now() + days*864e5).toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+  }
+
+  async function login() {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const messageDiv = document.getElementById('message');
+    messageDiv.textContent = "";
+
+    if (!email || !password) {
+      messageDiv.textContent = "Please enter email and password.";
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8100/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const { token, user } = result;
+
+        // Store token in localStorage (for API use)
+        localStorage.setItem('token', token);
+
+        // Store user id and role in cookies
+        setCookie('user_id', user.id, 7);
+        setCookie('role', user.role, 7);
+
+        messageDiv.style.color = "green";
+        messageDiv.textContent = "Login successful! Redirecting...";
+
+        // Redirect based on role
+        if (user.role === 'student') {
+          window.location.href = 'student_grade_statistics.html';
+        } else if (user.role === 'instructor') {
+          window.location.href = 'instructor_dashboard.html';
+        } else if (user.role === 'institution_rep') {
+          // Αν έχει institutionId => rep_grade_statistics, αλλιώς => register_institution
+          if (user.institutionId) {
+            window.location.href = 'rep_grade_statistics.html';
+          } else {
+            window.location.href = 'register_institution.html';
+          }
+        } else {
+          messageDiv.style.color = "orange";
+          messageDiv.textContent = "Unknown role!";
+        }
+
+      } else {
+        messageDiv.style.color = "red";
+        messageDiv.textContent = result.error || "Login failed.";
+      }
+
+    } catch (err) {
+      console.error(err);
+      messageDiv.textContent = "Server error.";
+    }
+  }
+</script>
+</body>
+</html>

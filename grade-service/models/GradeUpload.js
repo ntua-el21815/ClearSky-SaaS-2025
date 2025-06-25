@@ -1,0 +1,30 @@
+const mongoose = require('mongoose');
+
+const gradeUploadSchema = new mongoose.Schema({
+  timestamp: { type: Date, default: Date.now },
+  academicPeriod:{ type: String, required: true },
+  courseName:{ type: String, required: true },
+  courseId:  { type: String, required: true },
+  ratingScale:{ String },
+  final: { Boolean },
+  weights: {
+    type: Map,
+    of: Number
+  },
+  grades: [
+    {
+      "studentId": String,
+      "studentName": String,
+      "academicalEmail": String,
+      "grade": Number,
+      responses: {
+        type: Map,
+        of: Number
+      }
+    }
+  ]
+});
+
+module.exports = mongoose.model('GradeUpload', gradeUploadSchema);
+
+module.exports = mongoose.model('GradeUpload', gradeUploadSchema);

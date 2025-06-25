@@ -1,0 +1,159 @@
+
+{
+  "info": {
+    "_postman_id": "c1e2d3f4-5678-4abc-9def-1234567890ab",
+    "name": "ClearSky - Credit Service API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "A Postman collection to demonstrate and test all endpoints of the Credit Service API."
+  },
+  "item": [
+    {
+      "name": "Get Credit Balance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/institution/inst123/balance",
+          "host": ["{{baseUrl}}"],
+          "path": ["institution", "inst123", "balance"]
+        },
+        "description": "Get the current credit balance for institution inst123."
+      }
+    },
+    {
+      "name": "Add Credits (Success)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if(jsonData && jsonData.transactionId){",
+              "  pm.collectionVariables.set(\"transactionId\", jsonData.transactionId);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"credits\": 100\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/institution/inst123/add",
+          "host": ["{{baseUrl}}"],
+          "path": ["institution", "inst123", "add"]
+        },
+        "description": "Add 100 credits to institution inst123 (simulates payment, may randomly fail for demo)."
+      }
+    },
+    {
+      "name": "Add Credits (Failure Example)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"credits\": 0\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/institution/inst123/add",
+          "host": ["{{baseUrl}}"],
+          "path": ["institution", "inst123", "add"]
+        },
+        "description": "Try to add 0 credits (should fail with 400)."
+      }
+    },
+    {
+      "name": "Use Credits (Success)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"credits\": 5,\n  \"operation\": \"GENERATE_QUIZ\",\n  \"courseId\": \"course123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/institution/inst123/use",
+          "host": ["{{baseUrl}}"],
+          "path": ["institution", "inst123", "use"]
+        },
+        "description": "Use 5 credits for GENERATE_QUIZ operation."
+      }
+    },
+    {
+      "name": "Use Credits (Insufficient Funds)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"credits\": 99999,\n  \"operation\": \"GENERATE_REPORT\",\n  \"courseId\": \"course456\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/institution/inst123/use",
+          "host": ["{{baseUrl}}"],
+          "path": ["institution", "inst123", "use"]
+        },
+        "description": "Try to use more credits than available (should fail with 400)."
+      }
+    },
+    {
+      "name": "Use Credits (Invalid Operation)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"credits\": 5\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/institution/inst123/use",
+          "host": ["{{baseUrl}}"],
+          "path": ["institution", "inst123", "use"]
+        },
+        "description": "Try to use credits without specifying operation (should fail with 400)."
+      }
+    },
+    {
+      "name": "Get Credit Usage History",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/institution/inst123/usage",
+          "host": ["{{baseUrl}}"],
+          "path": ["institution", "inst123", "usage"]
+        },
+        "description": "Get the credit usage history for institution inst123."
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/credits",
+      "type": "string",
+      "description": "Base URL for the Credit Service API (use Krakend gateway or direct service URL)."
+    },
+    {
+      "key": "transactionId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

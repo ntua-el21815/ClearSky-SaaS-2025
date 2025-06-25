@@ -1,0 +1,190 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+		"name": "ClearSky - Review Orchestrator",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "UC03: Create Grade Review Request",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Capture the reviewId from the response to use in other requests",
+							"var jsonData = pm.response.json();",
+							"if (jsonData && jsonData.reviewId) {",
+							"    pm.collectionVariables.set(\"reviewId\", jsonData.reviewId);",
+							"    console.log('Set reviewId to: ' + jsonData.reviewId);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"studentId\": \"student-12345\",\n  \"courseId\": \"CSE101\",\n  \"gradeId\": \"grade-abcde\",\n  \"studentRegistrationNumber\": \"REG2024001\",\n  \"reason\": \"I believe my final exam score was calculated incorrectly.\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/review-requests",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"review-requests"
+					]
+				},
+				"description": "Submits a new grade review request. The orchestrator creates the request in the review service and sends a notification."
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Review Requests (Filter by PENDING)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/review-requests?status=PENDING",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"review-requests"
+					],
+					"query": [
+						{
+							"key": "status",
+							"value": "PENDING"
+						}
+					]
+				},
+				"description": "Fetches all review requests that are currently in the PENDING state."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Single Review Request by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/review-requests/{{reviewId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"review-requests",
+						"{{reviewId}}"
+					]
+				},
+				"description": "Retrieves the details of a specific review request using the ID captured from the creation step."
+			},
+			"response": []
+		},
+		{
+			"name": "UC04: Reply to Review Request (Approve)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"instructorResponse\": \"You are correct, there was an error. Your grade has been updated.\",\n  \"reviewedGrade\": \"A+\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/review-requests/{{reviewId}}/reply",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"review-requests",
+						"{{reviewId}}",
+						"reply"
+					]
+				},
+				"description": "An instructor replies to a review, approving the change and providing a new grade. This updates the review and sends notifications."
+			},
+			"response": []
+		},
+		{
+			"name": "UC04: Reply to Review Request (Reject)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"instructorResponse\": \"I have double-checked the grading, and the original grade is correct.\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/review-requests/{{reviewId}}/reply",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"review-requests",
+						"{{reviewId}}",
+						"reply"
+					]
+				},
+				"description": "An instructor replies to a review, rejecting the change. This updates the review and sends notifications."
+			},
+			"response": []
+		},
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/health",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Checks if the orchestrator service is running and healthy."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string",
+			"description": "The base URL of the API gateway. Change to http://localhost:3000 to target the service directly."
+		},
+		{
+			"key": "reviewId",
+			"value": "",
+			"type": "string",
+			"description": "This variable is automatically set by the 'Create Grade Review Request' test script."
+		}
+	]
+}
