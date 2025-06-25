@@ -16,6 +16,7 @@ app.use(express.json());
 const USER_AUTH_SERVICE_URL = process.env.USER_AUTH_SERVICE_URL || 'http://localhost:5000';
 const USER_MANAGEMENT_SERVICE_URL = process.env.USER_MANAGEMENT_SERVICE_URL || 'http://localhost:6000';
 const CREDIT_SERVICE_URL = process.env.CREDIT_SERVICE_URL || 'http://localhost:3000';
+const INSTITUTION_SERVICE_URL = process.env.INSTITUTION_SERVICE_URL || 'http://localhost:7000';
 
 // Auth orchestration endpoint
 app.post('/api/auth', async (req, res) => {
@@ -186,9 +187,17 @@ app.post('/api/credits/user-code/:userCode/add', async (req, res) => {
 
 
 // Forward GET /users/:id/courses to user management service
-app.get('/api/users/:id/courses', async (req, res) => {
+app.get('/api/users/by-code/:userCode/courses', async (req, res) => {
   try {
-    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${req.params.id}/courses`);
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${req.params.userCode}`);
+    const userId = userResp.data._id;
+    const role = userResp.data.role;
+
+    if (role !== 'student') {
+      return res.status(400).json({ message: 'Not a student' });
+    }
+
+    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${userId}/courses`);
     res.status(response.status).json(response.data);
   } catch (error) {
     console.error('❌ Error fetching student courses:', error.message);
@@ -199,10 +208,19 @@ app.get('/api/users/:id/courses', async (req, res) => {
   }
 });
 
+
 // Forward GET /users/:id/instructor-courses
-app.get('/api/users/:id/instructor-courses', async (req, res) => {
+app.get('/api/users/by-code/:userCode/instructor-courses', async (req, res) => {
   try {
-    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${req.params.id}/instructor-courses`);
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${req.params.userCode}`);
+    const userId = userResp.data._id;
+    const role = userResp.data.role;
+
+    if (role !== 'instructor') {
+      return res.status(400).json({ message: 'Not an instructor' });
+    }
+
+    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${userId}/instructor-courses`);
     res.status(response.status).json(response.data);
   } catch (error) {
     console.error('❌ Error fetching instructor courses:', error.message);
@@ -212,6 +230,7 @@ app.get('/api/users/:id/instructor-courses', async (req, res) => {
     });
   }
 });
+
 
 // get users for institution
 app.get('/api/users/count/by-user/:userCode', async (req, res) => {
@@ -277,6 +296,45 @@ app.get('/api/credits/by-user/:userCode/available', async (req, res) => {
     });
   }
 });
+
+// GET /api/institution/courses/by-user/:userCode
+app.get('/api/institution/courses/by-user/:userCode', async (req, res) => {
+  const { userCode } = req.params;
+
+  try {
+    // Step 1: Get institutionId from user-management service
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${userCode}`, {
+      timeout: 5000
+    });
+
+    const institutionId = userResp.data?.institutionId;
+
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User does not have an institutionId'
+      });
+    }
+
+    // Step 2: Call institution service to get courses by institutionId
+    const coursesResp = await axios.get(`${INSTITUTION_SERVICE_URL}/institutions/${institutionId}/courses`);
+
+    return res.status(200).json({
+      success: true,
+      institutionId,
+      courses: coursesResp.data
+    });
+
+  } catch (err) {
+    console.error('❌ Failed to fetch courses by userCode:', err.message);
+    return res.status(err.response?.status || 500).json({
+      success: false,
+      message: 'Failed to get courses for user\'s institution',
+      error: err.response?.data || err.message
+    });
+  }
+});
+
 
 
 app.get('/health', (req, res) => {

@@ -26,5 +26,3 @@ const gradeUploadSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('GradeUpload', gradeUploadSchema);
-
-module.exports = mongoose.model('GradeUpload', gradeUploadSchema);
