@@ -1,189 +1,107 @@
 openapi: 3.0.3
 info:
-  title: Review Service API
+  title: Grade Orchestrator API
   version: 1.0.0
-  description: API for managing reviews.
+  description: API gateway handling grade submissions, credit deductions, and data orchestration with messaging queues.
 
 servers:
-  - url: http://localhost:8400/api/reviews
-    description: Local development server
+  - url: http://localhost:4000/api
+    description: Local Grade Orchestrator Server
 
 paths:
-  /:
+  /grade-submissions:
     post:
-      summary: Create a new review
-      operationId: createReview
+      summary: Upload a grade file for a course
+      operationId: uploadGrades
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ReviewInput'
+              type: object
+              required:
+                - file
+                - userCode
+              properties:
+                file:
+                  type: string
+                  format: binary
+                courseId:
+                  type: string
+                userCode:
+                  type: string
+                final:
+                  type: boolean
       responses:
-        '201':
-          description: Review created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Review'
+        '200':
+          description: Upload completed successfully
         '400':
-          description: Invalid input data
+          description: Bad request (missing parameters or insufficient credits)
+        '502':
+          description: Error in downstream services
+
+  /grades/by-course:
     get:
-      summary: Get all reviews
-      operationId: getAllReviews
+      summary: Get all grades for a course
+      operationId: getGradesByCourse
       parameters:
         - in: query
-          name: filter
+          name: courseId
+          required: false
           schema:
             type: string
-          description: Filter reviews based on query parameters
+        - in: query
+          name: institutionId
+          required: false
+          schema:
+            type: string
       responses:
         '200':
-          description: List of reviews
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Review'
-        '500':
-          description: Internal server error
+          description: Grades for the course
+        '502':
+          description: Error in downstream services
 
-  /{id}:
+  /grades/student:
     get:
-      summary: Get a review by ID
-      operationId: getReviewById
+      summary: Get all grades for a student
+      operationId: getGradesByStudent
+      parameters:
+        - in: query
+          name: studentId
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Student grades
+        '502':
+          description: Error in downstream services
+
+  /statistics/all:
+    get:
+      summary: Get all statistics
+      operationId: getAllStatistics
+      responses:
+        '200':
+          description: All stored statistics
+        '502':
+          description: Failed to fetch statistics
+
+  /statistics/course/{courseId}:
+    get:
+      summary: Get statistics for a specific course
+      operationId: getStatisticsByCourse
       parameters:
         - in: path
-          name: id
+          name: courseId
           required: true
           schema:
             type: string
-          description: Review ID
       responses:
         '200':
-          description: Review details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Review'
-        '404':
-          description: Review not found
-        '500':
-          description: Internal server error
-    put:
-      summary: Update a review
-      operationId: updateReview
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          description: Review ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ReviewUpdate'
-      responses:
-        '200':
-          description: Review updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Review'
-        '400':
-          description: Invalid input data
-        '404':
-          description: Review not found
-    delete:
-      summary: Delete a review
-      operationId: deleteReview
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          description: Review ID
-      responses:
-        '200':
-          description: Review deleted successfully
-        '404':
-          description: Review not found
-        '500':
-          description: Internal server error
+          description: Statistics for the course
+        '502':
+          description: Failed to fetch statistics
 
 components:
-  schemas:
-    Review:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Unique identifier for the review
-        studentId:
-          type: string
-          description: Student's unique identifier
-        courseId:
-          type: string
-          description: Course's unique identifier
-        gradeId:
-          type: string
-          description: Grade's unique identifier
-        studentRegistrationNumber:
-          type: string
-          description: Student's registration number
-        reason:
-          type: string
-          description: Reason for the review
-        status:
-          type: string
-          description: Status of the review
-        instructorResponse:
-          type: string
-          description: Instructor's response
-        reviewedGrade:
-          type: string
-          description: Reviewed grade
-        createdAt:
-          type: string
-          format: date-time
-          description: Creation timestamp
-        updatedAt:
-          type: string
-          format: date-time
-          description: Last update timestamp
-
-    ReviewInput:
-      type: object
-      required:
-        - studentId
-        - courseId
-        - gradeId
-        - reason
-      properties:
-        studentId:
-          type: string
-        courseId:
-          type: string
-        gradeId:
-          type: string
-        studentRegistrationNumber:
-          type: string
-        reason:
-          type: string
-
-    ReviewUpdate:
-      type: object
-      properties:
-        reason:
-          type: string
-        status:
-          type: string
-        instructorResponse:
-          type: string
-        reviewedGrade:
-          type: string
+  schemas: {}

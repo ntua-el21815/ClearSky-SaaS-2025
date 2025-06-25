@@ -187,9 +187,17 @@ app.post('/api/credits/user-code/:userCode/add', async (req, res) => {
 
 
 // Forward GET /users/:id/courses to user management service
-app.get('/api/users/:id/courses', async (req, res) => {
+app.get('/api/users/by-code/:userCode/courses', async (req, res) => {
   try {
-    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${req.params.id}/courses`);
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${req.params.userCode}`);
+    const userId = userResp.data._id;
+    const role = userResp.data.role;
+
+    if (role !== 'student') {
+      return res.status(400).json({ message: 'Not a student' });
+    }
+
+    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${userId}/courses`);
     res.status(response.status).json(response.data);
   } catch (error) {
     console.error('❌ Error fetching student courses:', error.message);
@@ -200,10 +208,19 @@ app.get('/api/users/:id/courses', async (req, res) => {
   }
 });
 
+
 // Forward GET /users/:id/instructor-courses
-app.get('/api/users/:id/instructor-courses', async (req, res) => {
+app.get('/api/users/by-code/:userCode/instructor-courses', async (req, res) => {
   try {
-    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${req.params.id}/instructor-courses`);
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${req.params.userCode}`);
+    const userId = userResp.data._id;
+    const role = userResp.data.role;
+
+    if (role !== 'instructor') {
+      return res.status(400).json({ message: 'Not an instructor' });
+    }
+
+    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${userId}/instructor-courses`);
     res.status(response.status).json(response.data);
   } catch (error) {
     console.error('❌ Error fetching instructor courses:', error.message);
@@ -213,6 +230,7 @@ app.get('/api/users/:id/instructor-courses', async (req, res) => {
     });
   }
 });
+
 
 // get users for institution
 app.get('/api/users/count/by-user/:userCode', async (req, res) => {

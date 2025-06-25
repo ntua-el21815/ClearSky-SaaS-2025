@@ -1,17 +1,17 @@
 openapi: 3.0.3
 info:
   title: Auth Orchestrator API
-  version: 1.1.0
-  description: Orchestration layer for authentication, signup, and cross-service user/credit handling.
+  version: 1.0.0
+  description: Orchestration layer for authentication, signup, user and credit handling, and institutional data routing.
 
 servers:
   - url: http://localhost:4000/api
-    description: Local Orchestrator Server
+    description: Local development server
 
 paths:
   /auth:
     post:
-      summary: Authenticate user (via token or credentials)
+      summary: Authenticate user via token or credentials
       operationId: authenticateUser
       requestBody:
         required: true
@@ -28,31 +28,18 @@ paths:
                   type: string
       responses:
         '200':
-          description: Authenticated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  user:
-                    type: object
-                  token:
-                    type: string
+          description: Authentication successful
         '400':
           description: Missing credentials
         '401':
-          description: Invalid credentials or token
+          description: Invalid token
         '500':
           description: Server error
 
   /signup:
     post:
-      summary: Register a new user (via representative)
-      operationId: signupUser
+      summary: Register a new user with repCode
+      operationId: registerUser
       requestBody:
         required: true
         content:
@@ -65,7 +52,7 @@ paths:
                 - fullName
                 - role
                 - userCode
-                - repId
+                - repCode
               properties:
                 email:
                   type: string
@@ -77,38 +64,25 @@ paths:
                   type: string
                 userCode:
                   type: string
-                repId:
+                repCode:
                   type: string
       responses:
         '201':
-          description: User registered successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  user:
-                    type: object
-                  token:
-                    type: string
+          description: Signup successful
         '400':
-          description: Missing fields
+          description: Validation error or missing fields
         '502':
-          description: Failed to fetch representative data
+          description: Failed to fetch rep user
         '500':
-          description: Registration failed
+          description: Signup failed
 
-  /credits/institution/{institutionId}/add:
+  /credits/user-code/{userCode}/add:
     post:
-      summary: Add credits to institution (direct)
-      operationId: addCreditsToInstitution
+      summary: Add credits to a user's institution
+      operationId: addCreditsToUserInstitution
       parameters:
         - in: path
-          name: institutionId
+          name: userCode
           required: true
           schema:
             type: string
@@ -125,139 +99,109 @@ paths:
                   type: number
       responses:
         '200':
-          description: Credit update successful
-        '500':
-          description: Failed to forward request
-
-  /credits/user/{userId}/add:
-    post:
-      summary: Add credits to institution by user
-      operationId: addCreditsByUser
-      parameters:
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - credits
-              properties:
-                credits:
-                  type: number
-      responses:
-        '200':
-          description: Credit addition successful
+          description: Credits added successfully
         '400':
-          description: User has no institutionId
+          description: Institution not found
         '500':
-          description: Failed to process credit addition
+          description: Credit addition failed
 
-  /credits/by-user/{userId}/available:
+  /users/by-code/{userCode}/courses:
     get:
-      summary: Get available credits by userId
-      operationId: getAvailableCreditsByUser
+      summary: Get student courses by userCode
+      operationId: getStudentCoursesByUserCode
       parameters:
         - in: path
-          name: userId
+          name: userCode
           required: true
           schema:
             type: string
       responses:
         '200':
-          description: Credit balance returned
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  institutionId:
-                    type: string
-                  availableCredits:
-                    type: number
+          description: Courses for the student
         '400':
-          description: User has no institutionId
+          description: Not a student
         '500':
-          description: Failed to retrieve credit balance
+          description: Failed to fetch courses
 
-  /users/{id}/courses:
+  /users/by-code/{userCode}/instructor-courses:
     get:
-      summary: Get courses for a student (proxy)
-      operationId: getStudentCourses
+      summary: Get instructor courses by userCode
+      operationId: getInstructorCoursesByUserCode
       parameters:
         - in: path
-          name: id
+          name: userCode
           required: true
           schema:
             type: string
       responses:
         '200':
-          description: List of courses for the student
-        '500':
-          description: Failed to retrieve student courses
-
-  /users/{id}/instructor-courses:
-    get:
-      summary: Get courses for an instructor (proxy)
-      operationId: getInstructorCourses
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: List of courses for instructor
-        '500':
-          description: Failed to retrieve instructor courses
-
-  /users/count/by-institution/{institutionId}:
-    get:
-      summary: Get user count by institution ID
-      operationId: getUserCountByInstitution
-      parameters:
-        - in: path
-          name: institutionId
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: User count returned
-        '500':
-          description: Failed to retrieve count
-
-  /users/count/by-user/{userId}:
-    get:
-      summary: Get user count by userId's institution
-      operationId: getUserCountByUser
-      parameters:
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: User count returned
+          description: Courses for the instructor
         '400':
-          description: User has no institutionId
+          description: Not an instructor
         '500':
-          description: Failed to retrieve count
+          description: Failed to fetch courses
+
+  /users/count/by-user/{userCode}:
+    get:
+      summary: Get user count in the institution of a user
+      operationId: getUserCountByUserCode
+      parameters:
+        - in: path
+          name: userCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Count of users
+        '400':
+          description: Institution not found
+        '500':
+          description: Failed to fetch user count
+
+  /credits/by-user/{userCode}/available:
+    get:
+      summary: Get available credits for institution by userCode
+      operationId: getAvailableCreditsByUserCode
+      parameters:
+        - in: path
+          name: userCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Available credits
+        '400':
+          description: Institution not found
+        '500':
+          description: Failed to fetch credit balance
+
+  /institution/courses/by-user/{userCode}:
+    get:
+      summary: Get courses for institution based on userCode
+      operationId: getInstitutionCoursesByUserCode
+      parameters:
+        - in: path
+          name: userCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of courses for the institution
+        '400':
+          description: Institution not found
+        '500':
+          description: Failed to fetch courses
 
   /health:
     get:
-      summary: Service health check
-      operationId: getHealthStatus
+      summary: Health check
+      operationId: healthCheck
       responses:
         '200':
-          description: Service is healthy
+          description: Service is up
           content:
             application/json:
               schema:
