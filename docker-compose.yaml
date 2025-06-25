@@ -362,6 +362,16 @@ services:
   #     - clearsky-network
   #   restart: unless-stoppedß
     
+  frontend:
+    build: ./frontend_new
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - krakend
+    networks:
+      - clearsky-network
+    restart: unless-stopped
   
 networks:
   clearsky-network:
