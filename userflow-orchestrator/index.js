@@ -212,11 +212,29 @@ app.get('/api/users/:id/instructor-courses', async (req, res) => {
   }
 });
 
-// Forward GET /users/count/by-institution/:institutionId
-app.get('/api/users/count/by-institution/:institutionId', async (req, res) => {
+// get users for institution
+app.get('/api/users/count/by-user/:userId', async (req, res) => {
+  const { userId } = req.params;
+
   try {
-    const response = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/count/by-institution/${req.params.institutionId}`);
-    res.status(response.status).json(response.data);
+    // Step 1: Get institutionId from user-management service
+    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${userId}`, {
+      timeout: 5000
+    });
+
+    const institutionId = userResponse.data?.institutionId;
+
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User does not have an institutionId'
+      });
+    }
+
+    // Step 2: Use institutionId to get user count
+    const countResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/count/by-institution/${institutionId}`);
+    res.status(countResponse.status).json(countResponse.data);
+
   } catch (error) {
     console.error('❌ Error fetching user count by institution:', error.message);
     res.status(error.response?.status || 500).json({
@@ -226,16 +244,30 @@ app.get('/api/users/count/by-institution/:institutionId', async (req, res) => {
   }
 });
 
-
-// GET available credits for institution
-app.get('/api/credits/institution/:institutionId/available', async (req, res) => {
-  const { institutionId } = req.params;
+// GET available credits for institution using userId
+app.get('/api/credits/by-user/:userId/available', async (req, res) => {
+  const { userId } = req.params;
 
   try {
-    const response = await axios.get(`${CREDIT_SERVICE_URL}/api/credits/institution/${institutionId}/balance`);
-    const { availableCredits } = response.data;
+    // Step 1: Get institutionId from user-management
+    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${userId}`, {
+      timeout: 5000
+    });
+
+    const institutionId = userResponse.data?.institutionId;
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User does not have an institutionId'
+      });
+    }
+
+    // Step 2: Get available credits from credit service
+    const creditResponse = await axios.get(`${CREDIT_SERVICE_URL}/api/credits/institution/${institutionId}/balance`);
+    const { availableCredits } = creditResponse.data;
 
     return res.json({ institutionId, availableCredits });
+
   } catch (error) {
     console.error('❌ Error fetching available credits:', error.message);
     res.status(error.response?.status || 500).json({
@@ -244,6 +276,7 @@ app.get('/api/credits/institution/:institutionId/available', async (req, res) =>
     });
   }
 });
+
 
 
 
