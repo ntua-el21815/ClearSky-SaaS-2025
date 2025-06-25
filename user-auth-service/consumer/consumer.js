@@ -87,7 +87,8 @@ const processUserSignup = async (userData) => {
       email: userData.email,
       password: hashedPassword,
       role: userData.role,
-      institutionId: userData.institutionId || null
+      institutionId: userData.institutionId || null,
+      userCode: userData.userCode
     });
     
     await newUser.save();
