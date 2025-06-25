@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: Course Statistics API
+  version: 1.0.0
+  description: API for calculating and retrieving course statistics.
+
+servers:
+  - url: http://localhost:8700/api/statistics
+    description: Local statistics service
+
+paths:
+  /:
+    post:
+      summary: Save statistics from grade data
+      operationId: handleStatisticsSave
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+                - gradeSheetId
+                - data
+              properties:
+                courseId:
+                  type: string
+                gradeSheetId:
+                  type: string
+                data:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '201':
+          description: Statistics saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: string
+        '400':
+          description: Invalid input
+        '500':
+          description: Failed to calculate or save statistics
+
+    get:
+      summary: Get all statistics
+      operationId: getAllStatistics
+      responses:
+        '200':
+          description: List of statistics (up to 100)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Statistics'
+        '500':
+          description: Failed to fetch statistics
+
+  /course/{courseId}:
+    get:
+      summary: Get latest statistics for a course
+      operationId: getStatisticsByCourse
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Latest statistics for course
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistics'
+        '400':
+          description: Missing courseId
+        '404':
+          description: No statistics found
+        '500':
+          description: Server error
+
+  /calculate:
+    post:
+      summary: Calculate statistics from raw grade input
+      operationId: calculateStatisticsFromInput
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        grades:
+                          type: array
+                          items:
+                            type: object
+      responses:
+        '200':
+          description: Statistics calculated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistics'
+        '400':
+          description: Invalid grades array
+        '500':
+          description: Failed to calculate statistics
+
+components:
+  schemas:
+    Statistics:
+      type: object
+      properties:
+        courseId:
+          type: string
+        gradeSheetId:
+          type: string
+        average:
+          type: number
+        median:
+          type: number
+        stdDev:
+          type: number
+        histogram:
+          type: object
+          additionalProperties:
+            type: integer
+        questionStats:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              average:
+                type: number
+              stdDev:
+                type: number
+        calculatedAt:
+          type: string
+          format: date-time

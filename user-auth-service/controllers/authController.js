@@ -20,6 +20,7 @@ exports.login = async (req, res) => {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        institutionId: user.institutionId
       },
     });
   } catch (err) {
