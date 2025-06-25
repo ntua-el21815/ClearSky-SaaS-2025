@@ -205,6 +205,26 @@ app.get('/api/users/count/by-institution/:institutionId', async (req, res) => {
 });
 
 
+// GET available credits for institution
+app.get('/api/credits/institution/:institutionId/available', async (req, res) => {
+  const { institutionId } = req.params;
+
+  try {
+    const response = await axios.get(`${CREDIT_SERVICE_URL}/api/credits/institution/${institutionId}/balance`);
+    const { availableCredits } = response.data;
+
+    return res.json({ institutionId, availableCredits });
+  } catch (error) {
+    console.error('❌ Error fetching available credits:', error.message);
+    res.status(error.response?.status || 500).json({
+      message: 'Failed to get available credits',
+      error: error.response?.data || error.message
+    });
+  }
+});
+
+
+
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', service: 'auth-orchestrator', timestamp: new Date().toISOString() });
 });
