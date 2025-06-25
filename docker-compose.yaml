@@ -177,8 +177,10 @@ services:
     environment:
       - PORT=8101
       - MONGO_URI=mongodb://institution-mongodb:27017/institution-db?authSource=admin
+      - RABBITMQ_URL=amqp://admin:secure21@rabbitmq:5672
     depends_on:
       - institution-mongodb
+      - rabbitmq
     networks:
       - institution-network
       - clearsky-network

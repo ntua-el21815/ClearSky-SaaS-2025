@@ -78,35 +78,31 @@ router.post(
   upload.single('file'),
   async (req, res) => {
     /* pull params from client */
-    // const { institutionId,
-    //         courseId  = 'unknown',
-    //         userId    = 'unknown' } = req.body;
-    const { userId, courseId = 'unknown' } = req.body;
+    const {
+      courseId = 'unknown',
+      userId   = 'unknown'
+    } = req.body;
 
-    if (!userId || !req.file) {
+    const isFinal = (req.body.final === 'true' || req.body.final === true);
+    const file    = req.file;
+
+    if (!userId || !file) {
       return res.status(400).json({ success:false, error:'Missing userId or file' });
     }
 
-    // 1. Fetch institutionId from User Management Service
+    /* ---------- institutionId: fetch from user-management ---------- */
     let institutionId;
     try {
       const userResp = await axios.get(`${USER_SERVICE_API}/${userId}`);
       institutionId = userResp.data?.institutionId;
       if (!institutionId) throw new Error('Missing institutionId in user record');
     } catch (err) {
-      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       return res.status(502).json({
         success:false,
         stage:'user-fetch',
         ...formatAxiosError(err, 'Failed to fetch user or institutionId')
       });
-    }
-
-    const isFinal = (req.body.final === 'true' || req.body.final === true);
-    const file    = req.file;
-
-    if (!institutionId || !file) {
-      return res.status(400).json({ success:false, error:'Missing institutionId or file' });
     }
 
     /* ---------- credit logic (only if NOT final) ---------- */
@@ -223,34 +219,33 @@ router.post(
           { persistent:true }
         );
 
+        /* 4. course authorization → coursesAuth  (🆕) */
+        try {
+          const instructorIdFinal = userId;  // uploader is instructor
 
-      /* 4. course authorization → coursesAuth  (🆕) */
-      try {
-        const instructorIdFinal = userId;  // για τώρα, instructor είναι ο uploader
-
-        const studentIds = [
-          ...new Set(
-            (inner.grades || [])
-              .map(g => g.studentId)      // ← field exists in the return JSON
-              .filter(Boolean)            // drop null / ''
+          const studentIds = [
+            ...new Set(
+              (inner.grades || [])
+                .map(g => g.studentId)
+                .filter(Boolean)
             )
           ];
 
-        mqChannel.sendToQueue(
-          'coursesAuth',
-          Buffer.from(JSON.stringify({
-            courseId: meta.courseId,
-            courseName: meta.courseName,
-            academicPeriod: meta.academicPeriod,         // αυτό έρχεται από το grade-service
-            instructorId: instructorIdFinal,
-            studentIds
-          })),
-          { persistent: true }
-        );
-        console.log('[orchestrator] 🔐 courseAuth sent to coursesAuth queue');
-      } catch (err) {
-        console.error('[orchestrator] failed to publish coursesAuth:', err.message);
-      }
+          mqChannel.sendToQueue(
+            'coursesAuth',
+            Buffer.from(JSON.stringify({
+              courseId: meta.courseId,
+              courseName: meta.courseName,
+              academicPeriod: meta.academicPeriod,
+              instructorId: instructorIdFinal,
+              studentIds
+            })),
+            { persistent: true }
+          );
+          console.log('[orchestrator] 🔐 courseAuth sent to coursesAuth queue');
+        } catch (err) {
+          console.error('[orchestrator] failed to publish coursesAuth:', err.message);
+        }
 
         console.log('[orchestrator] 📚 course info sent to courses queue');
       } catch (err) {
@@ -266,6 +261,7 @@ router.post(
     });
   }
 );
+
 
 router.get('/api/grades/by-course', async (req, res) => {
   try {
