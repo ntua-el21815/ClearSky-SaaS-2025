@@ -22,14 +22,14 @@
       document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     }
     function logout() {
-      deleteCookie('user_id');
+      deleteCookie('userCode');
       deleteCookie('role');
       localStorage.removeItem('token');
       window.location.href = 'login.html';
     }
-    const userId = getCookie('user_id');
+    const userCode = getCookie('userCode');
     const role = getCookie('role');
-    if (!userId || role !== 'instructor') {
+    if (!userCode || role !== 'instructor') {
       window.location.href = 'login.html';
     }
   </script>

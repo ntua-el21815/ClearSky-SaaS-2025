@@ -147,9 +147,9 @@
     return null;
   }
 
-  const userId = getCookie('user_id');
+  const userCode = getCookie('userCode');
   const role = getCookie('role');
-  if (!userId || role !== 'instructor') {
+  if (!userCode || role !== 'instructor') {
     window.location.href = 'login.html';
   }
 

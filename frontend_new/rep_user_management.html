@@ -144,16 +144,16 @@
     }
 
     function logout() {
-      deleteCookie('user_id');
+      deleteCookie('userCode');
       deleteCookie('role');
       localStorage.removeItem('token');
       window.location.href = 'login.html';
     }
 
-    const userId = getCookie('user_id');
+    const userCode = getCookie('userCode');
     const role = getCookie('role');
 
-    if (!userId || role !== 'institution_rep') {
+    if (!userCode || role !== 'institution_rep') {
       window.location.href = 'login.html';
     }
 
@@ -167,9 +167,9 @@
       const fullName = document.getElementById('fullName').value.trim();
       const role = document.getElementById('role').value;
       const userCode = document.getElementById('userCode').value.trim();
-      const repId = getCookie('user_id');
+      const repCode = getCookie('userCode');
 
-      if (!email || !password || !fullName || !role || !userCode || !repId) {
+      if (!email || !password || !fullName || !role || !userCode || !repCode) {
         messageDiv.style.color = 'red';
         messageDiv.textContent = "Please fill in all fields.";
         return;
@@ -179,7 +179,7 @@
         const response = await fetch('http://localhost:8100/api/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, fullName, role, userCode, repId })
+          body: JSON.stringify({ email, password, fullName, role, userCode, repCode })
         });
 
         const result = await response.json();

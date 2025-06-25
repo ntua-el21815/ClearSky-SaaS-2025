@@ -23,20 +23,20 @@
     }
 
     function logout() {
-      deleteCookie('user_id');
-      deleteCookie('role');
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
-    }
+  deleteCookie('userCode');
+  deleteCookie('role');
+  localStorage.removeItem('token');
+  window.location.href = 'login.html';
+}
 
-    const userId = getCookie('user_id');
-    const role = getCookie('role');
+    const userCode = getCookie('userCode');
+const role = getCookie('role');
 
-    if (!userId || role !== 'institution_rep') {
-      window.location.href = 'login.html';
-    } else {
+    if (!userCode || role !== 'institution_rep') {
+  window.location.href = 'login.html';
+} else {
       document.getElementById('user-info').textContent =
-        `Logged in as ${role} (User ID: ${userId})`;
+  `Logged in as ${role} (User Code: ${userCode})`;
     }
   </script>
 </body>

@@ -182,7 +182,7 @@
 
     async function fetchCredits() {
   try {
-    const response = await fetch(`http://localhost:8100/api/credits/by-user/${userId}/available`);
+    const response = await fetch(`http://localhost:8100/api/credits/by-user/${userCode}/available`);
     const result = await response.json();
 
     if (response.ok && result.availableCredits !== undefined) {
