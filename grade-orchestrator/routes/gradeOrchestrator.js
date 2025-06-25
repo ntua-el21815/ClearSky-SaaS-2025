@@ -80,20 +80,20 @@ router.post(
     /* pull params from client */
     const {
       courseId = 'unknown',
-      userId   = 'unknown'
+      userCode    = 'unknown'
     } = req.body;
 
     const isFinal = (req.body.final === 'true' || req.body.final === true);
     const file    = req.file;
 
-    if (!userId || !file) {
-      return res.status(400).json({ success:false, error:'Missing userId or file' });
+    if (!userCode  || !file) {
+      return res.status(400).json({ success:false, error:'Missing userCode  or file' });
     }
 
     /* ---------- institutionId: fetch from user-management ---------- */
     let institutionId;
     try {
-      const userResp = await axios.get(`${USER_SERVICE_API}/${userId}`);
+      const userResp = await axios.get(`${USER_SERVICE_API}/by-code/${userCode}`);
       institutionId = userResp.data?.institutionId;
       if (!institutionId) throw new Error('Missing institutionId in user record');
     } catch (err) {
@@ -201,55 +201,57 @@ router.post(
         console.error('[orchestrator] failed to publish GRADES_POSTED:', err.message);
       }
 
-      /* 3. course-info → courses  (🆕) */
-      try {
-        const meta = inner.metadata || {};
-
-        const courseMsg = {
-          academicPeriod : meta.academicPeriod  || null,
-          courseName     : meta.courseName      || null,
-          courseId       : meta.courseId        || null,
-          institutionId,
-          instructorId   : userId
-        };
-
-        mqChannel.sendToQueue(
-          'courses',
-          Buffer.from(JSON.stringify(courseMsg)),
-          { persistent:true }
-        );
-
-        /* 4. course authorization → coursesAuth  (🆕) */
+      /* 3. course-info → courses (only for initial uploads) */
+      if (!isFinal) {
         try {
-          const instructorIdFinal = userId;  // uploader is instructor
+          const meta = inner.metadata || {};
 
-          const studentIds = [
-            ...new Set(
-              (inner.grades || [])
-                .map(g => g.studentId)
-                .filter(Boolean)
-            )
-          ];
+          const courseMsg = {
+            academicPeriod : meta.academicPeriod  || null,
+            courseName     : meta.courseName      || null,
+            courseId       : meta.courseId        || null,
+            institutionId,
+            instructorId   : userCode
+          };
 
           mqChannel.sendToQueue(
-            'coursesAuth',
-            Buffer.from(JSON.stringify({
-              courseId: meta.courseId,
-              courseName: meta.courseName,
-              academicPeriod: meta.academicPeriod,
-              instructorId: instructorIdFinal,
-              studentIds
-            })),
-            { persistent: true }
+            'courses',
+            Buffer.from(JSON.stringify(courseMsg)),
+            { persistent:true }
           );
-          console.log('[orchestrator] 🔐 courseAuth sent to coursesAuth queue');
-        } catch (err) {
-          console.error('[orchestrator] failed to publish coursesAuth:', err.message);
-        }
 
-        console.log('[orchestrator] 📚 course info sent to courses queue');
-      } catch (err) {
-        console.error('[orchestrator] failed to publish course info:', err.message);
+          /* 4. course authorization → coursesAuth */
+          try {
+            const instructorIdFinal = userCode;
+
+            const studentIds = [
+              ...new Set(
+                (inner.grades || [])
+                  .map(g => g.studentId)
+                  .filter(Boolean)
+              )
+            ];
+
+            mqChannel.sendToQueue(
+              'coursesAuth',
+              Buffer.from(JSON.stringify({
+                courseId: meta.courseId,
+                courseName: meta.courseName,
+                academicPeriod: meta.academicPeriod,
+                instructorId: instructorIdFinal,
+                studentIds
+              })),
+              { persistent: true }
+            );
+            console.log('[orchestrator] 🔐 courseAuth sent to coursesAuth queue');
+          } catch (err) {
+            console.error('[orchestrator] failed to publish coursesAuth:', err.message);
+          }
+
+          console.log('[orchestrator] 📚 course info sent to courses queue');
+        } catch (err) {
+          console.error('[orchestrator] failed to publish course info:', err.message);
+        }
       }
     }
 
