@@ -1,54 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Rep Dashboard</title>
+  <meta charset="UTF-8">
+  <title>ClearSky - Rep Dashboard</title>
   <style>
     body {
-      font-family: sans-serif;
-      background-color: #f3f3f3;
-      padding: 2em;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
-    h2 {
-      margin-bottom: 1em;
+
+    .dashboard-card {
+      background: white;
+      padding: 2.5rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      width: 400px;
+      text-align: center;
     }
+
+    .logo-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      background-color: #0a2a66;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 22px;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+    }
+
     .button-container {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      max-width: 300px;
+      margin-top: 1rem;
     }
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 5px;
+
+    .btn {
+      padding: 10px;
       font-size: 16px;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
-      background-color: #3498db;
+      transition: background-color 0.2s;
+    }
+
+    .primary-btn {
+      background-color: #0a2a66;
       color: white;
     }
-    button:hover {
-      background-color: #2980b9;
+
+    .primary-btn:hover {
+      background-color: #083075;
     }
-    .logout-btn {
+
+    .danger-btn {
       background-color: #e74c3c;
+      color: white;
     }
-    .logout-btn:hover {
+
+    .danger-btn:hover {
       background-color: #c0392b;
     }
+
     .info {
-      margin-bottom: 1em;
+      margin-top: 1rem;
+      font-size: 14px;
+      color: #4b5563;
     }
   </style>
 </head>
 <body>
-  <h2>Institution Representative - Dashboard</h2>
-  <div class="info" id="user-info"></div>
+  <div class="dashboard-card">
+    <div class="logo-title-row">
+      <div class="logo">C</div>
+      <p class="title">ClearSky</p>
+    </div>
+    <p class="subtitle">Institution Representative Dashboard</p>
 
-  <div class="button-container">
-    <button onclick="location.href='rep_grade_statistics.html'">Grade Statistics</button>
-    <button onclick="location.href='rep_purchase_credits.html'">Purchase Credits</button>
-    <button onclick="location.href='rep_user_management.html'">User Management</button>
-    <button class="logout-btn" onclick="logout()">Logout</button>
+    <div class="button-container">
+      <button class="btn primary-btn" onclick="location.href='rep_grade_statistics.html'">📊 Grade Statistics</button>
+      <button class="btn primary-btn" onclick="location.href='rep_purchase_credits.html'">💳 Purchase Credits</button>
+      <button class="btn primary-btn" onclick="location.href='rep_user_management.html'">👥 User Management</button>
+      <button class="btn danger-btn" onclick="logout()">🚪 Logout</button>
+    </div>
+
+    <div class="info" id="user-info"></div>
   </div>
 
   <script>
@@ -73,11 +136,10 @@
       window.location.href = 'login.html';
     }
 
-    // Έλεγχος authentication
     const userId = getCookie('user_id');
     const role = getCookie('role');
 
-    if (!userId || !role || role !== 'institution_rep') {
+    if (!userId || role !== 'institution_rep') {
       window.location.href = 'login.html';
     } else {
       document.getElementById('user-info').textContent =

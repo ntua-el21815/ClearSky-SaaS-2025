@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Review Requests</title>
+</head>
+<body>
+  <h2>📝 Review Requests Page</h2>
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    function getCookie(name) {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+    function deleteCookie(name) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+    function logout() {
+      deleteCookie('user_id');
+      deleteCookie('role');
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    }
+    const userId = getCookie('user_id');
+    const role = getCookie('role');
+    if (!userId || role !== 'instructor') {
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>
