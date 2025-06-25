@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rep Dashboard</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f3f3f3;
+      padding: 2em;
+    }
+    h2 {
+      margin-bottom: 1em;
+    }
+    .button-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 300px;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #3498db;
+      color: white;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .logout-btn {
+      background-color: #e74c3c;
+    }
+    .logout-btn:hover {
+      background-color: #c0392b;
+    }
+    .info {
+      margin-bottom: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h2>Institution Representative - Dashboard</h2>
+  <div class="info" id="user-info"></div>
+
+  <div class="button-container">
+    <button onclick="location.href='rep_grade_statistics.html'">Grade Statistics</button>
+    <button onclick="location.href='rep_purchase_credits.html'">Purchase Credits</button>
+    <button onclick="location.href='rep_user_management.html'">User Management</button>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const cookieStr = document.cookie;
+      const cookies = cookieStr.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    function deleteCookie(name) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+
+    function logout() {
+      deleteCookie('user_id');
+      deleteCookie('role');
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    }
+
+    // Έλεγχος authentication
+    const userId = getCookie('user_id');
+    const role = getCookie('role');
+
+    if (!userId || !role || role !== 'institution_rep') {
+      window.location.href = 'login.html';
+    } else {
+      document.getElementById('user-info').textContent =
+        `Logged in as ${role} (User ID: ${userId})`;
+    }
+  </script>
+</body>
+</html>

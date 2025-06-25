@@ -337,7 +337,7 @@ services:
   user-management-mongodb:
     image: mongo:latest
     ports:
-      - "27017:27017"  
+      - "27025:27017"  
     container_name: userflow-mongodb
     volumes:
       - userflow-mongo-data:/data/db

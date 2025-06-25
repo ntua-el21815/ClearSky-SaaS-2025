@@ -93,9 +93,6 @@
         setCookie('user_id', user.id, 7);
         setCookie('role', user.role, 7);
 
-        messageDiv.style.color = "green";
-        messageDiv.textContent = "Login successful! Redirecting...";
-
         // Redirect based on role
         if (user.role === 'student') {
           window.location.href = 'student_grade_statistics.html';
@@ -104,9 +101,9 @@
         } else if (user.role === 'institution_rep') {
           // Αν έχει institutionId => rep_grade_statistics, αλλιώς => register_institution
           if (user.institutionId) {
-            window.location.href = 'rep_grade_statistics.html';
+            window.location.href = 'rep_dashboard.html';
           } else {
-            window.location.href = 'register_institution.html';
+            window.location.href = 'rep_register_institution.html';
           }
         } else {
           messageDiv.style.color = "orange";
