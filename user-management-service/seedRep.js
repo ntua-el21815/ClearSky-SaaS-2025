@@ -3,42 +3,47 @@ const bcrypt    = require("bcryptjs");
 const connectDB = require("./config/db");
 const User      = require("./models/User");
 
-// Your provided mock users
+// Your provided mock users with specific _id values
 const mockUsers = [
   {
-    fullName: 'Student 1',
-    email: 'student1@test.com',
-    password: '123456',
-    role: 'student',
-    institutionId: 'NTUA'
+    _id: "685bda768a59ccd6ddcffefd",
+    fullName: "Student 1",
+    email: "student1@test.com",
+    password: "123456",
+    role: "student",
+    institutionId: "NTUA"
   },
   {
-    fullName: 'Instructor 1',
-    email: 'instructor1@test.com',
-    password: '123456',
-    role: 'instructor',
-    institutionId: 'NTUA'
+    _id: "685bda768a59ccd6ddcffefe",
+    fullName: "Instructor 1",
+    email: "instructor1@test.com",
+    password: "123456",
+    role: "instructor",
+    institutionId: "NTUA"
   },
   {
-    fullName: 'Representative',
-    email: 'institution@test.com',
-    password: '123456',
-    role: 'institution_rep',
-    institutionId: 'NTUA'
+    _id: "685bda768a59ccd6ddcffeff",
+    fullName: "Representative",
+    email: "institution@test.com",
+    password: "123456",
+    role: "institution_rep",
+    institutionId: "NTUA"
   },
   {
-    fullName: 'Student 2',
-    email: 'student2@test.com',
-    password: '123456',
-    role: 'student',
-    institutionId: 'NTUA'
+    _id: "685bda768a59ccd6ddcfff00",
+    fullName: "Student 2",
+    email: "student2@test.com",
+    password: "123456",
+    role: "student",
+    institutionId: "NTUA"
   },
   {
-    fullName: 'Instructor 2',
-    email: 'instructor2@test.com',
-    password: '123456',
-    role: 'instructor',
-    institutionId: 'NTUA'
+    _id: "685bda768a59ccd6ddcfff01",
+    fullName: "Instructor 2",
+    email: "instructor2@test.com",
+    password: "123456",
+    role: "instructor",
+    institutionId: "NTUA"
   }
 ];
 
@@ -47,7 +52,7 @@ const mockUsers = [
     await connectDB();
 
     for (const userData of mockUsers) {
-      const exists = await User.findOne({ email: userData.email });
+      const exists = await User.findOne({ _id: userData._id });
       if (exists) {
         console.log(`ℹ️  User already exists: ${userData.email}`);
         continue;
@@ -59,7 +64,7 @@ const mockUsers = [
       console.log(`✅  Created: ${userData.email} (${userData.role})`);
     }
 
-    console.log("🎉 All users seeded.");
+    console.log("🎉 All users seeded with specific IDs.");
     process.exit(0);
   } catch (err) {
     console.error("❌  Seeding failed:", err.message);

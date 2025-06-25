@@ -83,10 +83,8 @@ app.post('/api/signup', async (req, res) => {
     });
   }
 
-  let institutionId;   // we will get this from the user-management via rep_id
-
-    try {
-    // Fetch the creator's institutionId using userId
+  let institutionId;
+  try {
     const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/${repId}`, { timeout: 5000 });
     institutionId = userResp.data?.institutionId;
 
@@ -115,20 +113,26 @@ app.post('/api/signup', async (req, res) => {
       institutionId
     }, { timeout: 5000 });
 
-    // Publish to RabbitMQ all the user data (including password)
+    const createdUser = registerResponse.data.user;
+    const userId = createdUser.id;
+
+    console.log("Forwarding user ID:", createdUser.id);
+
+    // Publish to RabbitMQ with ID
     await publishUserCreated({
+      id: userId,
       email,
-      password, // Include password for user creation
+      password,
       fullName,
       role,
       userCode,
       institutionId
     });
-    
+
     return res.status(201).json({
       success: true,
       message: 'Signup successful',
-      user: registerResponse.data.user,
+      user: createdUser,
       token: registerResponse.data.token
     });
 
@@ -141,6 +145,7 @@ app.post('/api/signup', async (req, res) => {
     });
   }
 });
+
 
 app.post('/api/credits/institution/:institutionId/add', async (req, res) => {
   const { institutionId } = req.params;

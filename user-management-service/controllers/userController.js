@@ -101,7 +101,7 @@ exports.registerUser = async (req, res) => {
 
     res.status(201).json({
       user: {
-        id: newUser._id,
+        id: newUser._id.toString(),
         email: newUser.email,
         fullName: newUser.fullName,
         role: newUser.role,
