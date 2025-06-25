@@ -80,20 +80,20 @@ router.post(
     /* pull params from client */
     const {
       courseId = 'unknown',
-      userId   = 'unknown'
+      userCode    = 'unknown'
     } = req.body;
 
     const isFinal = (req.body.final === 'true' || req.body.final === true);
     const file    = req.file;
 
-    if (!userId || !file) {
-      return res.status(400).json({ success:false, error:'Missing userId or file' });
+    if (!userCode  || !file) {
+      return res.status(400).json({ success:false, error:'Missing userCode  or file' });
     }
 
     /* ---------- institutionId: fetch from user-management ---------- */
     let institutionId;
     try {
-      const userResp = await axios.get(`${USER_SERVICE_API}/${userId}`);
+      const userResp = await axios.get(`${USER_SERVICE_API}/by-code/${userCode}`);
       institutionId = userResp.data?.institutionId;
       if (!institutionId) throw new Error('Missing institutionId in user record');
     } catch (err) {
@@ -210,7 +210,7 @@ router.post(
           courseName     : meta.courseName      || null,
           courseId       : meta.courseId        || null,
           institutionId,
-          instructorId   : userId
+          instructorId   : userCode
         };
 
         mqChannel.sendToQueue(
@@ -221,7 +221,7 @@ router.post(
 
         /* 4. course authorization → coursesAuth  (🆕) */
         try {
-          const instructorIdFinal = userId;  // uploader is instructor
+          const instructorIdFinal = userCode;  // uploader is instructor
 
           const studentIds = [
             ...new Set(
