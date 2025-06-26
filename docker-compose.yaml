@@ -36,6 +36,8 @@ services:
   review-mongodb:
     image: mongo:latest
     container_name: review-mongodb
+    ports:
+    - "27020:27017"
     volumes:
       - review-mongo-data:/data/db
     networks:
@@ -60,6 +62,8 @@ services:
   credit-mongodb:
     image: mongo:latest
     container_name: credit-mongodb
+    ports:
+    - "27021:27017"
     volumes:
       - credit-mongo-data:/data/db
     networks:
@@ -83,8 +87,10 @@ services:
   grade-mongodb:
     image: mongo:latest
     container_name: grade-mongodb
+    ports:
+    - "27019:27017"
     volumes:
-      - grade-mongo-data:/data/db\
+      - grade-mongo-data:/data/db
     networks:
       - grades-network
 
@@ -142,6 +148,8 @@ services:
   notification-mongodb:
     image: mongo:latest
     container_name: notification-mongodb
+    ports:
+    - "27022:27017"
     volumes:
       - notification-mongo-data:/data/db
     networks:
@@ -169,8 +177,10 @@ services:
     environment:
       - PORT=8101
       - MONGO_URI=mongodb://institution-mongodb:27017/institution-db?authSource=admin
+      - RABBITMQ_URL=amqp://admin:secure21@rabbitmq:5672
     depends_on:
       - institution-mongodb
+      - rabbitmq
     networks:
       - institution-network
       - clearsky-network
@@ -178,6 +188,8 @@ services:
   institution-mongodb:
     image: mongo:latest
     container_name: institution-mongodb
+    ports:
+    - "27023:27017"
     volumes:
       - institution-mongo-data:/data/db
     networks:
@@ -196,6 +208,7 @@ services:
       - USER_AUTH_SERVICE_URL=http://user-auth-service:5002
       - CREDIT_SERVICE_URL=http://institution-credit-service:8102
       - USER_MANAGEMENT_SERVICE_URL=http://user-management-service:5001
+      - INSTITUTION_SERVICE_URL=http://institution-service:8101
     depends_on:
       - rabbitmq
       - institution-service
@@ -225,6 +238,8 @@ services:
   statistics-mongodb:
     image: mongo:latest
     container_name: statistics-mongodb
+    ports:
+    - "27024:27017"
     volumes:
       - statistics-mongo-data:/data/db
     networks:
@@ -241,12 +256,14 @@ services:
       - NODE_ENV=development
       - PORT=8081
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
-      - CREDIT_SERVICE_URL=http://credit-service:8102
+      - CREDIT_SERVICE_URL=http://institution-credit-service:8102
       - GRADE_SERVICE_URL=http://grade-service:8200
       - STATISTICS_SERVICE_URL=http://statistics-service:8300
+      - USER_MANAGEMENT_SERVICE_URL=http://user-management-service:5001
     depends_on:
       - rabbitmq
       - grade-service
+      - user-management-service
     networks:
       - clearsky-network
     restart: unless-stopped
@@ -272,6 +289,7 @@ services:
       - PORT=5002
       - MONGO_URI=mongodb://user-auth-mongodb:27017/user-auth?authSource=admin
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
+      - JWT_SECRET=supersecretkey123 
     depends_on:
       - user-auth-mongodb
       - rabbitmq
@@ -322,7 +340,7 @@ services:
   user-management-mongodb:
     image: mongo:latest
     ports:
-      - "27017:27017"  
+      - "27025:27017"  
     container_name: userflow-mongodb
     volumes:
       - userflow-mongo-data:/data/db
@@ -342,16 +360,7 @@ services:
   #     - grade-orchestrator
   #   networks:
   #     - clearsky-network
-  #   restart: unless-stopped
-
-  # --- Alternative Frontend (Simple HTML/CSS/JS) ---
-  frontend-alt:
-    build: ./frontend-alt
-    container_name: frontend-alt
-    ports:
-      - "3001:80"
-    networks:
-      - clearsky-network
+  #   restart: unless-stoppedß
     
   
 networks:

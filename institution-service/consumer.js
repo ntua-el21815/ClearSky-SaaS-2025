@@ -1,38 +1,64 @@
-require('dotenv').config();             // so .env vars still work
-const amqp      = require('amqplib');
+require('dotenv').config();
+const amqp = require('amqplib');
 const connectDB = require('./config/db');
-const Course    = require('./models/Course');
+const Course = require('./models/Course');
 
-const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
-const QUEUE      = 'courses';
+const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://admin:secure21@rabbitmq:5672';
+const QUEUE = 'courses';
 
-(async () => {
-  await connectDB();                                    // connect Mongo
-  const conn    = await amqp.connect(RABBIT_URL);       // connect RabbitMQ
-  const channel = await conn.createChannel();
-  await channel.assertQueue(QUEUE, { durable: true });
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  console.log('📥  waiting for messages on "courses" …');
+async function startConsumer(retries = 5) {
+  await connectDB(); // Connect to MongoDB
 
-  channel.consume(QUEUE, async (msg) => {
-    if (!msg) return;
+  while (retries > 0) {
     try {
-      const payload = JSON.parse(msg.content.toString());
+      console.log('🔌 Connecting to RabbitMQ at:', RABBIT_URL);
+      const conn = await amqp.connect(RABBIT_URL);
+      const channel = await conn.createChannel();
 
-      const course = await Course.create({
-        courseId       : payload['Κωδικός μαθήματος'],
-        name           : payload['Μάθημα'],
-        academicPeriod : payload['Περίοδος δήλωσης'],
-        institutionId  : payload.institutionId,
-        instructorId   : payload.userId            // optional
+      await channel.assertQueue(QUEUE, { durable: true });
+      console.log(`📥 Waiting for messages on "${QUEUE}"...`);
+
+      channel.consume(QUEUE, async (msg) => {
+        if (!msg) return;
+
+        try {
+          const payload = JSON.parse(msg.content.toString());
+
+        const course = await Course.create({
+          courseId       : payload.courseId,
+          name           : payload.courseName,
+          academicPeriod : payload.academicPeriod,
+          institutionId  : payload.institutionId,
+          instructorId   : payload.instructorId
+        });
+
+
+          console.log(`✅ Saved course: ${course.courseId} (${course.name})`);
+          channel.ack(msg);
+
+        } catch (err) {
+          console.error('❌ Failed to save course:', err.message);
+          channel.nack(msg, false, false); // Do not requeue
+        }
       });
 
-      console.log(`✅  saved course ${course.courseId} (${course.name})`);
-      channel.ack(msg);
+      // Exit retry loop on success
+      break;
 
     } catch (err) {
-      console.error('❌  failed to save course:', err.message);
-      channel.nack(msg, false, false);                 // dead-letter
+      retries--;
+      console.error(`❌ RabbitMQ connection failed: ${err.message}`);
+      if (retries === 0) {
+        console.error('❌ Out of retries. Exiting.');
+        process.exit(1);
+      } else {
+        console.log(`🔁 Retrying in 5s... (${retries} attempts left)`);
+        await sleep(5000);
+      }
     }
-  });
-})();
+  }
+}
+
+startConsumer();

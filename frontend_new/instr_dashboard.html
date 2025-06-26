@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ClearSky - Instructor Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .dashboard {
+      width: 800px;
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .card p {
+      color: #6b7280;
+      font-size: 14px;
+      margin: 4px 0 1rem;
+      text-align: center;
+    }
+
+    .button {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      margin-bottom: 10px;
+    }
+
+    .primary-btn {
+      background-color: #0a2a66;
+      color: white;
+    }
+
+    .primary-btn:hover {
+      background-color: #083075;
+    }
+
+    .outline-btn {
+      background-color: white;
+      border: 1px solid #d1d5db;
+      color: black;
+    }
+
+    .outline-btn:hover {
+      background-color: #f3f4f6;
+    }
+
+    .notification-badge {
+      background-color: #ef4444;
+      color: white;
+      font-size: 12px;
+      border-radius: 9999px;
+      padding: 2px 6px;
+      position: absolute;
+      top: -6px;
+      right: -10px;
+    }
+
+    .btn-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .header {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      font-size: 14px;
+    }
+
+    .logout-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .logout-btn:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <button class="logout-btn" onclick="logout()">Logout</button>
+
+  <div class="dashboard">
+    <!-- Card 1 -->
+    <div class="card">
+      <h3>Course Management</h3>
+      <p>Manage grades and course content</p>
+      <button class="button primary-btn" onclick="location.href='instr_post_initial_grades.html'">Post Initial Grades</button>
+      <button class="button outline-btn" onclick="location.href='instr_post_final_grades.html'">Post Final Grades</button>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="card">
+      <h3>Student Interaction</h3>
+      <p>Handle reviews and view analytics</p>
+      <div class="btn-wrapper">
+        <button class="button primary-btn" onclick="location.href='instr_review_requests.html'">Review Requests</button>
+        <div class="notification-badge">3</div> <!-- δυναμικό στο μέλλον -->
+      </div>
+      <button class="button outline-btn" onclick="location.href='instr_grade_statistics.html'">Show Statistics</button>
+    </div>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    function deleteCookie(name) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+
+    function logout() {
+      deleteCookie('userCode');
+      deleteCookie('role');
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    }
+
+    const userCode = getCookie('userCode');
+    const role = getCookie('role');
+    if (!userCode || role !== 'instructor') {
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>

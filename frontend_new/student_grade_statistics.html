@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Grade Statistics</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      padding: 2rem;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .header-subtitle {
+      color: #6b7280;
+      font-size: 16px;
+      margin-top: 4px;
+    }
+
+    .blue-btn {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      font-size: 15px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .blue-btn:hover {
+      background-color: #1d4ed8;
+    }
+
+    .logout-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      position: absolute;
+      top: 16px;
+      right: 16px;
+    }
+
+    .logout-btn:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <button class="logout-btn" onclick="logout()">Logout</button>
+
+  <div class="header-row">
+    <div>
+      <div class="header-title">Grade Statistics</div>
+      <div class="header-subtitle">Click on a course to view its grading distribution.</div>
+    </div>
+    <button class="blue-btn" onclick="location.href='student_my_courses.html'">Go to My Courses</button>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const cookieStr = document.cookie;
+      const cookies = cookieStr.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    function deleteCookie(name) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+
+    function logout() {
+      deleteCookie('userCode');
+      deleteCookie('role');
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    }
+
+    const userCode = getCookie('userCode');
+    const role = getCookie('role');
+
+    if (!userCode || role !== 'student') {
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>

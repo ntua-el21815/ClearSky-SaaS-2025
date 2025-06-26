@@ -1,21 +1,22 @@
 const mongoose = require('mongoose');
 
 const gradeUploadSchema = new mongoose.Schema({
-  timestamp: Date,
-  "Περίοδος δήλωσης": String,
-  "Τμήμα Τάξης": String,
-  "Κλίμακα βαθμολόγησης": String,
-  final: Boolean,
+  timestamp: { type: Date, default: Date.now },
+  academicPeriod:{ type: String, required: true },
+  courseName:{ type: String, required: true },
+  courseId:  { type: String, required: true },
+  ratingScale:{ String },
+  final: { Boolean },
   weights: {
     type: Map,
     of: Number
   },
   grades: [
     {
-      "Αριθμός Μητρώου": String,
-      "Ονοματεπώνυμο": String,
-      "Ακαδημαϊκό E-mail": String,
-      "Βαθμολογία": Number,
+      "studentId": String,
+      "studentName": String,
+      "academicalEmail": String,
+      "grade": Number,
       responses: {
         type: Map,
         of: Number

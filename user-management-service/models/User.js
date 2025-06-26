@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
   password: String,
   role: { type: String, enum: ["student", "instructor", "institution_rep"] },
   institutionId: String,
+  userCode: String, 
   courses: [courseInfoSchema], default: []
 });
 

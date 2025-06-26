@@ -20,11 +20,14 @@ exports.login = async (req, res) => {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        institutionId: user.institutionId,
+        userCode: user.userCode
       },
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
+  console.error("🔥 Login Error:", err);
+  res.status(500).json({ message: "Server error" });
+}
 };
 
 exports.getCurrentUser = (req, res) => {

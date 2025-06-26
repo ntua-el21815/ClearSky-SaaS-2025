@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 const userEmailSchema = new mongoose.Schema({
-  studentId: { type: String, required: true, unique: true },
+  studentCode: { type: String, required: true, unique: true },
   email: { type: String, required: true }
 });
 

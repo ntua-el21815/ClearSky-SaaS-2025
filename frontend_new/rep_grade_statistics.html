@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Grade Statistics</title>
+</head>
+<body>
+  <h2>Grade Statistics (Institution Rep)</h2>
+  <p id="user-info"></p>
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    function getCookie(name) {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    function deleteCookie(name) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+
+    function logout() {
+  deleteCookie('userCode');
+  deleteCookie('role');
+  localStorage.removeItem('token');
+  window.location.href = 'login.html';
+}
+
+    const userCode = getCookie('userCode');
+const role = getCookie('role');
+
+    if (!userCode || role !== 'institution_rep') {
+  window.location.href = 'login.html';
+} else {
+      document.getElementById('user-info').textContent =
+  `Logged in as ${role} (User Code: ${userCode})`;
+    }
+  </script>
+</body>
+</html>

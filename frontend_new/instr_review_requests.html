@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Instructor - Review Requests</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      padding: 2rem;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .header-title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #0a0a0a;
+    }
+
+    .header-subtitle {
+      font-size: 1rem;
+      color: #555;
+    }
+
+    .back-btn {
+      background-color: #0a2a66;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      text-align: left;
+    }
+
+    th {
+      background-color: #0a2a66;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f3f4f6;
+    }
+
+    .reply-form {
+      background-color: white;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-top: 2rem;
+    }
+
+    .reply-form h3 {
+      margin-bottom: 1rem;
+    }
+
+    .reply-form label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+
+    .reply-form input, .reply-form select, .reply-form textarea {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .reply-form button {
+      margin-top: 1.5rem;
+      background-color: #0a2a66;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .message {
+      margin-top: 1rem;
+      font-weight: bold;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <div class="header-title">Reply to Grade Review Request</div>
+      <div class="header-subtitle">Dr. Maria Ioannidou</div>
+    </div>
+    <a class="back-btn" href="instr_dashboard.html">Back to Dashboard</a>
+  </div>
+
+  <div id="requests-container">Loading...</div>
+
+  <div id="reply-form-container" style="display: none;" class="reply-form">
+    <h3 id="reply-title">Reply to Review</h3>
+
+    <label>Student's Message</label>
+    <input type="text" id="student-reason" readonly />
+
+    <label>Action</label>
+    <select id="instructor-action">
+      <option value="TOTAL_ACCEPT">Total accept</option>
+      <option value="PARTIAL_ACCEPT">Partial accept</option>
+      <option value="DECLINE">Decline</option>
+    </select>
+
+    <label>Instructor's Message</label>
+    <textarea id="instructor-message" rows="4" placeholder="Write your reply..."></textarea>
+
+    <button>Send Reply</button>
+  </div>
+
+  <script>
+  let selectedReviewId = null;
+
+  function getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [key, value] = cookie.trim().split('=');
+      if (key === name) return decodeURIComponent(value);
+    }
+    return null;
+  }
+
+  const userCode = getCookie('userCode');
+  const role = getCookie('role');
+  if (!userCode || role !== 'instructor') {
+    window.location.href = 'login.html';
+  }
+
+  async function fetchReviewRequests() {
+    const container = document.getElementById('requests-container');
+    try {
+      const response = await fetch('http://localhost:8082/api/review-requests');
+      const result = await response.json();
+
+      if (response.ok && Array.isArray(result.data)) {
+        if (result.data.length === 0) {
+          container.innerHTML = '<p>No review requests found.</p>';
+          return;
+        }
+
+        let tableHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Course ID</th>
+                <th>Student ID</th>
+                <th>Grade ID</th>
+                <th>Status</th>
+                <th>Reason</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        for (const req of result.data) {
+          tableHTML += `
+            <tr>
+              <td>${req.courseId || '-'}</td>
+              <td>${req.studentId || '-'}</td>
+              <td>${req.gradeId || '-'}</td>
+              <td>${req.status || '-'}</td>
+              <td>${req.reason || '-'}</td>
+              <td><button onclick='showReplyForm(${JSON.stringify(req)})'>Reply</button></td>
+            </tr>
+          `;
+        }
+
+        tableHTML += `</tbody></table>`;
+        container.innerHTML = tableHTML;
+      } else {
+        container.innerHTML = `<p class="message">⚠️ Failed to load requests.</p>`;
+      }
+    } catch (err) {
+      console.error('Error fetching review requests:', err);
+      container.innerHTML = `<p class="message">⚠️ Server error.</p>`;
+    }
+  }
+
+  function showReplyForm(request) {
+    selectedReviewId = request._id;
+    document.getElementById('reply-form-container').style.display = 'block';
+    document.getElementById('student-reason').value = request.reason || '';
+    document.getElementById('reply-title').textContent =
+      `Reply to ${request.courseId} - ${request.studentId}`;
+  }
+
+  document.querySelector('.reply-form button').addEventListener('click', async () => {
+    const instructorResponse = document.getElementById('instructor-message').value.trim();
+    const action = document.getElementById('instructor-action').value;
+
+    if (!instructorResponse) {
+      alert('Please enter a response message.');
+      return;
+    }
+
+    const body = {
+      instructorResponse
+    };
+
+    // Add grade only if accepted
+    if (action === 'TOTAL_ACCEPT' || action === 'PARTIAL_ACCEPT') {
+      const grade = prompt('Enter the reviewed grade (0-10):');
+      if (!grade || isNaN(grade)) {
+        alert('Invalid grade input. Please try again.');
+        return;
+      }
+      body.reviewedGrade = parseFloat(grade);
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8082/api/review-requests/${selectedReviewId}/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('✅ Reply submitted successfully!');
+        window.location.reload(); // ή μπορείς να κάνεις update τον πίνακα χωρίς reload
+      } else {
+        alert('⚠️ Failed to submit reply: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error submitting reply:', error);
+      alert('❌ Server error while submitting reply.');
+    }
+  });
+
+  fetchReviewRequests();
+</script>
+</body>
+</html>
