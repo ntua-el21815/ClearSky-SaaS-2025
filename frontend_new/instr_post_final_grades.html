@@ -113,8 +113,6 @@
   </div>
 
   <form class="upload-form" id="grade-upload-form">
-    <label for="courseId">Course ID</label>
-    <input type="text" id="courseId" name="courseId" required placeholder="e.g. MATH101" />
 
     <label for="file">Excel File</label>
     <input type="file" id="file" name="file" accept=".xlsx,.xls" required />
@@ -133,17 +131,6 @@
       return null;
     }
 
-    function deleteCookie(name) {
-      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    }
-
-    function logout() {
-      deleteCookie('userCode');
-      deleteCookie('role');
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
-    }
-
     const userCode = getCookie('userCode');
     const role = getCookie('role');
 
@@ -154,21 +141,20 @@
     document.getElementById('grade-upload-form').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const courseId = document.getElementById('courseId').value.trim();
       const fileInput = document.getElementById('file');
       const file = fileInput.files[0];
       const messageDiv = document.getElementById('upload-message');
 
-      if (!file || !courseId) {
-        messageDiv.textContent = '⚠️ Please provide all required fields.';
+      if (!file) {
+        messageDiv.style.color = 'red';
+        messageDiv.textContent = '⚠️ Please upload a file.';
         return;
       }
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('courseId', courseId);
       formData.append('userCode', userCode);
-      formData.append('final', 'true');
+      formData.append('final', 'true'); // Final grade submission
 
       try {
         const response = await fetch('http://localhost:8081/api/grade-submissions', {
@@ -178,16 +164,16 @@
 
         const result = await response.json();
 
-        if (response.ok) {
+        if (response.ok && result.success) {
           messageDiv.style.color = 'green';
-          messageDiv.textContent = '✅ Upload successful!';
+          messageDiv.textContent = `✅ ${result.message || 'Upload successful!'}`;
         } else {
           messageDiv.style.color = 'red';
-          console.log('📦 Server responded with:', result);
-          messageDiv.textContent = '❌ Upload failed: ' + (result?.error || result?.message || 'Unknown error');
+          const errorMsg = result?.data?.message || result?.message || 'Unknown error';
+          messageDiv.textContent = `❌ Upload failed: ${errorMsg}`;
         }
       } catch (err) {
-        console.error('❌ Error uploading:', err);
+        console.error('❌ Upload error:', err);
         messageDiv.style.color = 'red';
         messageDiv.textContent = '❌ Server error during upload.';
       }

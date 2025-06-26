@@ -1,7 +1,163 @@
 <!DOCTYPE html>
-<html>
-<head><title>Register Institution</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Register Institution</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background-color: #f9fafb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 2rem 2.5rem;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .sub {
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      font-weight: 500;
+      display: block;
+      margin-top: 1rem;
+    }
+
+    input {
+      margin-top: 6px;
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    button {
+      flex: 1;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .primary {
+      background-color: #1e3a8a;
+      color: white;
+    }
+
+    .secondary {
+      background-color: #f3f4f6;
+      color: #111827;
+      border: 1px solid #d1d5db;
+    }
+
+    .message {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
 <body>
-  <h2>Register Institution Page</h2>
+  <div class="container">
+    <h2>Register Institution</h2>
+    <p class="sub">Fill in your institution's details below.</p>
+
+    <label for="name">Institution Name</label>
+    <input id="name" placeholder="e.g. National Technical University of Athens" />
+
+    <label for="region">Region</label>
+    <input id="region" placeholder="e.g. Katechaki" />
+
+    <label for="contactPhone">Contact Phone</label>
+    <input id="contactPhone" placeholder="e.g. 210 772 1000" />
+
+    <label for="address">Address</label>
+    <input id="address" placeholder="e.g. 9 Iroon Polytechniou Street, Athens, 157 80" />
+
+    <div class="buttons">
+      <button class="primary" onclick="submitInstitution()">Submit</button>
+    </div>
+
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    const userCode = getCookie('userCode');
+    const role = getCookie('role');
+
+    if (!userCode || role !== 'institution_rep') {
+      window.location.href = 'login.html';
+    }
+
+    async function submitInstitution() {
+  const name = document.getElementById('name').value.trim();
+  const region = document.getElementById('region').value.trim();
+  const contactPhone = document.getElementById('contactPhone').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const message = document.getElementById('message');
+
+  message.textContent = '';
+  message.style.color = '';
+
+  if (!name || !region || !contactPhone || !address) {
+    message.textContent = '❌ Please fill in all fields.';
+    message.style.color = 'red';
+    return;
+  }
+
+  try {
+    const res = await fetch(`http://localhost:8100/api/institution/create/by-user/${userCode}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, region, contactPhone, address })
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      window.location.href = 'rep_dashboard.html';  // ✅ επιτυχία → redirect
+    } else {
+      message.textContent = `❌ ${result.message || 'Failed to register institution.'}`;
+      message.style.color = 'red';
+    }
+  } catch (err) {
+    console.error(err);
+    message.textContent = '❌ Server error while submitting.';
+    message.style.color = 'red';
+  }
+}
+  </script>
 </body>
 </html>

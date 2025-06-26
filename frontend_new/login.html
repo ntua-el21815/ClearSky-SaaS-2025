@@ -124,7 +124,7 @@
       document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
     }
 
-    async function login() {
+  async function login() {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
   const messageDiv = document.getElementById('message');
@@ -148,17 +148,19 @@
       const { token, user } = result;
       localStorage.setItem('token', token);
 
-      // ✅ Αποθήκευση νέου πεδίου userCode
       setCookie('userCode', user.userCode, 7);
       setCookie('role', user.role, 7);
 
-      // ➤ Ανακατεύθυνση με βάση το ρόλο
       if (user.role === 'student') {
         window.location.href = 'student_grade_statistics.html';
       } else if (user.role === 'instructor') {
         window.location.href = 'instr_dashboard.html';
       } else if (user.role === 'institution_rep') {
-        if (user.institutionId) {
+        // 🔍 Έλεγχος αν έχει ήδη δηλωμένο institution
+        const instCheck = await fetch(`http://localhost:8100/api/institution/info/by-user/${user.userCode}`);
+        const instResult = await instCheck.json();
+
+        if (instCheck.ok && instResult.success) {
           window.location.href = 'rep_dashboard.html';
         } else {
           window.location.href = 'rep_register_institution.html';

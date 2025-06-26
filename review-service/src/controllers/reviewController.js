@@ -51,7 +51,7 @@ export const createReview = async (req, res) => {
 export const getAllReviews = async (req, res) => {
   try {
     const reviews = await Review.find(req.query); // Basic filtering via query params
-    res.status(200).json(reviews);
+    res.status(200).json({ success: true, data: reviews });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

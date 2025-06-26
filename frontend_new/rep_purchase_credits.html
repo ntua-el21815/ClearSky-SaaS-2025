@@ -150,7 +150,7 @@
 
     const result = await res.json();
 
-    if (res.ok && result.status === 'SUCCESS') {
+    if (res.ok && result.status === 'COMPLETED') {
       message.style.color = 'green';
       message.textContent = `✅ Transaction successful! ${credits} credits added.`;
       fetchCredits(userCode); // refresh balance
