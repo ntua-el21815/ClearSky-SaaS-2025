@@ -71,29 +71,25 @@ app.get('/health', (req, res) => {
 app.post('/api/review-requests', async (req, res) => {
   try {
     const {
-      studentId,
+      studentCode,
       courseId,
-      gradeId,
-      studentRegistrationNumber,
       reason
     } = req.body;
 
     // Validate required fields
-    if (!studentId || !courseId || !gradeId || !reason) {
+    if (!studentCode || !courseId || !reason) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: studentId, courseId, gradeId, reason'
+        error: 'Missing required fields: studentCode, courseId, reason'
       });
     }
 
-    console.log('Processing review request for student:', studentRegistrationNumber);
+    console.log('Processing review request for student:', studentCode);
 
     // Step 1: Create review request in Review Service
     const reviewData = {
-      studentId,
+      studentCode,
       courseId,
-      gradeId,
-      studentRegistrationNumber : studentRegistrationNumber || null,
       reason,
       status: 'PENDING',
       requestedAt: new Date().toISOString()
@@ -113,10 +109,9 @@ app.post('/api/review-requests', async (req, res) => {
     const notificationData = {
       type: 'REVIEW_REQUEST_CREATED',
       reviewId: createdReview.id,
-      studentId: createdReview.studentId,
+      studentId: createdReview.studentCode,
       courseId: createdReview.courseId,
-      studentRegistrationNumber: createdReview.studentRegistrationNumber,
-      message: `New grade review request from student ${studentRegistrationNumber}`,
+      message: `New grade review request from student ${createdReview.studentCode}}`,
       timestamp: new Date().toISOString()
     };
 
@@ -196,9 +191,8 @@ app.post('/api/review-requests/:reviewId/reply', async (req, res) => {
     const notificationData = {
       type: 'REVIEW_REQUEST_COMPLETED',
       reviewId: updatedReview.id,
-      studentId: updatedReview.studentId,
+      studentId: updatedReview.studentCode,
       courseId: updatedReview.courseId,
-      studentRegistrationNumber: updatedReview.studentRegistrationNumber,
       message: `Your grade review request has been processed`,
       timestamp: new Date().toISOString()
     };
