@@ -9,4 +9,7 @@ COPY . .
 
 EXPOSE 5001
 
-CMD ["node", "app.js"]
+# Install concurrently to run both app and consumer together
+RUN npm install -g concurrently
+
+CMD ["concurrently", "node app.js", "node courseConsumer.js"]
