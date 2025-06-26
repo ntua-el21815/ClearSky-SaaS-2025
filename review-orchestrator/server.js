@@ -73,16 +73,16 @@ app.post('/api/review-requests', async (req, res) => {
     const {
       studentId,
       courseId,
-      gradeId,
+      //gradeId,
       studentRegistrationNumber,
       reason
     } = req.body;
 
     // Validate required fields
-    if (!studentId || !courseId || !gradeId || !reason) {
+    if (!studentId || !courseId || !reason) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: studentId, courseId, gradeId, reason'
+        error: 'Missing required fields: studentId, courseId, reason'
       });
     }
 
@@ -92,7 +92,7 @@ app.post('/api/review-requests', async (req, res) => {
     const reviewData = {
       studentId,
       courseId,
-      gradeId,
+      //gradeId,
       studentRegistrationNumber : studentRegistrationNumber || null,
       reason,
       status: 'PENDING',
@@ -209,7 +209,7 @@ app.post('/api/review-requests/:reviewId/reply', async (req, res) => {
     const cleanupNotification = {
       type: 'CLEANUP_TEMP_GRADES',
       reviewId: updatedReview.id,
-      gradeId: updatedReview.gradeId,
+      //gradeId: updatedReview.gradeId,
       message: 'Delete temporary personal grade details',
       timestamp: new Date().toISOString()
     };

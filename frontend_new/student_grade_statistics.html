@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Student Grade Statistics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -18,62 +19,85 @@
     }
 
     .header-title {
-      font-size: 24px;
+      font-size: 28px;
       font-weight: bold;
+      color: #0a0a0a;
     }
 
     .header-subtitle {
-      color: #6b7280;
       font-size: 16px;
+      color: #6b7280;
       margin-top: 4px;
     }
 
-    .blue-btn {
-      background-color: #2563eb;
+    .dashboard-btn {
+      background-color: #0a2a66;
       color: white;
-      border: none;
-      padding: 10px 16px;
+      padding: 10px 20px;
       font-size: 15px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .blue-btn:hover {
-      background-color: #1d4ed8;
-    }
-
-    .logout-btn {
-      background-color: #e74c3c;
-      color: white;
       border: none;
-      padding: 8px 14px;
-      border-radius: 5px;
+      border-radius: 8px;
       cursor: pointer;
-      position: absolute;
-      top: 16px;
-      right: 16px;
     }
 
-    .logout-btn:hover {
-      background-color: #c0392b;
+    .dashboard-btn:hover {
+      background-color: #07306a;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background-color: #0a2a66;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f3f4f6;
+    }
+
+    #charts-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .chart-box {
+      background: white;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     }
   </style>
 </head>
 <body>
-  <button class="logout-btn" onclick="logout()">Logout</button>
-
   <div class="header-row">
     <div>
-      <div class="header-title">Grade Statistics</div>
-      <div class="header-subtitle">Click on a course to view its grading distribution.</div>
+      <div class="header-title">Course Statistics</div>
+      <div class="header-subtitle">Click on a course to view its grading statistics.</div>
     </div>
-    <button class="blue-btn" onclick="location.href='student_my_courses.html'">Go to My Courses</button>
+    <div>
+      <button class="dashboard-btn" onclick="window.location.href='student_my_courses.html'">Go to My Courses</button>
+      <button class="dashboard-btn" onclick="logout()" style="margin-left: 10px;">Logout</button>
+    </div>
   </div>
+
+  <div id="course-table-container">Loading...</div>
+  <div id="charts-container"></div>
 
   <script>
     function getCookie(name) {
-      const cookieStr = document.cookie;
-      const cookies = cookieStr.split(';');
+      const cookies = document.cookie.split(';');
       for (let cookie of cookies) {
         const [key, value] = cookie.trim().split('=');
         if (key === name) return decodeURIComponent(value);
@@ -81,22 +105,166 @@
       return null;
     }
 
-    function deleteCookie(name) {
-      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    }
-
-    function logout() {
-      deleteCookie('userCode');
-      deleteCookie('role');
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
-    }
-
     const userCode = getCookie('userCode');
     const role = getCookie('role');
-
     if (!userCode || role !== 'student') {
       window.location.href = 'login.html';
+    }
+
+     async function loadStudentCourses() {
+    const container = document.getElementById('course-table-container');
+    const chartsContainer = document.getElementById('charts-container');
+    chartsContainer.innerHTML = '';
+
+    try {
+      const response = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/courses`);
+      const result = await response.json();
+      const courses = result.courses;
+
+      if (!Array.isArray(courses) || courses.length === 0) {
+        container.innerHTML = '<p>Student is not enrolled in any courses.</p>';
+        return;
+      }
+
+      const instCoursesRes = await fetch(`http://localhost:8100/api/institution/courses/by-user/${userCode}`);
+      const instCoursesData = await instCoursesRes.json();
+      const allCourses = instCoursesData.courses || [];
+
+      let tableHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Course ID</th>
+              <th>Course Name</th>
+              <th>Academic Period</th>
+              <th>Average</th>
+              <th>Median</th>
+              <th>Std Dev</th>
+              <th>Pass</th>
+              <th>Fail</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for (const course of courses) {
+        const courseId = course.courseId;
+        const name = course.courseName ?? '-';
+        const period = course.academicPeriod ?? '-';
+
+        let avg = '-', med = '-', std = '-', pass = '-', fail = '-';
+
+        try {
+          const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
+          if (statsRes.ok) {
+            const stats = await statsRes.json();
+            avg = stats.averageGrade?.toFixed(2) ?? '-';
+            med = stats.medianGrade?.toFixed(2) ?? '-';
+            std = stats.standardDeviation?.toFixed(2) ?? '-';
+            pass = stats.numberOfPasses ?? '-';
+            fail = stats.numberOfFails ?? '-';
+          }
+        } catch (err) {
+          console.warn(`Failed to load statistics for course ${courseId}`);
+        }
+
+        tableHTML += `
+          <tr style="cursor:pointer;" onclick="loadCourseCharts('${courseId}')">
+            <td>${courseId}</td>
+            <td>${name}</td>
+            <td>${period}</td>
+            <td>${avg}</td>
+            <td>${med}</td>
+            <td>${std}</td>
+            <td>${pass}</td>
+            <td>${fail}</td>
+          </tr>
+        `;
+      }
+
+      tableHTML += '</tbody></table>';
+      container.innerHTML = tableHTML;
+
+    } catch (err) {
+      console.error('Error loading student courses:', err);
+      container.innerHTML = `<p style="color: red;">❌ Failed to load courses.</p>`;
+    }
+  }
+
+    async function loadCourseCharts(courseId) {
+    const chartsContainer = document.getElementById('charts-container');
+    chartsContainer.innerHTML = '<p>Loading charts...</p>';
+
+    try {
+      const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
+      if (!statsRes.ok) throw new Error('Failed to fetch stats');
+      const stats = await statsRes.json();
+
+      chartsContainer.innerHTML = ''; // Clear before drawing
+
+      createChart(`Total Grading - ${courseId}`, stats.finalGradeDistribution, chartsContainer);
+
+      const sortedQuestions = Object.entries(stats.questionDistributionsRaw || {}).sort((a, b) => {
+        const numA = parseInt(a[0].replace('Q', ''), 10);
+        const numB = parseInt(b[0].replace('Q', ''), 10);
+        return numA - numB;
+      });
+
+      for (const [question, dist] of sortedQuestions) {
+        createChart(`Course ${courseId} - Q${question.replace('Q', '')}`, dist, chartsContainer);
+      }
+
+    } catch (err) {
+      console.error(err);
+      chartsContainer.innerHTML = '<p style="color:red;">❌ Failed to fetch statistics.</p>';
+    }
+  }
+
+    function createChart(title, dataObj, container) {
+    const box = document.createElement('div');
+    box.className = 'chart-box';
+    const canvas = document.createElement('canvas');
+    box.appendChild(canvas);
+    container.appendChild(box);
+
+    const labels = Object.keys(dataObj).map(n => +n).sort((a, b) => a - b);
+    const values = labels.map(l => dataObj[l] || 0);
+
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: title,
+          data: values,
+          backgroundColor: '#2563eb'
+        }]
+      },
+      options: {
+        plugins: {
+          title: {
+            display: true,
+            text: title,
+            font: { size: 18 }
+          },
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+  }
+
+    loadStudentCourses();
+
+    function logout() {
+      document.cookie = "userCode=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie = "role=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      window.location.href = "login.html";
     }
   </script>
 </body>
