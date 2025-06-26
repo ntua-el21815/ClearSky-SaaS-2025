@@ -211,4 +211,34 @@ exports.getInitialCourses = async (req, res) => {
 };
 
 
+exports.getCourseStatus = async (req, res) => {
+  const { userCode, courseId } = req.query;
+
+  if (!userCode || !courseId) {
+    return res.status(400).json({ success: false, message: "Missing userCode or courseId." });
+  }
+
+  try {
+    const course = await GradeUpload.findOne({
+      instructorId: userCode,
+      courseId
+    }).sort({ final: -1 }).lean(); // prioritizes final:true over false/null if both exist
+
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found for instructor." });
+    }
+
+    const status = course.final === true ? "Closed" : "Open";
+
+    return res.json({
+      success: true,
+      status
+    });
+  } catch (err) {
+    console.error("getCourseStatus error:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+
 
