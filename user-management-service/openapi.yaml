@@ -1,0 +1,335 @@
+openapi: 3.0.3
+info:
+  title: User Management API
+  version: 1.0.0
+  description: Endpoints for managing users, roles, and user-course associations.
+
+servers:
+  - url: http://localhost:8900/api/users
+    description: Local user service
+
+paths:
+  /:
+    get:
+      summary: Get all users
+      operationId: getAllUsers
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '500':
+          description: Server error
+    post:
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '201':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserSummary'
+        '400':
+          description: Missing fields or user already exists
+        '500':
+          description: Server error
+
+  /{id}:
+    get:
+      summary: Get a user by ID
+      operationId: getUserById
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+    put:
+      summary: Update a user by ID
+      operationId: updateUser
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  /code/{code}:
+    get:
+      summary: Get user by userCode
+      operationId: getUserByCode
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  /institution/{institutionId}:
+    get:
+      summary: Get users by institution
+      operationId: getUsersByInstitution
+      parameters:
+        - in: path
+          name: institutionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Users found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '500':
+          description: Server error
+
+  /assign-code:
+    post:
+      summary: Assign a userCode to a user
+      operationId: assignUserCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - userCode
+              properties:
+                email:
+                  type: string
+                userCode:
+                  type: string
+      responses:
+        '200':
+          description: User code assigned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Missing parameters
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  /{id}/courses:
+    get:
+      summary: Get courses for a student
+      operationId: getCoursesForStudent
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Student courses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  studentId:
+                    type: string
+                  courses:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Not a student
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  /{id}/instructor-courses:
+    get:
+      summary: Get courses for an instructor
+      operationId: getCoursesForInstructor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Instructor courses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instructorId:
+                    type: string
+                  courses:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Not an instructor
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  /count/by-institution/{institutionId}:
+    get:
+      summary: Get user count by institution
+      operationId: getUserCountByInstitution
+      parameters:
+        - in: path
+          name: institutionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  institutionId:
+                    type: string
+                  count:
+                    type: integer
+        '500':
+          description: Server error
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        role:
+          type: string
+        institutionId:
+          type: string
+        userCode:
+          type: string
+        courses:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserInput:
+      type: object
+      required:
+        - email
+        - password
+        - fullName
+        - role
+        - institutionId
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        fullName:
+          type: string
+        role:
+          type: string
+        institutionId:
+          type: string
+
+    UserUpdate:
+      type: object
+      properties:
+        fullName:
+          type: string
+        role:
+          type: string
+        userCode:
+          type: string
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        role:
+          type: string

@@ -2,6 +2,7 @@ const amqp = require('amqplib');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const connectDB = require('../config/db');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
@@ -14,7 +15,7 @@ const initConsumer = async () => {
   // Connect to database first
   await connectDB();
 
-  let retries = 5;
+  let retries = 10;
   while (retries) {
     try {
       const connection = await amqp.connect(RABBITMQ_URL);
@@ -76,14 +77,18 @@ const processUserSignup = async (userData) => {
     if (userData.password && !userData.password.startsWith('$2a$')) {
       hashedPassword = await bcrypt.hash(userData.password, 10);
     }
+
+    console.log("Creating user with ID:", userData.id);
     
     // Create new user
     const newUser = new User({
+      _id: new mongoose.Types.ObjectId(userData.userId),
       fullName: userData.fullName,
       email: userData.email,
       password: hashedPassword,
       role: userData.role,
-      institutionId: userData.institutionId || null
+      institutionId: userData.institutionId || null,
+      userCode: userData.userCode
     });
     
     await newUser.save();

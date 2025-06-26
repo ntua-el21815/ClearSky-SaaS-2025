@@ -1,0 +1,107 @@
+openapi: 3.0.3
+info:
+  title: Grade Orchestrator API
+  version: 1.0.0
+  description: API gateway handling grade submissions, credit deductions, and data orchestration with messaging queues.
+
+servers:
+  - url: http://localhost:4000/api
+    description: Local Grade Orchestrator Server
+
+paths:
+  /grade-submissions:
+    post:
+      summary: Upload a grade file for a course
+      operationId: uploadGrades
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - userCode
+              properties:
+                file:
+                  type: string
+                  format: binary
+                courseId:
+                  type: string
+                userCode:
+                  type: string
+                final:
+                  type: boolean
+      responses:
+        '200':
+          description: Upload completed successfully
+        '400':
+          description: Bad request (missing parameters or insufficient credits)
+        '502':
+          description: Error in downstream services
+
+  /grades/by-course:
+    get:
+      summary: Get all grades for a course
+      operationId: getGradesByCourse
+      parameters:
+        - in: query
+          name: courseId
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: institutionId
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Grades for the course
+        '502':
+          description: Error in downstream services
+
+  /grades/student:
+    get:
+      summary: Get all grades for a student
+      operationId: getGradesByStudent
+      parameters:
+        - in: query
+          name: studentId
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Student grades
+        '502':
+          description: Error in downstream services
+
+  /statistics/all:
+    get:
+      summary: Get all statistics
+      operationId: getAllStatistics
+      responses:
+        '200':
+          description: All stored statistics
+        '502':
+          description: Failed to fetch statistics
+
+  /statistics/course/{courseId}:
+    get:
+      summary: Get statistics for a specific course
+      operationId: getStatisticsByCourse
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Statistics for the course
+        '502':
+          description: Failed to fetch statistics
+
+components:
+  schemas: {}

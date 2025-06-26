@@ -20,6 +20,9 @@ const STATISTICS_API = (process.env.STATISTICS_SERVICE_URL || '')
   .replace(/\/$/, '');
 const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
 
+const USER_SERVICE_API = (process.env.USER_MANAGEMENT_SERVICE_URL || '').replace(/\/$/, '') + '/users';
+
+
 /* ---------- RabbitMQ bootstrap with retry ---------- */
 let mqChannel;
 const MAX_RETRIES   = 12;
@@ -75,15 +78,32 @@ router.post(
   upload.single('file'),
   async (req, res) => {
     /* pull params from client */
-    const { institutionId,
-            courseId  = 'unknown',
-            userId    = 'unknown' } = req.body;
+    const {
+      courseId = 'unknown',
+      userCode    = 'unknown'
+    } = req.body;
 
     const isFinal = (req.body.final === 'true' || req.body.final === true);
+    const finalFlag = Boolean(isFinal);
     const file    = req.file;
 
-    if (!institutionId || !file) {
-      return res.status(400).json({ success:false, error:'Missing institutionId or file' });
+    if (!userCode  || !file) {
+      return res.status(400).json({ success:false, error:'Missing userCode  or file' });
+    }
+
+    /* ---------- institutionId: fetch from user-management ---------- */
+    let institutionId;
+    try {
+      const userResp = await axios.get(`${USER_SERVICE_API}/by-code/${userCode}`);
+      institutionId = userResp.data?.institutionId;
+      if (!institutionId) throw new Error('Missing institutionId in user record');
+    } catch (err) {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      return res.status(502).json({
+        success:false,
+        stage:'user-fetch',
+        ...formatAxiosError(err, 'Failed to fetch user or institutionId')
+      });
     }
 
     /* ---------- credit logic (only if NOT final) ---------- */
@@ -126,8 +146,9 @@ router.post(
     /* ---------- forward file to grade-service ---------- */
     const formData = new FormData();
     formData.append('file',   fs.createReadStream(file.path));
-    formData.append('final',  String(isFinal));
-    formData.append('courseId', courseId);
+    formData.append('final',  String(finalFlag));
+    formData.append('instructorId', userCode); 
+
 
     let gradeResp;
     try {
@@ -182,56 +203,58 @@ router.post(
         console.error('[orchestrator] failed to publish GRADES_POSTED:', err.message);
       }
 
-      /* 3. course-info → courses  (🆕) */
-      try {
-        const meta = inner.metadata || {};
+      /* 3. course-info → courses (only for initial uploads) */
+      if (!isFinal) {
+        try {
+          const meta = inner.metadata || {};
 
-        const courseMsg = {
-          academicPeriod : meta.academicPeriod  || null,
-          courseName     : meta.courseName      || null,
-          courseId       : meta.courseId        || null,
-          institutionId,
-          instructorId   : userId
-        };
+          const courseMsg = {
+            academicPeriod : meta.academicPeriod  || null,
+            courseName     : meta.courseName      || null,
+            courseId       : meta.courseId        || null,
+            institutionId,
+            instructorId   : userCode
+          };
 
-        mqChannel.sendToQueue(
-          'courses',
-          Buffer.from(JSON.stringify(courseMsg)),
-          { persistent:true }
-        );
+          mqChannel.sendToQueue(
+            'courses',
+            Buffer.from(JSON.stringify(courseMsg)),
+            { persistent:true }
+          );
+
+          /* 4. course authorization → coursesAuth */
+          try {
+            const instructorIdFinal = userCode;
+
+            const studentUserCodes = [
+              ...new Set(
+                (inner.grades || [])
+                  .map(g => g.studentId) 
+                  .filter(Boolean)
+              )
+            ];
 
 
-      /* 4. course authorization → coursesAuth  (🆕) */
-      try {
-        const instructorIdFinal = userId;  // για τώρα, instructor είναι ο uploader
+            mqChannel.sendToQueue(
+              'coursesAuth',
+              Buffer.from(JSON.stringify({
+                courseId: meta.courseId,
+                courseName: meta.courseName,
+                academicPeriod: meta.academicPeriod,
+                instructorId: instructorIdFinal,
+                studentUserCodes  
+              })),
+              { persistent: true }
+            );
+            console.log('[orchestrator] 🔐 courseAuth sent to coursesAuth queue');
+          } catch (err) {
+            console.error('[orchestrator] failed to publish coursesAuth:', err.message);
+          }
 
-        const studentIds = [
-          ...new Set(
-            (inner.grades || [])
-              .map(g => g.studentId)      // ← field exists in the return JSON
-              .filter(Boolean)            // drop null / ''
-            )
-          ];
-
-        mqChannel.sendToQueue(
-          'coursesAuth',
-          Buffer.from(JSON.stringify({
-            courseId: meta.courseId,
-            courseName: meta.courseName,
-            academicPeriod: meta.academicPeriod,         // αυτό έρχεται από το grade-service
-            instructorId: instructorIdFinal,
-            studentIds
-          })),
-          { persistent: true }
-        );
-        console.log('[orchestrator] 🔐 courseAuth sent to coursesAuth queue');
-      } catch (err) {
-        console.error('[orchestrator] failed to publish coursesAuth:', err.message);
-      }
-
-        console.log('[orchestrator] 📚 course info sent to courses queue');
-      } catch (err) {
-        console.error('[orchestrator] failed to publish course info:', err.message);
+          console.log('[orchestrator] 📚 course info sent to courses queue');
+        } catch (err) {
+          console.error('[orchestrator] failed to publish course info:', err.message);
+        }
       }
     }
 
@@ -243,6 +266,7 @@ router.post(
     });
   }
 );
+
 
 router.get('/api/grades/by-course', async (req, res) => {
   try {
@@ -297,5 +321,21 @@ router.get('/api/statistics/course/:courseId', async (req, res) => {
     });
   }
 });
+
+// get initial courses that are not final for instructorCode
+router.get('/api/grades/initial-courses', async (req, res) => {
+  try {
+    const response = await axios.get(`${GRADE_API}/initial-courses`, {
+      params: req.query
+    });
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      ...formatAxiosError(err, 'Failed to fetch initial-only courses')
+    });
+  }
+});
+
 
 module.exports = router;

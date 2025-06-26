@@ -6,7 +6,8 @@ const UserEmail = require('./models/UserEmail'); // ✅ You'll need this model
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
 const NOTIFICATION_QUEUE = 'notifications';
-const USER_CREATED_QUEUE = 'user_created';
+const EXCHANGE_NAME = 'user.signup';
+const FANOUT_QUEUE = 'notification.fanout.queue';
 
 async function startConsumer() {
   await connectDB(); // ✅ Connect to MongoDB
@@ -15,9 +16,11 @@ async function startConsumer() {
   const channel = await connection.createChannel();
 
   await channel.assertQueue(NOTIFICATION_QUEUE, { durable: true });
-  await channel.assertQueue(USER_CREATED_QUEUE, { durable: true });
+  await channel.assertExchange(EXCHANGE_NAME, 'fanout', { durable: false });
+  const q = await channel.assertQueue(FANOUT_QUEUE, { durable: true });
+  await channel.bindQueue(q.queue, EXCHANGE_NAME, '');
 
-  console.log(`🟢 Listening on queues: "${NOTIFICATION_QUEUE}", "${USER_CREATED_QUEUE}"`);
+  console.log(`🟢 Listening on queues: "${NOTIFICATION_QUEUE}", "${FANOUT_QUEUE}"`);
 
   // 🔔 Notification handler
   channel.consume(NOTIFICATION_QUEUE, async msg => {
@@ -47,31 +50,32 @@ async function startConsumer() {
   });
 
   // 👤 User Created handler
-  channel.consume(USER_CREATED_QUEUE, async msg => {
+  channel.consume(q.queue, async msg => {
     if (!msg) return;
     try {
       const data = JSON.parse(msg.content.toString());
-      const { userId, email } = data;
+      const { userCode, email } = data;
 
-      if (!userId || !email) {
-        console.warn('⚠️ Invalid user data received');
+      if (!userCode || !email) {
+        console.warn('⚠️ Invalid user data received (fanout)');
         channel.ack(msg);
         return;
       }
 
       await UserEmail.updateOne(
-        { studentId: userId },
-        { studentId: userId, email },
+        { studentCode: userCode },
+        { studentCode: userCode, email },
         { upsert: true }
       );
 
-      console.log(`✅ Stored user: ${userId} → ${email}`);
+      console.log(`✅ Stored user (via fanout): ${userCode} → ${email}`);
       channel.ack(msg);
     } catch (err) {
-      console.error('❌ Failed to store user:', err);
+      console.error('❌ Fanout handler error:', err);
       channel.nack(msg, false, false);
     }
   });
+
 }
 
 startConsumer();

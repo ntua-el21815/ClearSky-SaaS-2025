@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Grade Statistics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9fafb;
+      padding: 2rem;
+    }
+
+    h2 {
+      font-size: 24px;
+      margin-bottom: 1rem;
+    }
+
+    #charts-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .chart-box {
+      background: white;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    .chart-box canvas {
+      width: 100%;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      margin-right: 8px;
+      width: 200px;
+    }
+
+    button {
+      padding: 8px 14px;
+      background: #0a2a66;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #083075;
+    }
+
+    table {
+      margin-top: 1rem;
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 800px;
+      background: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    th {
+      background-color: #0a2a66;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f3f4f6;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>📊 Grade Statistics (Institution Rep)</h2>
+
+  <input type="text" id="courseIdInput" placeholder="Enter Course ID..." />
+  <button onclick="loadStatistics()">Load Statistics</button>
+
+  <div id="summary-table-container"></div>
+  <div id="charts-container"></div>
+
+  <script>
+    async function loadStatistics() {
+      const courseId = document.getElementById('courseIdInput').value.trim();
+      const chartsContainer = document.getElementById('charts-container');
+      const tableContainer = document.getElementById('summary-table-container');
+      chartsContainer.innerHTML = '';
+      tableContainer.innerHTML = '';
+
+      if (!courseId) {
+        alert('Please enter a course ID.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
+        if (!res.ok) throw new Error('Failed to load statistics');
+        const stats = await res.json();
+
+        // Summary Table
+        tableContainer.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Average</th>
+                <th>Median</th>
+                <th>Std Dev</th>
+                <th>Students</th>
+                <th>Passes</th>
+                <th>Fails</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${stats.averageGrade?.toFixed(2) ?? '-'}</td>
+                <td>${stats.medianGrade?.toFixed(2) ?? '-'}</td>
+                <td>${stats.standardDeviation?.toFixed(2) ?? '-'}</td>
+                <td>${stats.numberOfStudents ?? '-'}</td>
+                <td>${stats.numberOfPasses ?? '-'}</td>
+                <td>${stats.numberOfFails ?? '-'}</td>
+              </tr>
+            </tbody>
+          </table>
+        `;
+
+        // --- Total Grade Distribution Chart ---
+        createChart(
+          'Total Grading Overview',
+          stats.finalGradeDistribution,
+          chartsContainer
+        );
+
+        // Ταξινόμηση των ερωτήσεων βάσει αριθμητικής τιμής (π.χ. Q01 < Q02 < ... < Q10)
+        const sortedQuestions = Object.entries(stats.questionDistributionsRaw)
+        .sort((a, b) => {
+          const numA = parseInt(a[0].replace('Q', ''), 10);
+          const numB = parseInt(b[0].replace('Q', ''), 10);
+          return numA - numB;
+        });
+
+        for (const [question, dist] of sortedQuestions) {
+          createChart(`Question ${question.replace('Q', '')}`, dist, chartsContainer);
+        }
+
+      } catch (err) {
+        console.error(err);
+        chartsContainer.innerHTML = '<p style="color:red;">❌ Failed to fetch data</p>';
+      }
+    }
+
+    function createChart(title, dataObj, container) {
+      const box = document.createElement('div');
+      box.className = 'chart-box';
+
+      const canvas = document.createElement('canvas');
+      box.appendChild(canvas);
+      container.appendChild(box);
+
+      const labels = Object.keys(dataObj).map(n => +n).sort((a, b) => a - b);
+      const values = labels.map(l => dataObj[l] || 0);
+
+      new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: title,
+            data: values,
+            backgroundColor: '#2563eb'
+          }]
+        },
+        options: {
+          plugins: {
+            title: {
+              display: true,
+              text: title,
+              font: { size: 18 }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

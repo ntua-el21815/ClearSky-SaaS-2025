@@ -1,0 +1,216 @@
+openapi: 3.0.3
+info:
+  title: Auth Orchestrator API
+  version: 1.0.0
+  description: Orchestration layer for authentication, signup, user and credit handling, and institutional data routing.
+
+servers:
+  - url: http://localhost:4000/api
+    description: Local development server
+
+paths:
+  /auth:
+    post:
+      summary: Authenticate user via token or credentials
+      operationId: authenticateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Authentication successful
+        '400':
+          description: Missing credentials
+        '401':
+          description: Invalid token
+        '500':
+          description: Server error
+
+  /signup:
+    post:
+      summary: Register a new user with repCode
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - fullName
+                - role
+                - userCode
+                - repCode
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                fullName:
+                  type: string
+                role:
+                  type: string
+                userCode:
+                  type: string
+                repCode:
+                  type: string
+      responses:
+        '201':
+          description: Signup successful
+        '400':
+          description: Validation error or missing fields
+        '502':
+          description: Failed to fetch rep user
+        '500':
+          description: Signup failed
+
+  /credits/user-code/{userCode}/add:
+    post:
+      summary: Add credits to a user's institution
+      operationId: addCreditsToUserInstitution
+      parameters:
+        - in: path
+          name: userCode
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credits
+              properties:
+                credits:
+                  type: number
+      responses:
+        '200':
+          description: Credits added successfully
+        '400':
+          description: Institution not found
+        '500':
+          description: Credit addition failed
+
+  /users/by-code/{userCode}/courses:
+    get:
+      summary: Get student courses by userCode
+      operationId: getStudentCoursesByUserCode
+      parameters:
+        - in: path
+          name: userCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Courses for the student
+        '400':
+          description: Not a student
+        '500':
+          description: Failed to fetch courses
+
+  /users/by-code/{userCode}/instructor-courses:
+    get:
+      summary: Get instructor courses by userCode
+      operationId: getInstructorCoursesByUserCode
+      parameters:
+        - in: path
+          name: userCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Courses for the instructor
+        '400':
+          description: Not an instructor
+        '500':
+          description: Failed to fetch courses
+
+  /users/count/by-user/{userCode}:
+    get:
+      summary: Get user count in the institution of a user
+      operationId: getUserCountByUserCode
+      parameters:
+        - in: path
+          name: userCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Count of users
+        '400':
+          description: Institution not found
+        '500':
+          description: Failed to fetch user count
+
+  /credits/by-user/{userCode}/available:
+    get:
+      summary: Get available credits for institution by userCode
+      operationId: getAvailableCreditsByUserCode
+      parameters:
+        - in: path
+          name: userCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Available credits
+        '400':
+          description: Institution not found
+        '500':
+          description: Failed to fetch credit balance
+
+  /institution/courses/by-user/{userCode}:
+    get:
+      summary: Get courses for institution based on userCode
+      operationId: getInstitutionCoursesByUserCode
+      parameters:
+        - in: path
+          name: userCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of courses for the institution
+        '400':
+          description: Institution not found
+        '500':
+          description: Failed to fetch courses
+
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time

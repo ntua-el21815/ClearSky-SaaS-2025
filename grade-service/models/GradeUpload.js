@@ -6,7 +6,8 @@ const gradeUploadSchema = new mongoose.Schema({
   courseName:{ type: String, required: true },
   courseId:  { type: String, required: true },
   ratingScale:{ String },
-  final: { Boolean },
+  final: { type: Boolean },
+  instructorId: { type: String, required: true },
   weights: {
     type: Map,
     of: Number
@@ -24,7 +25,5 @@ const gradeUploadSchema = new mongoose.Schema({
     }
   ]
 });
-
-module.exports = mongoose.model('GradeUpload', gradeUploadSchema);
 
 module.exports = mongoose.model('GradeUpload', gradeUploadSchema);

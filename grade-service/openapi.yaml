@@ -1,0 +1,177 @@
+openapi: 3.0.3
+info:
+  title: Grade Service API
+  version: 1.0.0
+  description: API for uploading and retrieving course grades.
+
+servers:
+  - url: http://localhost:8500/gradeRoutes
+    description: Local Grade Service
+
+paths:
+  /upload-initial:
+    post:
+      summary: Upload a grade Excel file
+      operationId: uploadGrades
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                final:
+                  type: boolean
+              required:
+                - file
+      responses:
+        '200':
+          description: Grades uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '500':
+          description: Upload failed due to server error
+
+  /:
+    get:
+      summary: Get grades for a course
+      operationId: getGradesByCourse
+      parameters:
+        - in: query
+          name: academicPeriod
+          schema:
+            type: string
+          required: true
+          description: Academic period (e.g., "2024-Winter")
+        - in: query
+          name: courseId
+          schema:
+            type: string
+          required: true
+          description: Course ID
+        - in: query
+          name: final
+          schema:
+            type: boolean
+          required: false
+          description: Whether to fetch final grades
+      responses:
+        '200':
+          description: Course grades returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseGrades'
+        '400':
+          description: Missing required query parameters
+        '404':
+          description: Grades not found
+        '500':
+          description: Internal server error
+
+  /student:
+    get:
+      summary: Get a student's grades by ID
+      operationId: getStudentGradesById
+      parameters:
+        - in: query
+          name: academicPeriod
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: courseId
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: studentId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Student grade returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentGrade'
+        '400':
+          description: Missing required query parameters
+        '404':
+          description: Course or student not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    UploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            metadata:
+              type: object
+              additionalProperties: true
+            weights:
+              type: object
+              additionalProperties:
+                type: number
+            grades:
+              type: array
+              items:
+                $ref: '#/components/schemas/GradeEntry'
+            _id:
+              type: string
+
+    CourseGrades:
+      type: object
+      properties:
+        academicPeriod:
+          type: string
+        courseId:
+          type: string
+        final:
+          type: boolean
+        grades:
+          type: array
+          items:
+            $ref: '#/components/schemas/GradeEntry'
+
+    StudentGrade:
+      type: object
+      properties:
+        academicPeriod:
+          type: string
+        courseId:
+          type: string
+        final:
+          type: boolean
+        student:
+          $ref: '#/components/schemas/GradeEntry'
+
+    GradeEntry:
+      type: object
+      properties:
+        studentId:
+          type: string
+        studentName:
+          type: string
+        academicalEmail:
+          type: string
+        grade:
+          type: string
+        responses:
+          type: object
+          additionalProperties:
+            type: string

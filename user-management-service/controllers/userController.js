@@ -77,12 +77,10 @@ exports.assignUserCode = async (req, res) => {
   }
 };
 
-
-
 exports.registerUser = async (req, res) => {
-  const { email, password, fullName, role } = req.body;
+  const { email, password, fullName, role, institutionId, userCode } = req.body;
 
-  if (!email || !password || !role) {
+  if (!email || !password || !role || !fullName || !institutionId || !userCode) {
     return res.status(400).json({ message: "Missing fields" });
   }
 
@@ -92,7 +90,7 @@ exports.registerUser = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const newUser = new User({ email, fullName, role, password: hashed });
+    const newUser = new User({ email, fullName, role, password: hashed, institutionId, userCode });
     await newUser.save();
 
     // const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, {
@@ -101,10 +99,12 @@ exports.registerUser = async (req, res) => {
 
     res.status(201).json({
       user: {
-        id: newUser._id,
+        id: newUser._id.toString(),
         email: newUser.email,
         fullName: newUser.fullName,
         role: newUser.role,
+        institutionId: institutionId,
+        userCode: userCode
       },
     });
   } catch (err) {
@@ -121,7 +121,7 @@ exports.getCoursesForStudent = async (req, res) => {
     if (user.role !== "student")
       return res.status(400).json({ message: "Not a student" });
 
-    res.json({ studentId: user._id, courses: user.courses });
+    res.json({courses: user.courses });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
@@ -134,12 +134,7 @@ exports.getCoursesForInstructor = async (req, res) => {
     if (!user)               return res.status(404).json({ message: "User not found" });
     if (user.role !== "instructor")
       return res.status(400).json({ message: "Not an instructor" });
-
-    const courseIds = user.courses.map(c =>
-      typeof c === "string" ? c : c.courseId
-    );
-
-    res.json({ instructorId: user._id, courses: courseIds });
+    res.json({ courses: user.courses  });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }

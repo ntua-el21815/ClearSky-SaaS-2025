@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ClearSky - Institution Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      padding: 2rem;
+    }
+
+    .dashboard-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .dashboard-header h1 {
+      font-size: 28px;
+      margin-bottom: 0.2rem;
+    }
+
+    .dashboard-header p {
+      color: #6b7280;
+      font-size: 16px;
+    }
+
+    .stats-container {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .stat-box {
+      background: white;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 0.2rem;
+    }
+
+    .sections {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .section-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      flex: 1;
+      min-width: 220px;
+      text-align: center;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 0.3rem;
+    }
+
+    .section-desc {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 1rem;
+    }
+
+    .section-card button {
+      background-color: #0a2a66;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .section-card button:hover {
+      background-color: #083075;
+    }
+
+    .logout-container {
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    .logout-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 15px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .logout-btn:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-header">
+    <h1>Institution Dashboard</h1>
+    <p>Manage your institution's grading platform</p>
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-box">
+      <div class="stat-label">Available Credits</div>
+      <div class="stat-value" id="available-credits">Loading...</div>
+    </div>
+  </div>
+
+  <div class="sections">
+    <div class="section-card">
+      <div class="section-title">Register Institution</div>
+      <div class="section-desc">Add a new institution to the system</div>
+      <button onclick="location.href='rep_register_institution.html'">Register Institution</button>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">Grade Statistics</div>
+      <div class="section-desc">Analyze grading outcomes</div>
+      <button onclick="location.href='rep_grade_statistics.html'">Grade Statistics</button>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">Credits Management</div>
+      <div class="section-desc">Purchase additional credits</div>
+      <button onclick="location.href='rep_purchase_credits.html'">Purchase Credits</button>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">User Administration</div>
+      <div class="section-desc">Manage users and permissions</div>
+      <button onclick="location.href='rep_user_management.html'">User Management</button>
+    </div>
+  </div>
+
+  <div class="logout-container">
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const cookieStr = document.cookie;
+      const cookies = cookieStr.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    function deleteCookie(name) {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    }
+
+    function logout() {
+      deleteCookie('userCode');
+      deleteCookie('role');
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    }
+
+    const userCode = getCookie('userCode');
+    const role = getCookie('role');
+
+    if (!userCode || role !== 'institution_rep') {
+      window.location.href = 'login.html';
+    }
+
+    async function fetchCredits() {
+  try {
+    const response = await fetch(`http://localhost:8100/api/credits/by-user/${userCode}/available`);
+    const result = await response.json();
+
+    if (response.ok && result.availableCredits !== undefined) {
+      document.getElementById('available-credits').textContent = result.availableCredits;
+    } else {
+      document.getElementById('available-credits').textContent = 'Error';
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById('available-credits').textContent = 'Error';
+  }
+}
+
+    fetchCredits();
+  </script>
+</body>
+</html>

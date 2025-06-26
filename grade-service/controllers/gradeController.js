@@ -7,6 +7,8 @@ exports.uploadGrades = async (req, res) => {
     /* 1. Parse Excel */
     const { grades, metadata } = parseExcel(req.file.path);
     const isFinal = req.body.final === 'true' || req.body.final === true;
+    const instructorId = req.body.instructorId;
+
 
     /* 2. Extract weights into a separate object */
     const weights = {};
@@ -36,7 +38,7 @@ exports.uploadGrades = async (req, res) => {
     });
 
     /* 4. Build document */
-    const doc = { timestamp:new Date(), final:isFinal, ...metadata, weights, grades:formattedGrades };
+    const doc = { timestamp:new Date(), ...metadata, final:Boolean(isFinal), instructorId, weights, grades:formattedGrades };
 
     /* 5. Delete previous upload for same course/period */
     const filter = {
@@ -46,6 +48,51 @@ exports.uploadGrades = async (req, res) => {
     };
     if (metadata.courseName) filter.courseName = metadata.courseName;
     if (metadata.courseId) filter.courseId = metadata.courseId;
+
+
+    // 5b. Check for conflicting uploads
+    const existingInitial = await GradeUpload.findOne({
+      courseId: metadata.courseId,
+      academicPeriod: metadata.academicPeriod,
+      final: { $in: [false, null] }
+    });
+
+    const existingFinal = await GradeUpload.findOne({
+      courseId: metadata.courseId,
+      academicPeriod: metadata.academicPeriod,
+      final: true
+    });
+
+    console.log('Checking for duplicates with:', {
+      courseId: metadata.courseId,
+      academicPeriod: metadata.academicPeriod,
+      isFinal
+    });
+
+
+    // Rule 1: Prevent second initial
+    if (!isFinal && existingInitial) {
+      return res.status(400).json({
+        success: false,
+        message: 'Initial grades have already been uploaded. Only one initial upload allowed.'
+      });
+    }
+
+    // Rule 2: Prevent final if no initial
+    if (isFinal && !existingInitial) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot upload final grades before uploading initial grades.'
+      });
+    }
+
+    // Rule 3: Prevent second final
+    if (isFinal && existingFinal) {
+      return res.status(400).json({
+        success: false,
+        message: 'Final grades have already been uploaded. Only one final upload allowed.'
+      });
+    }
 
 
     /* 6. Save */
@@ -109,3 +156,59 @@ exports.getStudentGradesById = async (req, res) => {
 
   res.json({ academicPeriod: course.academicPeriod, courseId: course.courseId, final: course.final, student });
 };
+
+
+exports.getInitialCourses = async (req, res) => {
+  const { userCode } = req.query;
+
+  if (!userCode) {
+    return res.status(400).json({ success: false, message: "Missing userCode in query." });
+  }
+
+  try {
+    // Step 1: Find all initial uploads for this instructor
+    const initialCourses = await GradeUpload.find({
+      final: { $in: [false, null] },
+      instructorId: userCode
+    }).lean();
+
+    // Step 2: Get courseId + academicPeriod pairs that have a final upload
+    const finals = await GradeUpload.find(
+      { final: true },
+      { courseId: 1, academicPeriod: 1 }
+    ).lean();
+
+    const finalKeys = new Set(finals.map(f => `${f.courseId}-${f.academicPeriod}`));
+
+    // Step 3: Filter out initial uploads that already have a final
+    const result = initialCourses.filter(doc => {
+      const key = `${doc.courseId}-${doc.academicPeriod}`;
+      return !finalKeys.has(key);
+    });
+
+    // If none found, return message
+    if (result.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No initial courses",
+        data: []
+      });
+    }
+
+    // Step 4: Return only the needed fields
+    const courses = result.map(doc => ({
+      courseId: doc.courseId,
+      courseName: doc.courseName,
+      academicPeriod: doc.academicPeriod,
+      timestamp: doc.timestamp
+    }));
+
+    return res.status(200).json({ success: true, data: courses });
+  } catch (err) {
+    console.error("getInitialCourses error:", err);
+    return res.status(500).json({ success: false, message: "Failed to fetch initial-only courses." });
+  }
+};
+
+
+

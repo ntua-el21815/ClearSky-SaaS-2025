@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ClearSky - User Management</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .card {
+      background: white;
+      padding: 2.5rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      width: 400px;
+      text-align: center;
+    }
+
+    .logo-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      background-color: #0a2a66;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 22px;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    input, select {
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .btn {
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .submit-btn {
+      background-color: #0a2a66;
+      color: white;
+    }
+
+    .submit-btn:hover {
+      background-color: #083075;
+    }
+
+    .logout-btn {
+      background-color: #e74c3c;
+      color: white;
+      margin-top: 1rem;
+    }
+
+    .logout-btn:hover {
+      background-color: #c0392b;
+    }
+
+    .message {
+      margin-top: 1rem;
+      font-weight: bold;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo-title-row">
+      <div class="logo">C</div>
+      <p class="title">ClearSky</p>
+    </div>
+    <p class="subtitle">Add New User Account</p>
+
+    <form onsubmit="createUser(event)">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <input type="text" id="fullName" placeholder="Full Name" required>
+      <select id="role" required>
+        <option value="">-- Select Role --</option>
+        <option value="student">Student</option>
+        <option value="instructor">Instructor</option>
+      </select>
+      <input type="text" id="userCode" placeholder="User Code (π.χ. 031xxxxx)" required>
+      <button type="submit" class="btn submit-btn">➕ Add User</button>
+    </form>
+
+    <div class="message" id="message"></div>
+    <button class="btn logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    function deleteCookie(name) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+
+    function logout() {
+      deleteCookie('userCode');
+      deleteCookie('role');
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    }
+
+    const userCode = getCookie('userCode');
+    const role = getCookie('role');
+
+    if (!userCode || role !== 'institution_rep') {
+      window.location.href = 'login.html';
+    }
+
+    async function createUser(event) {
+      event.preventDefault();
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = "";
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const fullName = document.getElementById('fullName').value.trim();
+      const role = document.getElementById('role').value;
+      const userCode = document.getElementById('userCode').value.trim();
+      const repCode = getCookie('userCode');
+
+      if (!email || !password || !fullName || !role || !userCode || !repCode) {
+        messageDiv.style.color = 'red';
+        messageDiv.textContent = "Please fill in all fields.";
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:8100/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, fullName, role, userCode, repCode })
+        });
+
+        const result = await response.json();
+
+        if (response.status === 201 && result.success) {
+          messageDiv.style.color = 'green';
+          messageDiv.textContent = `✅ User ${result.user.fullName} registered successfully.`;
+        } else {
+          messageDiv.style.color = 'red';
+          messageDiv.textContent = result.message || '❌ Failed to create user.';
+        }
+      } catch (err) {
+        console.error('Signup error:', err);
+        messageDiv.style.color = 'red';
+        messageDiv.textContent = "Server error during signup.";
+      }
+    }
+  </script>
+</body>
+</html>
