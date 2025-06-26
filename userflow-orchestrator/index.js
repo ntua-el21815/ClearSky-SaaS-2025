@@ -335,6 +335,61 @@ app.get('/api/institution/courses/by-user/:userCode', async (req, res) => {
   }
 });
 
+// post institution info
+app.post('/api/institution/create/by-user/:userCode', async (req, res) => {
+  const { userCode } = req.params;
+  const { name, region, contactPhone, address } = req.body;
+
+  if (!name || !region || !contactPhone || !address) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required fields: name, region, contactPhone, address'
+    });
+  }
+
+  try {
+    // Step 1: Get institutionId from user-management service
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${userCode}`, {
+      timeout: 5000
+    });
+
+    const institutionId = userResp.data?.institutionId;
+
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User does not have an institutionId'
+      });
+    }
+
+    // Step 2: Call institution service to create institution
+    const institutionData = {
+      id: institutionId,
+      name,
+      region,
+      contactPhone,
+      address
+    };
+
+    const createResp = await axios.post(`${INSTITUTION_SERVICE_URL}/institutions`, institutionData);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Institution created successfully',
+      institution: createResp.data
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to create institution:', error.message);
+    return res.status(error.response?.status || 500).json({
+      success: false,
+      message: 'Failed to create institution',
+      error: error.response?.data || error.message
+    });
+  }
+});
+
+
 
 
 app.get('/health', (req, res) => {
