@@ -53,9 +53,10 @@
     }
 
     .sections {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 1rem;
-      flex-wrap: wrap;
+      margin-bottom: 2rem;
     }
 
     .section-card {
@@ -128,6 +129,12 @@
   </div>
 
   <div class="sections">
+    <div class="section-card">
+      <div class="section-title">Register Institution</div>
+      <div class="section-desc">Add a new institution to the system</div>
+      <button onclick="location.href='rep_register_institution.html'">Register Institution</button>
+    </div>
+
     <div class="section-card">
       <div class="section-title">Grade Statistics</div>
       <div class="section-desc">Analyze grading outcomes</div>
