@@ -3,10 +3,95 @@
 <head>
   <meta charset="UTF-8">
   <title>Grade Statistics</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      padding: 2rem;
+    }
+
+    h2 {
+      font-size: 24px;
+      color: #0a0a0a;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #c0392b;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #0a2a66;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f3f4f6;
+    }
+    .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #0a0a0a;
+}
+
+.header-subtitle {
+  font-size: 16px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.dashboard-btn {
+  background-color: #0a2a66;
+  color: white;
+  padding: 10px 20px;
+  font-size: 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dashboard-btn:hover {
+  background-color: #07306a;
+}
+  </style>
 </head>
 <body>
-  <h2>📈 Grade Statistics Page</h2>
-  <button onclick="logout()">Logout</button>
+  <div class="header-row">
+    <div>
+      <div class="header-title">Course Statistics</div>
+      <div class="header-subtitle">Click on a course to view its grading statistics.</div>
+    </div>
+    <button class="dashboard-btn" onclick="window.location.href='instr_dashboard.html'">Back to Dashboard</button>
+  </div>
+
+  <div id="course-table-container">Loading...</div>
 
   <script>
     function getCookie(name) {
@@ -17,20 +102,88 @@
       }
       return null;
     }
+
     function deleteCookie(name) {
       document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     }
-    function logout() {
-      deleteCookie('userCode');
-      deleteCookie('role');
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
-    }
+
     const userCode = getCookie('userCode');
     const role = getCookie('role');
     if (!userCode || role !== 'instructor') {
       window.location.href = 'login.html';
     }
+
+    async function loadInstructorCourses() {
+    const container = document.getElementById('course-table-container');
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/users/by-code/${userCode}/instructor-courses`);
+      const courses = await response.json();
+
+      if (!Array.isArray(courses) || courses.length === 0) {
+        container.innerHTML = '<p>No courses assigned to this instructor.</p>';
+        return;
+      }
+
+      let tableHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Course ID</th>
+              <th>Course Name</th>
+              <th>Academic Period</th>
+              <th>Average</th>
+              <th>Median</th>
+              <th>Std Dev</th>
+              <th>Pass</th>
+              <th>Fail</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for (const course of courses) {
+        // Default values
+        let avg = '-', med = '-', std = '-', pass = '-', fail = '-';
+
+        try {
+          const statsRes = await fetch(`http://localhost:8080/api/statistics/course/${course.courseId}`);
+          if (statsRes.ok) {
+            const stats = await statsRes.json();
+            avg = stats.averageGrade?.toFixed(2) ?? '-';
+            med = stats.medianGrade?.toFixed(2) ?? '-';
+            std = stats.standardDeviation?.toFixed(2) ?? '-';
+            pass = stats.numberOfPasses ?? '-';
+            fail = stats.numberOfFails ?? '-';
+          }
+        } catch (err) {
+          console.warn(`No statistics for course ${course.courseId}`);
+        }
+
+        tableHTML += `
+          <tr>
+            <td>${course.courseId || '-'}</td>
+            <td>${course.courseName || '-'}</td>
+            <td>${course.academicPeriod || '-'}</td>
+            <td>${avg}</td>
+            <td>${med}</td>
+            <td>${std}</td>
+            <td>${pass}</td>
+            <td>${fail}</td>
+          </tr>
+        `;
+      }
+
+      tableHTML += '</tbody></table>';
+      container.innerHTML = tableHTML;
+
+    } catch (err) {
+      console.error('Error loading instructor courses:', err);
+      container.innerHTML = `<p style="color: red;">❌ Failed to load courses.</p>`;
+    }
+  }
+
+    loadInstructorCourses();
   </script>
 </body>
 </html>

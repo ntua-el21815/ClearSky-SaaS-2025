@@ -154,55 +154,74 @@
   }
 
   async function fetchReviewRequests() {
-    const container = document.getElementById('requests-container');
-    try {
-      const response = await fetch('http://localhost:8082/api/review-requests');
-      const result = await response.json();
+  const container = document.getElementById('requests-container');
+  container.innerHTML = 'Loading review requests...';
 
-      if (response.ok && Array.isArray(result.data)) {
-        if (result.data.length === 0) {
-          container.innerHTML = '<p>No review requests found.</p>';
-          return;
-        }
+  try {
+    // 1. Πάρε τα μαθήματα του instructor
+    const coursesResp = await fetch(`http://localhost:8080/api/users/by-code/${userCode}/courses`);
+    const coursesData = await coursesResp.json();
 
-        let tableHTML = `
-          <table>
-            <thead>
-              <tr>
-                <th>Course ID</th>
-                <th>Student ID</th>
-                <th>Grade ID</th>
-                <th>Status</th>
-                <th>Reason</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-
-        for (const req of result.data) {
-          tableHTML += `
-            <tr>
-              <td>${req.courseId || '-'}</td>
-              <td>${req.studentId || '-'}</td>
-              <td>${req.gradeId || '-'}</td>
-              <td>${req.status || '-'}</td>
-              <td>${req.reason || '-'}</td>
-              <td><button onclick='showReplyForm(${JSON.stringify(req)})'>Reply</button></td>
-            </tr>
-          `;
-        }
-
-        tableHTML += `</tbody></table>`;
-        container.innerHTML = tableHTML;
-      } else {
-        container.innerHTML = `<p class="message">⚠️ Failed to load requests.</p>`;
-      }
-    } catch (err) {
-      console.error('Error fetching review requests:', err);
-      container.innerHTML = `<p class="message">⚠️ Server error.</p>`;
+    if (!Array.isArray(coursesData) || coursesData.length === 0) {
+      container.innerHTML = '<p>No courses found for this instructor.</p>';
+      return;
     }
+
+    let allRequests = [];
+
+    // 2. Για κάθε μάθημα κάνε fetch τα review requests του
+    for (const course of coursesData) {
+      const courseId = course.courseId;
+      const reviewResp = await fetch(`http://localhost:8082/api/review-requests?courseId=${courseId}`);
+      const reviewData = await reviewResp.json();
+
+      if (Array.isArray(reviewData.data)) {
+        allRequests = allRequests.concat(reviewData.data);
+      }
+    }
+
+    if (allRequests.length === 0) {
+      container.innerHTML = '<p>No review requests found.</p>';
+      return;
+    }
+
+    // 3. Δείξε τα αποτελέσματα
+    let tableHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Course ID</th>
+            <th>Student ID</th>
+            <th>Grade ID</th>
+            <th>Status</th>
+            <th>Reason</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    for (const req of allRequests) {
+      tableHTML += `
+        <tr>
+          <td>${req.courseId || '-'}</td>
+          <td>${req.studentId || '-'}</td>
+          <td>${req.gradeId || '-'}</td>
+          <td>${req.status || '-'}</td>
+          <td>${req.reason || '-'}</td>
+          <td><button onclick='showReplyForm(${JSON.stringify(req)})'>Reply</button></td>
+        </tr>
+      `;
+    }
+
+    tableHTML += '</tbody></table>';
+    container.innerHTML = tableHTML;
+
+  } catch (err) {
+    console.error('Error fetching review requests:', err);
+    container.innerHTML = `<p class="message">⚠️ Server error while loading requests.</p>`;
   }
+}
 
   function showReplyForm(request) {
     selectedReviewId = request._id;

@@ -1,12 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Grade Statistics</title>
+  <meta charset="UTF-8">
+  <title>Grade Statistics (Institution Rep)</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      padding: 2rem;
+    }
+
+    h2 {
+      font-size: 24px;
+      margin-bottom: 1rem;
+    }
+
+    input, button {
+      padding: 8px;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+
+    table {
+      margin-top: 1.5rem;
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+
+    th {
+      background-color: #0a2a66;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f3f4f6;
+    }
+
+    #error-message {
+      color: red;
+      margin-top: 1rem;
+    }
+  </style>
 </head>
 <body>
   <h2>Grade Statistics (Institution Rep)</h2>
-  <p id="user-info"></p>
-  <button onclick="logout()">Logout</button>
+
+  <input type="text" id="course-id-input" placeholder="Enter Course ID" />
+  <button onclick="fetchStatistics()">Get Statistics</button>
+
+  <div id="stats-table-container"></div>
+  <p id="error-message"></p>
 
   <script>
     function getCookie(name) {
@@ -22,21 +70,61 @@
       document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     }
 
-    function logout() {
-  deleteCookie('userCode');
-  deleteCookie('role');
-  localStorage.removeItem('token');
-  window.location.href = 'login.html';
-}
-
     const userCode = getCookie('userCode');
-const role = getCookie('role');
+    const role = getCookie('role');
 
     if (!userCode || role !== 'institution_rep') {
-  window.location.href = 'login.html';
-} else {
-      document.getElementById('user-info').textContent =
-  `Logged in as ${role} (User Code: ${userCode})`;
+      window.location.href = 'login.html';
+    }
+
+    async function fetchStatistics() {
+      const courseId = document.getElementById('course-id-input').value.trim();
+      const errorMsg = document.getElementById('error-message');
+      const tableContainer = document.getElementById('stats-table-container');
+      errorMsg.textContent = '';
+      tableContainer.innerHTML = '';
+
+      if (!courseId) {
+        errorMsg.textContent = 'Please enter a Course ID.';
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || 'Failed to fetch statistics');
+        }
+
+        const stats = await response.json();
+
+        tableContainer.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Course ID</th>
+                <th>Average</th>
+                <th>Median</th>
+                <th>Std Dev</th>
+                <th>Pass</th>
+                <th>Fail</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${stats.courseId}</td>
+                <td>${stats.averageGrade?.toFixed(2) ?? '-'}</td>
+                <td>${stats.medianGrade?.toFixed(2) ?? '-'}</td>
+                <td>${stats.standardDeviation?.toFixed(2) ?? '-'}</td>
+                <td>${stats.numberOfPasses ?? '-'}</td>
+                <td>${stats.numberOfFails ?? '-'}</td>
+              </tr>
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        errorMsg.textContent = '❌ ' + err.message;
+      }
     }
   </script>
 </body>

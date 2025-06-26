@@ -111,6 +111,9 @@
     .logout-btn:hover {
       background-color: #c0392b;
     }
+    .notification-badge {
+      display: none; /* start hidden */
+    }
   </style>
 </head>
 <body>
@@ -131,7 +134,7 @@
       <p>Handle reviews and view analytics</p>
       <div class="btn-wrapper">
         <button class="button primary-btn" onclick="location.href='instr_review_requests.html'">Review Requests</button>
-        <div class="notification-badge">3</div> <!-- δυναμικό στο μέλλον -->
+        <div class="notification-badge"></div> <!-- δυναμικό στο μέλλον -->
       </div>
       <button class="button outline-btn" onclick="location.href='instr_grade_statistics.html'">Show Statistics</button>
     </div>
@@ -158,11 +161,51 @@
       window.location.href = 'login.html';
     }
 
+    async function updateReviewNotification() {
+      const badge = document.querySelector('.notification-badge');
+      try {
+        const coursesRes = await fetch(`http://localhost:8080/api/users/by-code/${userCode}/instructor-courses`);
+        const courses = await coursesRes.json();
+
+        if (!Array.isArray(courses) || courses.length === 0) {
+          badge.style.display = 'none';
+          return;
+        }
+
+        let totalRequests = 0;
+
+        for (const course of courses) {
+          try {
+            const res = await fetch(`http://localhost:8082/api/review-requests?courseId=${course.courseId}`);
+            const data = await res.json();
+            if (res.ok && Array.isArray(data.data)) {
+              totalRequests += data.data.length;
+            }
+          } catch (err) {
+            console.warn(`Could not fetch requests for ${course.courseId}`);
+          }
+        }
+
+        if (totalRequests > 0) {
+          badge.textContent = totalRequests;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Failed to fetch instructor courses or review requests:', error);
+        badge.style.display = 'none';
+      }
+    }
+
     const userCode = getCookie('userCode');
     const role = getCookie('role');
     if (!userCode || role !== 'instructor') {
       window.location.href = 'login.html';
     }
+
+    updateReviewNotification();
+
   </script>
 </body>
 </html>
