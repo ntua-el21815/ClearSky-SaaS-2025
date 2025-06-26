@@ -6,7 +6,7 @@ const startCourseConsumer = require("./courseConsumer");
 
 dotenv.config();
 connectDB();
-startCourseConsumer(); 
+//startCourseConsumer(); 
 
 const app = express();
 app.use(express.json());

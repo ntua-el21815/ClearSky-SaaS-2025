@@ -226,13 +226,14 @@ router.post(
           try {
             const instructorIdFinal = userCode;
 
-            const studentIds = [
+            const studentUserCodes = [
               ...new Set(
                 (inner.grades || [])
-                  .map(g => g.studentId)
+                  .map(g => g.studentId) 
                   .filter(Boolean)
               )
             ];
+
 
             mqChannel.sendToQueue(
               'coursesAuth',
@@ -241,7 +242,7 @@ router.post(
                 courseName: meta.courseName,
                 academicPeriod: meta.academicPeriod,
                 instructorId: instructorIdFinal,
-                studentIds
+                studentUserCodes  
               })),
               { persistent: true }
             );
