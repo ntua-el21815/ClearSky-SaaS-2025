@@ -3,7 +3,7 @@ function formatNotification(event) {
   let message = '';
 
   switch (event.type) {
-    case 'GRADE_POSTED':
+    case 'GRADES_POSTED':
       title = '📘 New Grade Posted';
       message = 'Your new grade has been posted to the ClearSky platform. Log in to view your performance.';
       break;
@@ -13,7 +13,7 @@ function formatNotification(event) {
       message = 'Your request for review has been submitted. You will be notified once it has been processed.';
       break;
 
-    case 'REVIEW_REPLY':
+    case 'REVIEW_REQUEST_COMPLETED':
       title = '💬 Reply to Your Review';
       message = 'A response has been posted to your review. Visit the platform to read the reply.';
       break;
