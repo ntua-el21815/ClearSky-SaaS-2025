@@ -15,7 +15,7 @@ const initConsumer = async () => {
   // Connect to database first
   await connectDB();
 
-  let retries = 5;
+  let retries = 10;
   while (retries) {
     try {
       const connection = await amqp.connect(RABBITMQ_URL);
