@@ -71,13 +71,8 @@ const processUserSignup = async (data) => {
   const course = { courseId, courseName, academicPeriod };
 
   try {
-    // Fetch only users that exist in DB with these userCodes
+    // 1. Fetch student users
     const users = await User.find({ userCode: { $in: studentUserCodes } });
-
-    if (users.length === 0) {
-      console.log('⚠️ No matching users found for course update.');
-      return;
-    }
 
     for (const user of users) {
       const alreadyAdded = user.courses.some(
@@ -87,18 +82,38 @@ const processUserSignup = async (data) => {
       if (!alreadyAdded) {
         user.courses.push(course);
         await user.save();
-        console.log(`✅ Course added to ${user.userCode}`);
+        console.log(`✅ Course added to student ${user.userCode}`);
       } else {
-        console.log(`ℹ️ Course already exists for ${user.userCode}`);
+        console.log(`ℹ️ Course already exists for student ${user.userCode}`);
       }
     }
 
-    console.log(`📚 Finished updating course "${courseId}" for ${users.length} users`);
+    // 2. Also update instructor (if found)
+    const instructor = await User.findOne({ userCode: instructorId, role: 'instructor' });
+
+    if (instructor) {
+      const alreadyAdded = instructor.courses.some(
+        (c) => c.courseId === courseId && c.academicPeriod === academicPeriod
+      );
+
+      if (!alreadyAdded) {
+        instructor.courses.push(course);
+        await instructor.save();
+        console.log(`✅ Course added to instructor ${instructor.userCode}`);
+      } else {
+        console.log(`ℹ️ Course already exists for instructor ${instructor.userCode}`);
+      }
+    } else {
+      console.log(`⚠️ Instructor with userCode ${instructorId} not found`);
+    }
+
+    console.log(`📚 Finished updating course "${courseId}" for ${users.length} students and instructor`);
 
   } catch (err) {
     console.error('❌ Error updating user courses:', err.message);
   }
 };
+
 
 
 // Graceful shutdown
