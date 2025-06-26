@@ -147,6 +147,8 @@ router.post(
     const formData = new FormData();
     formData.append('file',   fs.createReadStream(file.path));
     formData.append('final',  String(finalFlag));
+    formData.append('instructorId', userCode); 
+
 
     let gradeResp;
     try {
@@ -318,5 +320,21 @@ router.get('/api/statistics/course/:courseId', async (req, res) => {
     });
   }
 });
+
+// get initial courses that are not final for instructorCode
+router.get('/api/grades/initial-courses', async (req, res) => {
+  try {
+    const response = await axios.get(`${GRADE_API}/initial-courses`, {
+      params: req.query
+    });
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      ...formatAxiosError(err, 'Failed to fetch initial-only courses')
+    });
+  }
+});
+
 
 module.exports = router;
