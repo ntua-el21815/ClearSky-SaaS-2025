@@ -33,12 +33,12 @@ const mockUsers = [
   },
   {
     _id: "685bda768a59ccd6ddcfff00",
-    fullName: 'Student 2',
-    email: 'student2@test.com',
-    password: '123456',
-    role: 'student',
-    institutionId: 'NTUA',
-    userCode: '03185004'
+    fullName: "ΘΕΟΔΩΡΟΥ ΓΕΩΡΓΙΑ",
+    email: "el80860@mail.ntua.gr",
+    password: "123456",
+    role: "student",
+    institutionId: "NTUA",
+    userCode: '03180860'
   },
   {
     _id: "685bda768a59ccd6ddcfff01",
