@@ -22,13 +22,6 @@ const mockUsers = [
   role: "instructor",
   institutionId: "NTUA",
   userCode: "03185002",
-  //courses: [
-  //  {
-  //    courseId: "3205",
-  //    courseName: "ΤΕΧΝΟΛΟΓΙΑ ΛΟΓΙΣΜΙΚΟΥ",
-  //    academicPeriod: "2024–2025 ΧΕΙΜΕΡΙΝΗ"
-  //  }
-  //]
   },
   {
     _id: "685bda768a59ccd6ddcffeff",
