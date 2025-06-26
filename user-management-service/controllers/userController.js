@@ -77,8 +77,6 @@ exports.assignUserCode = async (req, res) => {
   }
 };
 
-
-
 exports.registerUser = async (req, res) => {
   const { email, password, fullName, role, institutionId, userCode } = req.body;
 
@@ -123,7 +121,7 @@ exports.getCoursesForStudent = async (req, res) => {
     if (user.role !== "student")
       return res.status(400).json({ message: "Not a student" });
 
-    res.json({ studentId: user._id, courses: user.courses });
+    res.json({courses: user.courses });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
@@ -136,12 +134,7 @@ exports.getCoursesForInstructor = async (req, res) => {
     if (!user)               return res.status(404).json({ message: "User not found" });
     if (user.role !== "instructor")
       return res.status(400).json({ message: "Not an instructor" });
-
-    const courseIds = user.courses.map(c =>
-      typeof c === "string" ? c : c.courseId
-    );
-
-    res.json({ instructorId: user._id, courses: courseIds });
+    res.json({ courses: user.courses  });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
