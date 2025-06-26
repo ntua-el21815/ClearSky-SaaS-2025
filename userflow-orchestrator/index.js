@@ -452,6 +452,56 @@ app.get('/api/users/info/by-code/:userCode', async (req, res) => {
   }
 });
 
+// PUT /api/institution/update/by-user/:userCode
+app.put('/api/institution/update/by-user/:userCode', async (req, res) => {
+  const { userCode } = req.params;
+  const updateFields = req.body;
+
+  if (!updateFields || typeof updateFields !== 'object') {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing or invalid update data'
+    });
+  }
+
+  try {
+    // Step 1: Get institutionId from user-management service
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${userCode}`, {
+      timeout: 5000
+    });
+
+    const institutionId = userResp.data?.institutionId;
+
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User does not have an institutionId'
+      });
+    }
+
+    // Step 2: Forward the update to institution-service
+    const updateResp = await axios.put(
+      `${INSTITUTION_SERVICE_URL}/institutions/${institutionId}`,
+      updateFields,
+      { timeout: 5000 }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Institution updated successfully',
+      institution: updateResp.data
+    });
+
+  } catch (err) {
+    console.error('❌ Failed to update institution:', err.message);
+    return res.status(err.response?.status || 500).json({
+      success: false,
+      message: 'Failed to update institution',
+      error: err.response?.data || err.message
+    });
+  }
+});
+
 
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', service: 'auth-orchestrator', timestamp: new Date().toISOString() });

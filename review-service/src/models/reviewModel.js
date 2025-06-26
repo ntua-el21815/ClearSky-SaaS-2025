@@ -4,9 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const reviewSchema = new mongoose.Schema({
   _id: { type: String, default: uuidv4 }, // Using UUID for id
-  gradeId: { type: String, required: true }, // UUID
-  studentId: { type: String, required: true }, // UUID
-  studentRegistrationNumber: { type: String }, // Optional
+  studentCode: { type: String, required: true }, // UUID
   courseId: { type: String, required: true }, // UUID
   reason: { type: String, required: true },
   status: {
