@@ -428,6 +428,30 @@ app.get('/api/institution/info/by-user/:userCode', async (req, res) => {
 });
 
 
+// get user info by userCode 
+app.get('/api/users/info/by-code/:userCode', async (req, res) => {
+  const { userCode } = req.params;
+
+  try {
+    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${userCode}`, {
+      timeout: 5000
+    });
+
+    return res.status(200).json({
+      success: true,
+      user: userResponse.data
+    });
+
+  } catch (err) {
+    console.error('❌ Error fetching user info by userCode:', err.message);
+    return res.status(err.response?.status || 500).json({
+      success: false,
+      message: 'Failed to get user by userCode',
+      error: err.response?.data || err.message
+    });
+  }
+});
+
 
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', service: 'auth-orchestrator', timestamp: new Date().toISOString() });
