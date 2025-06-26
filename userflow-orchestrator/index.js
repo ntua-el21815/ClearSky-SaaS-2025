@@ -390,6 +390,43 @@ app.post('/api/institution/create/by-user/:userCode', async (req, res) => {
 });
 
 
+// get institution info based on usercode of representative
+app.get('/api/institution/info/by-user/:userCode', async (req, res) => {
+  const { userCode } = req.params;
+
+  try {
+    // Step 1: Get institutionId from user-management service
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${userCode}`, {
+      timeout: 5000
+    });
+
+    const institutionId = userResp.data?.institutionId;
+
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User does not have an institutionId'
+      });
+    }
+
+    // Step 2: Fetch institution info from institution service
+    const institutionResp = await axios.get(`${INSTITUTION_SERVICE_URL}/institutions/${institutionId}`);
+
+    return res.status(200).json({
+      success: true,
+      institution: institutionResp.data
+    });
+
+  } catch (err) {
+    console.error('❌ Error fetching institution info:', err.message);
+    return res.status(err.response?.status || 500).json({
+      success: false,
+      message: 'Failed to get institution info',
+      error: err.response?.data || err.message
+    });
+  }
+});
+
 
 
 app.get('/health', (req, res) => {

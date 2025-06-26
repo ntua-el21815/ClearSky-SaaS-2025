@@ -156,18 +156,18 @@ services:
       - notification-network
     restart: unless-stopped
   
-  institution-seeder:
-    build: ./institution-service
-    container_name: institution-seeder
-    command: ["node", "seedInstitution.js"]
-    environment:
-      MONGO_URI: mongodb://institution-mongodb:27017/institution-db?authSource=admin
-    depends_on: 
-      - institution-mongodb
-    networks: 
-      - institution-network
-      - clearsky-network  
-    restart: "no"
+  # institution-seeder:
+  #   build: ./institution-service
+  #   container_name: institution-seeder
+  #   command: ["node", "seedInstitution.js"]
+  #   environment:
+  #     MONGO_URI: mongodb://institution-mongodb:27017/institution-db?authSource=admin
+  #   depends_on: 
+  #     - institution-mongodb
+  #   networks: 
+  #     - institution-network
+  #     - clearsky-network  
+  #   restart: "no"
 
   institution-service:
     build: ./institution-service
