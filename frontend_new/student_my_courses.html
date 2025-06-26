@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Courses</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      padding: 2rem;
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      border: none;
+    }
+    .btn-primary {
+      background-color: #0a2a66;
+      color: white;
+    }
+    .btn-secondary {
+      background-color: white;
+      border: 1px solid #ccc;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background-color: #0a2a66;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f3f4f6;
+    }
+    .review-box {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      margin-top: 0.5rem;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-row">
+    <div>
+      <h2>My Courses</h2>
+      <p id="studentInfo">Loading...</p>
+    </div>
+    <div>
+      <button class="btn btn-primary" onclick="location.href='student_grade_statistics.html'">Statistics</button>
+      <button class="btn btn-secondary" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div id="coursesContainer">Loading courses...</div>
+
+  <script>
+    const userCode = getCookie("userCode");
+    const role = getCookie("role");
+    let studentId = null;
+    let regNumber = null;
+
+    async function loadStudentInfo() {
+      try {
+        const res = await fetch(`http://localhost:8100/api/users/by-code/${userCode}`);
+        const user = await res.json();
+        document.getElementById('studentInfo').textContent = `${user.name}, ${user.email}`;
+        studentId = user.id;
+        regNumber = user.registrationNumber;
+      } catch (err) {
+        document.getElementById('studentInfo').textContent = 'Error loading student info.';
+      }
+    }
+
+    loadStudentInfo();
+
+    if (!userCode || role !== 'student') {
+      window.location.href = 'login.html';
+    }
+
+    async function fetchCourses() {
+      try {
+        const res = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/courses`);
+        const data = await res.json();
+        studentId = data.studentId;
+        const courses = data.courses;
+
+        let html = `<table>
+          <thead>
+            <tr>
+              <th>Course Name</th><th>Exam Period</th><th>Grading Status</th><th>Actions</th>
+            </tr>
+          </thead><tbody>`;
+
+        for (const course of courses) {
+          course.gradingStatus = course.gradingStatus || 'Open';
+          const disabled = course.gradingStatus !== 'Open';
+          html += `
+          <tr>
+            <td>${course.courseName}</td>
+            <td>${course.academicPeriod}</td>
+            <td>${disabled ? '<i>Closed</i>' : 'Open'}</td>
+            <td>
+              <button class="btn btn-primary" onclick="viewGrades('${course.courseId}')">View Grades</button>
+              <button class="btn btn-secondary" ${disabled ? 'disabled' : ''} onclick="toggleReviewForm('${course.courseId}', '${course.gradeId || ''}')">Request Review</button>
+              <button class="btn btn-secondary" onclick="loadReviewStatus('${course.courseId}')">Review Status</button>
+            </td>
+          </tr>
+          <tr><td colspan="4">
+            <div id="review-box-${course.courseId}" style="display:none;" class="review-box">
+              <label>Message to instructor:</label>
+              <textarea id="review-msg-${course.courseId}" maxlength="500" style="resize: none;" oninput="updateCharCount('${course.courseId}')"></textarea>
+              <div style="text-align:right; font-size: 0.85rem; color: #666;" id="char-count-${course.courseId}">0 / 500</div>
+              <button class="btn btn-primary" style="margin-top: 0.5rem;" onclick="submitReview('${course.courseId}', '${course.gradeId || ''}')">Submit Review Request</button>
+              <div id="review-result-${course.courseId}" style="margin-top:0.5rem;"></div>
+            </div>
+            <div id="status-box-${course.courseId}" class="review-box" style="display:none;"></div>
+          </td></tr>`;
+        }
+
+        html += '</tbody></table>';
+        document.getElementById('coursesContainer').innerHTML = html;
+      } catch (e) {
+        document.getElementById('coursesContainer').innerHTML = 'Error loading courses.';
+      }
+    }
+
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    function logout() {
+      document.cookie = "userCode=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie = "role=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      window.location.href = "login.html";
+    }
+
+    function viewGrades(courseId) {
+      window.location.href = `student_view_personal_grades.html?courseId=${courseId}`;
+    }
+
+    function toggleReviewForm(courseId, gradeId) {
+      document.querySelectorAll('[id^="review-box-"]').forEach(div => {
+        if (div.id !== `review-box-${courseId}`) div.style.display = 'none';
+      });
+      document.querySelectorAll('[id^="status-box-"]').forEach(div => {
+        div.style.display = 'none';
+      });
+      const box = document.getElementById(`review-box-${courseId}`);
+      box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // Χρησιμοποιεί τα studentId και regNumber από loadStudentInfo
+    async function submitReview(courseId, gradeId) {
+      const msg = document.getElementById(`review-msg-${courseId}`).value;
+      const resultBox = document.getElementById(`review-result-${courseId}`);
+      try {
+        const res = await fetch('http://localhost:8082/api/review-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentId, courseId, gradeId,
+            reason: msg,
+            studentRegistrationNumber: regNumber || null
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          resultBox.innerHTML = '<p style="color:green;">Review submitted successfully.</p>';
+        } else {
+          resultBox.innerHTML = '<p style="color:red;">' + (data.error || 'Submission failed.') + '</p>';
+        }
+      } catch (e) {
+        resultBox.innerHTML = '<p style="color:red;">Error submitting review.</p>';
+      }
+    }
+
+    async function loadReviewStatus(courseId) {
+      const box = document.getElementById(`status-box-${courseId}`);
+      document.querySelectorAll('[id^="status-box-"]').forEach(div => {
+        if (div.id !== `status-box-${courseId}`) div.style.display = 'none';
+      });
+      document.querySelectorAll('[id^="review-box-"]').forEach(div => {
+        div.style.display = 'none';
+      });
+      box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+      try {
+        const res = await fetch(`http://localhost:8082/api/review-requests?studentId=${studentId}&courseId=${courseId}`);
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          const r = json.data[0];
+          box.innerHTML = `<strong>Instructor Response:</strong> ${r.instructorResponse || 'Pending'} ${r.reviewedGrade ? '(New grade: ' + r.reviewedGrade + ')' : ''}`;
+        } else {
+          box.innerHTML = 'No review requests found.';
+        }
+      } catch (e) {
+        box.innerHTML = 'Error loading review status.';
+      }
+    }
+
+    fetchCourses();
+
+    function updateCharCount(courseId) {
+      const text = document.getElementById(`review-msg-${courseId}`).value;
+      document.getElementById(`char-count-${courseId}`).textContent = `${text.length} / 500`;
+    }
+  </script>
+</body>
+</html>
