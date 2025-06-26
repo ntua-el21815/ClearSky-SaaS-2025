@@ -8,14 +8,17 @@ class CreditService {
   async getInstitutionCreditBalance(institutionId) {
     try {
       const credit = await InstitutionCredit.findOne({ institutionId });
-      
+
       if (!credit) {
+        // Return 0 values instead of error
         return {
-          success: false,
-          error: 'No credits found for institution'
+          institutionId,
+          totalCredits: 0,
+          usedCredits: 0,
+          availableCredits: 0
         };
       }
-      
+
       return {
         institutionId: credit.institutionId,
         totalCredits: credit.totalCredits,
@@ -27,6 +30,7 @@ class CreditService {
       throw error;
     }
   }
+
 
   // Add credits to an institution
   async addCredits(institutionId, creditsToAdd) {
