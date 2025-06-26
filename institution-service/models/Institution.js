@@ -5,7 +5,7 @@ const InstitutionSchema = new mongoose.Schema(
     _id:          { type: String, required: true },   
     name:         { type: String, required: true },
     address:      { type: String },
-    contactEmail: { type: String, required: true, unique: true },
+    region:       { type: String },   
     contactPhone: { type: String }
   },
   {

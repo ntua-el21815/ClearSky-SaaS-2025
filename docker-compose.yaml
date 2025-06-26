@@ -156,18 +156,18 @@ services:
       - notification-network
     restart: unless-stopped
   
-  institution-seeder:
-    build: ./institution-service
-    container_name: institution-seeder
-    command: ["node", "seedInstitution.js"]
-    environment:
-      MONGO_URI: mongodb://institution-mongodb:27017/institution-db?authSource=admin
-    depends_on: 
-      - institution-mongodb
-    networks: 
-      - institution-network
-      - clearsky-network  
-    restart: "no"
+  # institution-seeder:
+  #   build: ./institution-service
+  #   container_name: institution-seeder
+  #   command: ["node", "seedInstitution.js"]
+  #   environment:
+  #     MONGO_URI: mongodb://institution-mongodb:27017/institution-db?authSource=admin
+  #   depends_on: 
+  #     - institution-mongodb
+  #   networks: 
+  #     - institution-network
+  #     - clearsky-network  
+  #   restart: "no"
 
   institution-service:
     build: ./institution-service
@@ -340,7 +340,7 @@ services:
   user-management-mongodb:
     image: mongo:latest
     ports:
-      - "27025:27017"  
+      - "27017:27017"  
     container_name: userflow-mongodb
     volumes:
       - userflow-mongo-data:/data/db
@@ -360,18 +360,17 @@ services:
   #     - grade-orchestrator
   #   networks:
   #     - clearsky-network
-  #   restart: unless-stoppedß
-    
-  frontend:
-    build: ./frontend_new
-    container_name: frontend
+  #   restart: unless-stopped
+
+  # --- Alternative Frontend (Simple HTML/CSS/JS) ---
+  frontend-alt:
+    build: ./frontend-alt
+    container_name: frontend-alt
     ports:
-      - "80:80"
-    depends_on:
-      - krakend
+      - "3001:80"
     networks:
       - clearsky-network
-    restart: unless-stopped
+    
   
 networks:
   clearsky-network:

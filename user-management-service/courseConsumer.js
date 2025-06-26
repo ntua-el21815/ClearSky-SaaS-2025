@@ -12,7 +12,7 @@ const initConsumer = async () => {
   // Connect to MongoDB
   await connectDB();
 
-  let retries = 10;
+  let retries = 5;
   while (retries) {
     try {
       const connection = await amqp.connect(RABBITMQ_URL);

@@ -15,13 +15,13 @@ const mockUsers = [
     userCode: '03185001'
   },
   {
-  _id: "685bda768a59ccd6ddcffefe",
-  fullName: "Instructor 1",
-  email: "instructor1@test.com",
-  password: "123456",
-  role: "instructor",
-  institutionId: "NTUA",
-  userCode: "03185002",
+    _id: "685bda768a59ccd6ddcffefe",
+    fullName: "Instructor 1",
+    email: "instructor1@test.com",
+    password: "123456",
+    role: "instructor",
+    institutionId: "NTUA",
+    userCode: '03185002'
   },
   {
     _id: "685bda768a59ccd6ddcffeff",
