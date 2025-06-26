@@ -36,7 +36,7 @@ exports.uploadGrades = async (req, res) => {
     });
 
     /* 4. Build document */
-    const doc = { timestamp:new Date(), final:isFinal, ...metadata, weights, grades:formattedGrades };
+    const doc = { timestamp:new Date(), ...metadata, final:Boolean(isFinal), weights, grades:formattedGrades };
 
     /* 5. Delete previous upload for same course/period */
     const filter = {
@@ -46,6 +46,51 @@ exports.uploadGrades = async (req, res) => {
     };
     if (metadata.courseName) filter.courseName = metadata.courseName;
     if (metadata.courseId) filter.courseId = metadata.courseId;
+
+
+    // 5b. Check for conflicting uploads
+    const existingInitial = await GradeUpload.findOne({
+      courseId: metadata.courseId,
+      academicPeriod: metadata.academicPeriod,
+      final: { $in: [false, null] }
+    });
+
+    const existingFinal = await GradeUpload.findOne({
+      courseId: metadata.courseId,
+      academicPeriod: metadata.academicPeriod,
+      final: true
+    });
+
+    console.log('Checking for duplicates with:', {
+      courseId: metadata.courseId,
+      academicPeriod: metadata.academicPeriod,
+      isFinal
+    });
+
+
+    // Rule 1: Prevent second initial
+    if (!isFinal && existingInitial) {
+      return res.status(400).json({
+        success: false,
+        message: 'Initial grades have already been uploaded. Only one initial upload allowed.'
+      });
+    }
+
+    // Rule 2: Prevent final if no initial
+    if (isFinal && !existingInitial) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot upload final grades before uploading initial grades.'
+      });
+    }
+
+    // Rule 3: Prevent second final
+    if (isFinal && existingFinal) {
+      return res.status(400).json({
+        success: false,
+        message: 'Final grades have already been uploaded. Only one final upload allowed.'
+      });
+    }
 
 
     /* 6. Save */

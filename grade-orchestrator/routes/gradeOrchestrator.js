@@ -84,6 +84,7 @@ router.post(
     } = req.body;
 
     const isFinal = (req.body.final === 'true' || req.body.final === true);
+    const finalFlag = Boolean(isFinal);
     const file    = req.file;
 
     if (!userCode  || !file) {
@@ -145,8 +146,7 @@ router.post(
     /* ---------- forward file to grade-service ---------- */
     const formData = new FormData();
     formData.append('file',   fs.createReadStream(file.path));
-    formData.append('final',  String(isFinal));
-    formData.append('courseId', courseId);
+    formData.append('final',  String(finalFlag));
 
     let gradeResp;
     try {
