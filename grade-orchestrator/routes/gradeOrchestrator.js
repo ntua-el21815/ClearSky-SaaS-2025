@@ -20,7 +20,7 @@ const STATISTICS_API = (process.env.STATISTICS_SERVICE_URL || '')
   .replace(/\/$/, '');
 const RABBIT_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
 
-const USER_SERVICE_API = (process.env.USER_MANAGEMENT_SERVICE_URL || '').replace(/\/$/, '') + '/users';
+//const USER_SERVICE_API = (process.env.USER_MANAGEMENT_SERVICE_URL || '').replace(/\/$/, '') + '/users';
 
 
 /* ---------- RabbitMQ bootstrap with retry ---------- */
@@ -72,38 +72,22 @@ function formatAxiosError (err, defaultMsg) {
   return { fromService:false, status:500, msg:defaultMsg, details:err.message };
 }
 
-//grade upload
 router.post(
   '/api/grade-submissions',
   upload.single('file'),
   async (req, res) => {
-    /* pull params from client */
     const {
       courseId = 'unknown',
-      userCode    = 'unknown'
+      userCode = 'unknown',
+      institutionId = null // 👈 now expected from request
     } = req.body;
 
     const isFinal = (req.body.final === 'true' || req.body.final === true);
     const finalFlag = Boolean(isFinal);
-    const file    = req.file;
+    const file = req.file;
 
-    if (!userCode  || !file) {
-      return res.status(400).json({ success:false, error:'Missing userCode  or file' });
-    }
-
-    /* ---------- institutionId: fetch from user-management ---------- */
-    let institutionId;
-    try {
-      const userResp = await axios.get(`${USER_SERVICE_API}/by-code/${userCode}`);
-      institutionId = userResp.data?.institutionId;
-      if (!institutionId) throw new Error('Missing institutionId in user record');
-    } catch (err) {
-      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-      return res.status(502).json({
-        success:false,
-        stage:'user-fetch',
-        ...formatAxiosError(err, 'Failed to fetch user or institutionId')
-      });
+    if (!userCode || !file || !institutionId) {
+      return res.status(400).json({ success: false, error: 'Missing userCode, institutionId, or file' });
     }
 
     /* ---------- credit logic (only if NOT final) ---------- */
@@ -115,40 +99,39 @@ router.post(
       } catch (err) {
         if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
         return res.status(502).json({
-          success:false,
-          stage:'balance-check',
-          ...formatAxiosError(err,'Failed to contact credit-service for balance')
+          success: false,
+          stage: 'balance-check',
+          ...formatAxiosError(err, 'Failed to contact credit-service for balance')
         });
       }
 
       if (availableCredits < 1) {
         fs.unlinkSync(file.path);
-        return res.status(400).json({ success:false, error:'Insufficient credits' });
+        return res.status(400).json({ success: false, error: 'Insufficient credits' });
       }
 
-      /* deduct one credit */
       try {
         await axios.post(`${CREDIT_API}/institution/${institutionId}/use`, {
-          credits  : 1,
+          credits: 1,
           operation: 'upload_grades',
           courseId
         });
       } catch (err) {
         fs.unlinkSync(file.path);
         return res.status(502).json({
-          success:false,
-          stage:'credit-use',
-          ...formatAxiosError(err,'Failed while deducting credit')
+          success: false,
+          stage: 'credit-use',
+          ...formatAxiosError(err, 'Failed while deducting credit')
         });
       }
     }
 
     /* ---------- forward file to grade-service ---------- */
     const formData = new FormData();
-    formData.append('file',   fs.createReadStream(file.path));
-    formData.append('final',  String(finalFlag));
-    formData.append('instructorId', userCode); 
-
+    formData.append('file', fs.createReadStream(file.path));
+    formData.append('final', String(finalFlag));
+    formData.append('instructorId', userCode);
+    formData.append('institutionId', institutionId); // 👈 directly passed
 
     let gradeResp;
     try {
@@ -160,9 +143,9 @@ router.post(
     } catch (err) {
       fs.unlinkSync(file.path);
       return res.status(502).json({
-        success:false,
-        stage:'grade-upload',
-        ...formatAxiosError(err,'Failed while forwarding file to grade-service')
+        success: false,
+        stage: 'grade-upload',
+        ...formatAxiosError(err, 'Failed while forwarding file to grade-service')
       });
     } finally {
       if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
@@ -170,19 +153,24 @@ router.post(
 
     /* ---------- publish to RabbitMQ ---------- */
     if (mqChannel) {
+      const inner = gradeResp?.data?.data?.data ?? gradeResp?.data?.data ?? {};
+      const metadata = inner.metadata || {};
+
       /* 1. raw grades → statistics */
       try {
         mqChannel.sendToQueue(
           'statistics',
-          Buffer.from(JSON.stringify(gradeResp.data)),
-          { persistent:true }
+          Buffer.from(JSON.stringify({
+            grades: inner.grades,
+            metadata,
+            institutionId,
+            academicPeriod: metadata.academicPeriod
+          })),
+          { persistent: true }
         );
       } catch (err) {
         console.error('[orchestrator] failed to publish to statistics:', err.message);
       }
-
-      /* common helper to get inner { metadata, grades } no matter wrapper depth */
-      const inner = gradeResp?.data?.data?.data ?? gradeResp?.data?.data ?? {};
 
       /* 2. GRADES_POSTED → notifications */
       try {
@@ -194,10 +182,12 @@ router.post(
           )
         ];
 
+        console.log('📨 Sending GRADES_POSTED to notifications queue with emails:', emails);
+
         mqChannel.sendToQueue(
           'notifications',
-          Buffer.from(JSON.stringify({ type:'GRADES_POSTED', emails })),
-          { persistent:true }
+          Buffer.from(JSON.stringify({ type: 'GRADES_POSTED', emails })),
+          { persistent: true }
         );
       } catch (err) {
         console.error('[orchestrator] failed to publish GRADES_POSTED:', err.message);
@@ -206,46 +196,42 @@ router.post(
       /* 3. course-info → courses (only for initial uploads) */
       if (!isFinal) {
         try {
-          const meta = inner.metadata || {};
-
           const courseMsg = {
-            academicPeriod : meta.academicPeriod  || null,
-            courseName     : meta.courseName      || null,
-            courseId       : meta.courseId        || null,
+            academicPeriod: metadata.academicPeriod || null,
+            courseName    : metadata.courseName     || null,
+            courseId      : metadata.courseId       || null,
             institutionId,
-            instructorId   : userCode
+            instructorId  : userCode
           };
 
           mqChannel.sendToQueue(
             'courses',
             Buffer.from(JSON.stringify(courseMsg)),
-            { persistent:true }
+            { persistent: true }
           );
 
           /* 4. course authorization → coursesAuth */
           try {
-            const instructorIdFinal = userCode;
-
             const studentUserCodes = [
               ...new Set(
                 (inner.grades || [])
-                  .map(g => g.studentId) 
+                  .map(g => g.studentId)
                   .filter(Boolean)
               )
             ];
 
-
             mqChannel.sendToQueue(
               'coursesAuth',
               Buffer.from(JSON.stringify({
-                courseId: meta.courseId,
-                courseName: meta.courseName,
-                academicPeriod: meta.academicPeriod,
-                instructorId: instructorIdFinal,
-                studentUserCodes  
+                courseId       : metadata.courseId,
+                courseName     : metadata.courseName,
+                academicPeriod : metadata.academicPeriod,
+                instructorId   : userCode,
+                studentUserCodes
               })),
               { persistent: true }
             );
+
             console.log('[orchestrator] 🔐 courseAuth sent to coursesAuth queue');
           } catch (err) {
             console.error('[orchestrator] failed to publish coursesAuth:', err.message);
@@ -258,6 +244,7 @@ router.post(
       }
     }
 
+
     /* ---------- success response ---------- */
     return res.status(200).json({
       success : true,
@@ -269,8 +256,20 @@ router.post(
 
 
 router.get('/api/grades/by-course', async (req, res) => {
+  const { courseId, academicPeriod, institutionId } = req.query;
+
+  if (!courseId || !academicPeriod || !institutionId) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing courseId, academicPeriod, or institutionId in query."
+    });
+  }
+
   try {
-    const response = await axios.get(`${GRADE_API}`, { params: req.query });
+    const response = await axios.get(`${GRADE_API}`, {
+      params: { courseId, academicPeriod, institutionId }
+    });
+
     res.status(response.status).json(response.data);
   } catch (err) {
     res.status(502).json({
@@ -309,10 +308,23 @@ router.get('/api/statistics/all', async (req, res) => {
   }
 });
 
-//στατιστικά ανά μάθημα
+// στατιστικά ανά μάθημα (with institutionId + academicPeriod)
 router.get('/api/statistics/course/:courseId', async (req, res) => {
+  const { institutionId, academicPeriod } = req.query;
+  const courseId = req.params.courseId;
+
+  if (!courseId || !institutionId || !academicPeriod) {
+    return res.status(400).json({
+      success: false,
+      message: 'Missing courseId, institutionId, or academicPeriod.'
+    });
+  }
+
   try {
-    const response = await axios.get(`${STATISTICS_API}/statistics/course/${req.params.courseId}`);
+    const response = await axios.get(`${STATISTICS_API}/statistics/course/${courseId}`, {
+      params: { institutionId, academicPeriod }
+    });
+
     res.status(response.status).json(response.data);
   } catch (err) {
     res.status(502).json({
@@ -321,6 +333,7 @@ router.get('/api/statistics/course/:courseId', async (req, res) => {
     });
   }
 });
+
 
 // get initial courses that are not final for instructorCode
 router.get('/api/grades/initial-courses', async (req, res) => {
@@ -337,12 +350,21 @@ router.get('/api/grades/initial-courses', async (req, res) => {
   }
 });
 
-
-// GET course status (Open/Closed) by instructor userCode and courseId
+// GET course status (Open/Closed) by courseId, academicPeriod, and institutionId
 router.get('/api/grades/course-status', async (req, res) => {
+  const { courseId, academicPeriod, institutionId } = req.query;
+
+  // Validate required query params
+  if (!courseId || !academicPeriod || !institutionId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Missing courseId, academicPeriod, or institutionId.'
+    });
+  }
+
   try {
     const response = await axios.get(`${GRADE_API}/course-status`, {
-      params: req.query
+      params: { courseId, academicPeriod, institutionId }
     });
     res.status(response.status).json(response.data);
   } catch (err) {
@@ -352,7 +374,6 @@ router.get('/api/grades/course-status', async (req, res) => {
     });
   }
 });
-
 
 
 module.exports = router;

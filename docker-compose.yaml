@@ -105,9 +105,11 @@ services:
       - PORT=8082
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
       - REVIEW_SERVICE_URL=http://review-service:8400/api/reviews
+      - GRADE_SERVICE_URL=http://grade-service:8200
     depends_on:
       - rabbitmq
       - review-service
+      - grade-service
     networks:
       - clearsky-network
     restart: unless-stopped
@@ -261,11 +263,9 @@ services:
       - CREDIT_SERVICE_URL=http://institution-credit-service:8102
       - GRADE_SERVICE_URL=http://grade-service:8200
       - STATISTICS_SERVICE_URL=http://statistics-service:8300
-      - USER_MANAGEMENT_SERVICE_URL=http://user-management-service:5001
     depends_on:
       - rabbitmq
       - grade-service
-      - user-management-service
     networks:
       - clearsky-network
     restart: unless-stopped

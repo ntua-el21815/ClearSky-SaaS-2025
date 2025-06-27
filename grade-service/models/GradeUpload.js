@@ -8,6 +8,7 @@ const gradeUploadSchema = new mongoose.Schema({
   ratingScale:{ String },
   final: { type: Boolean },
   instructorId: { type: String, required: true },
+  institutionId: {type: String},
   weights: {
     type: Map,
     of: Number

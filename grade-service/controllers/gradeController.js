@@ -8,6 +8,7 @@ exports.uploadGrades = async (req, res) => {
     const { grades, metadata } = parseExcel(req.file.path);
     const isFinal = req.body.final === 'true' || req.body.final === true;
     const instructorId = req.body.instructorId;
+    const institutionId = req.body.institutionId;
 
 
     /* 2. Extract weights into a separate object */
@@ -38,7 +39,7 @@ exports.uploadGrades = async (req, res) => {
     });
 
     /* 4. Build document */
-    const doc = { timestamp:new Date(), ...metadata, final:Boolean(isFinal), instructorId, weights, grades:formattedGrades };
+    const doc = { timestamp:new Date(), ...metadata, final:Boolean(isFinal), instructorId, institutionId, weights, grades:formattedGrades };
 
     /* 5. Delete previous upload for same course/period */
     const filter = {
@@ -121,42 +122,91 @@ exports.uploadGrades = async (req, res) => {
 };
 
 exports.getGradesByCourse = async (req, res) => {
-  const { academicPeriod, courseId, final } = req.query;
+  const { academicPeriod, courseId, institutionId } = req.query;
 
-  if (!academicPeriod || !courseId) {
-    return res.status(400).json({ error: "Missing academicPeriod or courseId." });
+  if (!academicPeriod || !courseId || !institutionId) {
+    return res.status(400).json({ error: "Missing academicPeriod, courseId, or institutionId." });
   }
 
-  const query = { academicPeriod, courseId };
-  if (final !== undefined) query.final = final === "true";
-
   try {
-    const result = await GradeUpload.findOne(query).lean();
-    if (!result) return res.status(404).json({ message: "No grades found." });
+    // Try to fetch final grades first
+    let result = await GradeUpload.findOne({
+      academicPeriod,
+      courseId,
+      institutionId,
+      final: true
+    }).lean();
+
+    // If no final grades, fallback to initial grades
+    if (!result) {
+      result = await GradeUpload.findOne({
+        academicPeriod,
+        courseId,
+        institutionId,
+        final: { $in: [false, null] }
+      }).lean();
+    }
+
+    if (!result) {
+      return res.status(404).json({ message: "No grades found for this course." });
+    }
+
     res.json(result);
   } catch (err) {
-    console.error(err);
+    console.error("getGradesByCourse error:", err);
     res.status(500).send("Error fetching grades.");
   }
 };
+
 
 
 exports.getStudentGradesById = async (req, res) => {
   const { academicPeriod, courseId, studentId } = req.query;
 
   if (!academicPeriod || !courseId || !studentId) {
-    return res.status(400).json({ error: "Missing academicPeriod, courseId or studentId." });
+    return res.status(400).json({ error: "Missing academicPeriod, courseId, or studentId." });
   }
 
-  const course = await GradeUpload.findOne({ academicPeriod, courseId }).lean();
-  if (!course) return res.status(404).json({ error: "Course not found." });
+  try {
+    // 1. Try to find final grades
+    let course = await GradeUpload.findOne({
+      academicPeriod,
+      courseId,
+      final: true
+    }).lean();
 
-  const student = course.grades.find(g => g.studentId === studentId);
-  if (!student) return res.status(404).json({ error: "Student not found." });
+    // 2. Fallback to initial grades if no final exists
+    if (!course) {
+      course = await GradeUpload.findOne({
+        academicPeriod,
+        courseId,
+        final: { $in: [false, null] }
+      }).lean();
+    }
 
-  res.json({ academicPeriod: course.academicPeriod, courseId: course.courseId, final: course.final, student });
+    if (!course) {
+      return res.status(404).json({ error: "Course not found." });
+    }
+
+    // 3. Find the student's grade
+    const student = course.grades.find(g => g.studentId === studentId);
+
+    if (!student) {
+      return res.status(404).json({ error: "Student not found in this course." });
+    }
+
+    // 4. Respond with result
+    res.json({
+      academicPeriod: course.academicPeriod,
+      courseId: course.courseId,
+      final: course.final,
+      student
+    });
+  } catch (err) {
+    console.error("getStudentGradesById error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
-
 
 exports.getInitialCourses = async (req, res) => {
   const { userCode } = req.query;
@@ -212,20 +262,27 @@ exports.getInitialCourses = async (req, res) => {
 
 
 exports.getCourseStatus = async (req, res) => {
-  const { userCode, courseId } = req.query;
+  const { courseId, academicPeriod, institutionId } = req.query;
 
-  if (!userCode || !courseId) {
-    return res.status(400).json({ success: false, message: "Missing userCode or courseId." });
+  if (!courseId || !academicPeriod || !institutionId) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing courseId, academicPeriod, or institutionId."
+    });
   }
 
   try {
     const course = await GradeUpload.findOne({
-      instructorId: userCode,
-      courseId
-    }).sort({ final: -1 }).lean(); // prioritizes final:true over false/null if both exist
+      courseId,
+      academicPeriod,
+      institutionId
+    }).sort({ final: -1 }).lean(); // Prefer final:true
 
     if (!course) {
-      return res.status(404).json({ success: false, message: "Course not found for instructor." });
+      return res.status(404).json({
+        success: false,
+        message: "Course not found for given inputs."
+      });
     }
 
     const status = course.final === true ? "Closed" : "Open";
@@ -236,7 +293,46 @@ exports.getCourseStatus = async (req, res) => {
     });
   } catch (err) {
     console.error("getCourseStatus error:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+exports.getCourseInstructor = async (req, res) => {
+  const { courseId, institutionId } = req.query;
+
+  if (!courseId || !institutionId) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing courseId or institutionId."
+    });
+  }
+
+  try {
+    const doc = await GradeUpload.findOne({
+      courseId,
+      institutionId
+    }).lean();
+
+    if (!doc) {
+      return res.status(404).json({
+        success: false,
+        message: "No matching course found."
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      instructorId: doc.instructorId
+    });
+  } catch (err) {
+    console.error("getCourseInstructor error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
   }
 };
 
