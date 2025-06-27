@@ -175,7 +175,12 @@
 
     for (const course of courses) {
       const courseId = course.courseId;
-      const reviewResp = await fetch(`http://localhost:8082/api/review-requests?courseId=${courseId}`);
+      const params = new URLSearchParams({
+        courseId: courseId,
+        institutionId: getCookie('institutionId'),
+        academicPeriod: coursePeriodMap[courseId]
+        });
+      const reviewResp = await fetch(`http://localhost:8082/api/review-requests?${params.toString()}`);
       const reviewResult = await reviewResp.json();
 
       const nestedData = reviewResult.data?.data;

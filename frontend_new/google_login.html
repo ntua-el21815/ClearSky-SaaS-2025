@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Login</title>
+</head>
+<body>
+  <h2>🔐 Completing Google Login...</h2>
+  <p id="status">Please wait...</p>
+
+  <script>
+    function setCookie(name, value, days = 7) {
+      const expires = new Date(Date.now() + days * 864e5).toUTCString();
+      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+    }
+
+    function getCookie(name) {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    function redirectByRole() {
+      const role = getCookie('role');
+      if (role === 'student') {
+        window.location.href = 'student_grade_statistics.html';
+      } else if (role === 'instructor') {
+        window.location.href = 'instr_dashboard.html';
+      } else if (role === 'institution_rep') {
+        const userCode = getCookie('userCode');
+        // Έλεγχος αν έχει δηλωμένο institution
+        fetch(`http://localhost:8100/api/institution/info/by-user/${userCode}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              window.location.href = 'rep_dashboard.html';
+            } else {
+              window.location.href = 'rep_register_institution.html';
+            }
+          })
+          .catch(() => {
+            document.getElementById('status').textContent = '❌ Failed to validate institution';
+          });
+      } else {
+        document.getElementById('status').textContent = '⚠️ Unknown role';
+      }
+    }
+
+    async function completeGoogleLogin() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+
+      if (!token) {
+        document.getElementById('status').textContent = '❌ No token provided';
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:8100/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ googleAccessToken: token })
+        });
+
+        const result = await res.json();
+
+        if (res.ok && result.success) {
+          const { user, token } = result;
+
+          localStorage.setItem('token', token);
+          setCookie('userCode', user.userCode);
+          setCookie('role', user.role);
+          setCookie('institutionId', user.institutionId);
+
+          // 🔁 redirect ανάλογα το role (από cookie)
+          redirectByRole();
+
+        } else {
+          document.getElementById('status').textContent = result.error || '❌ Login failed.';
+        }
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('status').textContent = '❌ Server error during Google login.';
+      }
+    }
+
+    completeGoogleLogin();
+  </script>
+</body>
+</html>

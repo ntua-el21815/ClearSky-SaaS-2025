@@ -453,6 +453,7 @@ app.get('/api/users/info/by-code/:userCode', async (req, res) => {
   }
 });
 
+
 // GET user info by Gmail
 app.get('/api/users/info/by-gmail/:gmail', async (req, res) => {
   const { gmail } = req.params;
@@ -604,9 +605,12 @@ app.get('/oauth2callback', async (req, res) => {
 
     const { data: googleUser } = await google.oauth2({ auth: oauth2Client, version: 'v2' }).userinfo.get();
 
-    // 🔁 Redirect στη γενική σελίδα σύνδεσης
-    const redirectUrl = `http://127.0.0.1:5500/frontend_new/google_connect.html?token=${tokens.access_token}`;
-    return res.redirect(redirectUrl);
+    const redirectTarget = req.query.state === 'fromLogin'
+  ? 'google_login.html'
+  : 'google_connect.html';
+
+const redirectUrl = `http://127.0.0.1:5500/frontend_new/${redirectTarget}?token=${tokens.access_token}`;
+return res.redirect(redirectUrl);
 
   } catch (err) {
     console.error('❌ Google callback error:', err.message);
@@ -616,14 +620,58 @@ app.get('/oauth2callback', async (req, res) => {
 
 
 // sign in with google via token 
-app.post('/api/auth/google', async (req, res) => {
-  const { googleId, gmail } = req.body;
+// app.post('/api/auth/google', async (req, res) => {
+//   const { googleId, gmail } = req.body;
 
-  if (!googleId || !gmail) {
-    return res.status(400).json({ success: false, error: 'Missing googleId or gmail' });
+//   if (!googleId || !gmail) {
+//     return res.status(400).json({ success: false, error: 'Missing googleId or gmail' });
+//   }
+
+//   try {
+//     const loginResp = await axios.post(`${USER_AUTH_SERVICE_URL}/auth/login/google`, {
+//       googleId,
+//       gmail
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: 'Google login successful',
+//       user: loginResp.data.user,
+//       token: loginResp.data.token
+//     });
+//   } catch (err) {
+//     console.error('❌ Google login error:', err.message);
+//     return res.status(err.response?.status || 500).json({
+//       success: false,
+//       message: 'Google login failed',
+//       error: err.response?.data || err.message
+//     });
+//   }
+// });
+
+
+app.post('/api/auth/google', async (req, res) => {
+  const { googleAccessToken } = req.body;
+
+  if (!googleAccessToken) {
+    return res.status(400).json({ success: false, error: 'Missing googleAccessToken' });
   }
 
   try {
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: googleAccessToken });
+
+    const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
+    const { data: googleUser } = await oauth2.userinfo.get();
+
+    const googleId = googleUser.id;
+    const gmail = googleUser.email;
+
+    if (!gmail.endsWith("@gmail.com")) {
+      return res.status(400).json({ success: false, error: "Only Gmail addresses are supported" });
+    }
+
+    // Forward to user-auth-service to complete login
     const loginResp = await axios.post(`${USER_AUTH_SERVICE_URL}/auth/login/google`, {
       googleId,
       gmail
@@ -635,6 +683,7 @@ app.post('/api/auth/google', async (req, res) => {
       user: loginResp.data.user,
       token: loginResp.data.token
     });
+
   } catch (err) {
     console.error('❌ Google login error:', err.message);
     return res.status(err.response?.status || 500).json({
@@ -644,6 +693,9 @@ app.post('/api/auth/google', async (req, res) => {
     });
   }
 });
+
+
+
 
 // sign in with google via email 
 app.post('/api/auth/google-login', async (req, res) => {

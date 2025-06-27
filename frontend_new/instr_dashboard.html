@@ -183,8 +183,10 @@
       window.location.href = 'login.html';
     }
 
-    async function updateReviewNotification() {
+  async function updateReviewNotification() {
   const badge = document.querySelector('.notification-badge');
+  const institutionId = getCookie('institutionId'); // 🔁 Θεωρείται ότι υπάρχει ήδη helper getCookie()
+
   try {
     const coursesRes = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/instructor-courses`);
     const coursesJson = await coursesRes.json();
@@ -198,11 +200,19 @@
     let totalRequests = 0;
 
     for (const course of courses) {
+      const courseId = course.courseId;
+      const academicPeriod = course.academicPeriod;
+
       try {
-        const res = await fetch(`http://localhost:8082/api/review-requests?courseId=${course.courseId}`);
+        const params = new URLSearchParams({
+          courseId,
+          institutionId,
+          academicPeriod
+        });
+
+        const res = await fetch(`http://localhost:8082/api/review-requests?${params.toString()}`);
         const resJson = await res.json();
 
-        // ✅ Ελέγχει το success 2 φορές: έξω και μέσα
         if (
           res.ok &&
           resJson.success === true &&
@@ -215,7 +225,7 @@
           totalRequests += pending.length;
         }
       } catch (err) {
-        console.warn(`Could not fetch requests for ${course.courseId}`);
+        console.warn(`❌ Could not fetch review requests for course ${courseId}`);
       }
     }
 
@@ -226,7 +236,7 @@
       badge.style.display = 'none';
     }
   } catch (error) {
-    console.error('Failed to fetch instructor courses or review requests:', error);
+    console.error('❌ Failed to fetch instructor courses or review requests:', error);
     badge.style.display = 'none';
   }
 }

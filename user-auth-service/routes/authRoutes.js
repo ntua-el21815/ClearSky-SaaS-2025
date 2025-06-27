@@ -6,8 +6,8 @@ const {
   login,
   getCurrentUser,
   verifyToken,
-  loginWithGoogle,
-  loginWithGmail  // ✅ Import added here
+  loginWithGoogle
+  //loginWithGmail  // ✅ Import added here
 } = require("../controllers/authController");
 
 const verifyTokenMiddleware = require("../middlewares/authMiddleware");
@@ -16,7 +16,7 @@ router.post("/login", login);
 router.post("/login/google", loginWithGoogle); // ✅ Route added correctly
 router.get("/me", verifyTokenMiddleware, getCurrentUser);
 router.get("/verify-token", verifyTokenMiddleware, verifyToken);
-router.post("/login/gmail", loginWithGmail);
+//router.post("/login/gmail", loginWithGmail);
 
 
 // // 🔒 Google OAuth (optional: if you're using passport strategy as well)
