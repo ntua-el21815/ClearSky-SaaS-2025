@@ -453,38 +453,6 @@ app.get('/api/users/info/by-code/:userCode', async (req, res) => {
   }
 });
 
-// GET user info by Gmail
-app.get('/api/users/info/by-gmail/:gmail', async (req, res) => {
-  const { gmail } = req.params;
-
-  if (!gmail) {
-    return res.status(400).json({
-      success: false,
-      error: "Missing Gmail parameter"
-    });
-  }
-
-  try {
-    const userResponse = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-gmail/${gmail}`, {
-      timeout: 5000
-    });
-
-    return res.status(200).json({
-      success: true,
-      user: userResponse.data
-    });
-
-  } catch (err) {
-    console.error("❌ Error fetching user by Gmail:", err.message);
-    return res.status(err.response?.status || 500).json({
-      success: false,
-      message: "Failed to get user by Gmail",
-      error: err.response?.data || err.message
-    });
-  }
-});
-
-
 // PUT /api/institution/update/by-user/:userCode
 app.put('/api/institution/update/by-user/:userCode', async (req, res) => {
   const { userCode } = req.params;
