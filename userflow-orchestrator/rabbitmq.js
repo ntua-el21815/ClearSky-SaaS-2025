@@ -3,6 +3,7 @@ const amqp = require('amqplib');
 let channel;
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
 const EXCHANGE_NAME = 'user.signup'; // fanout exchange name
+const GOOGLE_QUEUE = 'google.info';
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -45,7 +46,25 @@ const publishUserCreated = async (user) => {
   console.log('📤 Published signup event to fanout exchange:', message.email);
 };
 
+  const publishGoogleSignup = async ({ userCode, gmail, googleId }) => {
+    if (!channel) {
+      console.warn('⚠️ RabbitMQ channel not available');
+      return;
+    }
+
+    const message = { userCode, gmail, googleId };
+
+    // Assert the queue in case it's not created yet
+    await channel.assertQueue(GOOGLE_QUEUE, { durable: false });
+
+    // Send message directly to the named queue (not via exchange)
+    channel.sendToQueue(GOOGLE_QUEUE, Buffer.from(JSON.stringify(message)));
+
+    console.log('📤 Published Google signup info to google.info queue:', message);
+  };
+
 module.exports = {
   initRabbit,
-  publishUserCreated
+  publishUserCreated,
+  publishGoogleSignup
 };

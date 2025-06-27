@@ -209,6 +209,8 @@ services:
       - CREDIT_SERVICE_URL=http://institution-credit-service:8102
       - USER_MANAGEMENT_SERVICE_URL=http://user-management-service:5001
       - INSTITUTION_SERVICE_URL=http://institution-service:8101
+      - GOOGLE_CLIENT_ID=787551778672-p5tcibqjdt7khnq2ssqkkbk1cri73lje.apps.googleusercontent.com
+      - GOOGLE_CLIENT_SECRET=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
     depends_on:
       - rabbitmq
       - institution-service
@@ -290,6 +292,8 @@ services:
       - MONGO_URI=mongodb://user-auth-mongodb:27017/user-auth?authSource=admin
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://admin:secure21@rabbitmq:5672}
       - JWT_SECRET=supersecretkey123 
+      - GOOGLE_CLIENT_ID=787551778672-p5tcibqjdt7khnq2ssqkkbk1cri73lje.apps.googleusercontent.com
+      - GOOGLE_CLIENT_SECRET=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
     depends_on:
       - user-auth-mongodb
       - rabbitmq

@@ -2,9 +2,10 @@ const express = require('express');
 const axios = require('axios');
 const helmet = require('helmet');
 const cors = require('cors');
+const { google } = require('googleapis');
 require('dotenv').config();
 
-const { initRabbit, publishUserCreated } = require('./rabbitmq');
+const { initRabbit, publishUserCreated,publishGoogleSignup} = require('./rabbitmq');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -447,6 +448,191 @@ app.get('/api/users/info/by-code/:userCode', async (req, res) => {
     return res.status(err.response?.status || 500).json({
       success: false,
       message: 'Failed to get user by userCode',
+      error: err.response?.data || err.message
+    });
+  }
+});
+
+// PUT /api/institution/update/by-user/:userCode
+app.put('/api/institution/update/by-user/:userCode', async (req, res) => {
+  const { userCode } = req.params;
+  const updateFields = req.body;
+
+  if (!updateFields || typeof updateFields !== 'object') {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing or invalid update data'
+    });
+  }
+
+  try {
+    // Step 1: Get institutionId from user-management service
+    const userResp = await axios.get(`${USER_MANAGEMENT_SERVICE_URL}/users/by-code/${userCode}`, {
+      timeout: 5000
+    });
+
+    const institutionId = userResp.data?.institutionId;
+
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User does not have an institutionId'
+      });
+    }
+
+    // Step 2: Forward the update to institution-service
+    const updateResp = await axios.put(
+      `${INSTITUTION_SERVICE_URL}/institutions/${institutionId}`,
+      updateFields,
+      { timeout: 5000 }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Institution updated successfully',
+      institution: updateResp.data
+    });
+
+  } catch (err) {
+    console.error('❌ Failed to update institution:', err.message);
+    return res.status(err.response?.status || 500).json({
+      success: false,
+      message: 'Failed to update institution',
+      error: err.response?.data || err.message
+    });
+  }
+});
+
+// sign up with google - connect google account 
+app.post('/api/users/google-signup', async (req, res) => {
+  const { userCode, googleAccessToken } = req.body;
+
+  if (!userCode || !googleAccessToken) {
+    return res.status(400).json({ success: false, error: "Missing userCode or googleAccessToken" });
+  }
+
+  try {
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: googleAccessToken });
+
+    const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
+    const { data: googleUser } = await oauth2.userinfo.get();
+
+    const googleId = googleUser.id;
+    const gmail = googleUser.email;
+    const fullName = googleUser.name;
+
+    if (!gmail.endsWith("@gmail.com")) {
+      return res.status(400).json({ success: false, error: "Only Gmail addresses allowed" });
+    }
+
+    const response = await axios.post(`${USER_MANAGEMENT_SERVICE_URL}/users/link-google-account`, {
+      userCode,
+      googleId,
+      gmail,
+      fullName
+    });
+
+    // 👉 Publish to google.info queue
+    await publishGoogleSignup({
+      userCode,
+      gmail,
+      googleId
+    });
+
+    return res.status(response.status).json(response.data);
+
+  } catch (err) {
+    console.error('❌ Error during Google signup:', err.message);
+    return res.status(err.response?.status || 500).json({
+      success: false,
+      message: 'Failed to complete Google signup',
+      error: err.response?.data || err.message
+    });
+  }
+});
+
+
+app.get('/oauth2callback', async (req, res) => {
+  const { code } = req.query;
+
+  if (!code) {
+    return res.status(400).send('No code provided');
+  }
+
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      'http://localhost:8100/oauth2callback'
+    );
+
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
+    const { data: googleUser } = await oauth2.userinfo.get();
+
+    // 🔗 Now you can redirect to frontend with Google user data or access_token
+    // OR call your own backend to link this Google account
+    res.json({
+      success: true,
+      googleUser,
+      accessToken: tokens.access_token
+    });
+
+  } catch (err) {
+    console.error('❌ Google callback error:', err.message);
+    res.status(500).send('Google OAuth failed');
+  }
+});
+
+// sign in with google via token 
+app.post('/api/auth/google', async (req, res) => {
+  const { googleId, gmail } = req.body;
+
+  if (!googleId || !gmail) {
+    return res.status(400).json({ success: false, error: 'Missing googleId or gmail' });
+  }
+
+  try {
+    const loginResp = await axios.post(`${USER_AUTH_SERVICE_URL}/auth/login/google`, {
+      googleId,
+      gmail
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Google login successful',
+      user: loginResp.data.user,
+      token: loginResp.data.token
+    });
+  } catch (err) {
+    console.error('❌ Google login error:', err.message);
+    return res.status(err.response?.status || 500).json({
+      success: false,
+      message: 'Google login failed',
+      error: err.response?.data || err.message
+    });
+  }
+});
+
+// sign in with google via email 
+app.post('/api/auth/google-login', async (req, res) => {
+  const { gmail } = req.body;
+
+  if (!gmail) {
+    return res.status(400).json({ success: false, error: "Missing Gmail address" });
+  }
+
+  try {
+    const response = await axios.post(`${USER_AUTH_SERVICE_URL}/auth/login/gmail`, { gmail });
+    return res.status(200).json({ success: true, ...response.data });
+  } catch (err) {
+    console.error("❌ Google login via Gmail failed:", err.message);
+    return res.status(err.response?.status || 500).json({
+      success: false,
+      message: "Google login failed",
       error: err.response?.data || err.message
     });
   }

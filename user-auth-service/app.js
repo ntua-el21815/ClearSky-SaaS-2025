@@ -2,16 +2,12 @@ const express = require("express");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
-const passport = require("passport");
-require("./config/passport");
 
 dotenv.config();
 connectDB();
 
 const app = express();
 app.use(express.json());
-
-app.use(passport.initialize());
 
 app.use("/auth", authRoutes);
 
