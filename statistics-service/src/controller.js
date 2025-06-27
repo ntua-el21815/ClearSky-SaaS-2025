@@ -63,14 +63,28 @@ exports.calculateStatisticsFromInput = async (req, res) => {
 
 exports.getStatisticsByCourse = async (req, res) => {
   try {
-    const { courseId } = req.params;
-    if (!courseId) return res.status(400).json({ error: 'Missing courseId' });
+    const { institutionId, academicPeriod } = req.query;
+    const courseId = req.params.courseId;
 
-    const stats = await CourseStatistics.find({ courseId }).sort({ calculatedAt: -1 });
+    if (!courseId || !institutionId || !academicPeriod) {
+      return res.status(400).json({
+        error: 'Missing courseId, institutionId, or academicPeriod'
+      });
+    }
 
-    if (!stats.length) return res.status(404).json({ error: 'No statistics found for this courseId' });
+    const stats = await CourseStatistics.find({
+      courseId,
+      institutionId,
+      academicPeriod
+    }).sort({ calculatedAt: -1 });
 
-    res.json(stats[0]); // return latest one
+    if (!stats.length) {
+      return res.status(404).json({
+        error: 'No statistics found for the given course'
+      });
+    }
+
+    res.json(stats[0]); // return latest stats
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch course statistics' });

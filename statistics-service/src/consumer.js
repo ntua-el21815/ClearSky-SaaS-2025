@@ -7,10 +7,10 @@ const CourseStatistics = require('./model/courseStatistics');
 const connectDB = require('./db');
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
-const QUEUE_NAME   = 'statistics';
+const QUEUE_NAME = 'statistics';
 
-const MAX_RETRIES   = 12;
-const RETRY_DELAY_MS = 5_000;
+const MAX_RETRIES = 12;
+const RETRY_DELAY_MS = 5000;
 
 let dbReady = false;
 async function ensureDB() {
@@ -25,9 +25,9 @@ async function startConsumer(attempt = 1) {
 
   try {
     const conn = await amqp.connect(RABBITMQ_URL);
-    const ch   = await conn.createChannel();
+    const ch = await conn.createChannel();
 
-    await ch.assertQueue(QUEUE_NAME,   { durable: true });
+    await ch.assertQueue(QUEUE_NAME, { durable: true });
     ch.prefetch(1);
 
     console.log('🟢 statistics-service connected to RabbitMQ, waiting for messages…');
@@ -41,49 +41,54 @@ async function startConsumer(attempt = 1) {
       if (!msg) return;
 
       try {
-        /* -------- parse incoming grade sheet -------- */
-        const parsed  = JSON.parse(msg.content.toString());
+        const parsed = JSON.parse(msg.content.toString());
 
-        // accept {data:{data:{…}}}  OR  {data:{…}}  OR  inner object
         const wrapper = parsed?.data?.data ?? parsed?.data ?? parsed;
 
-        const gradesArray  = wrapper?.grades;
+        const gradesArray = wrapper?.grades;
         const courseId =
-          wrapper?.['courseId'] ||
-          wrapper?.metadata?.['courseId'] ||
+          wrapper?.courseId ||
+          wrapper?.metadata?.courseId ||
           'UNKNOWN';
 
-        const gradeSheetId =
-          wrapper?.['academicPeriod'] ||
-          wrapper?.metadata?.['academicPeriod'] ||
+        const academicPeriod =
+          wrapper?.academicPeriod ||
+          wrapper?.metadata?.academicPeriod ||
+          'UNKNOWN';
+
+        const institutionId =
+          wrapper?.institutionId ||
+          wrapper?.metadata?.institutionId ||
           'UNKNOWN';
 
         if (!Array.isArray(gradesArray)) {
-          console.warn('⚠️  Invalid input: grades not found');
+          console.warn('⚠️ Invalid input: grades not found');
           ch.ack(msg);
           return;
         }
 
-        /* -------- transform & calculate statistics -------- */
         const transformed = gradesArray.map(stu => ({
-          studentId   : stu['studentId'],
-          finalGrade  : stu['grade'],
+          studentId: stu['studentId'],
+          finalGrade: stu['grade'],
           questionsRaw: Object.fromEntries(
-            Object.entries(stu.responses || {})
-                  .map(([k, v]) => [`Q${k.padStart(2, '0')}`, v])
+            Object.entries(stu.responses || {}).map(([k, v]) => [`Q${k.padStart(2, '0')}`, v])
           )
         }));
 
         const stats = calculateStatistics(transformed);
 
-        /* -------- save to MongoDB -------- */
-        const saved = await CourseStatistics.create({
-          courseId,
-          gradeSheetId,
-          ...stats
-        });
+        const saved = await CourseStatistics.findOneAndUpdate(
+          { courseId, institutionId, academicPeriod },
+          {
+            $set: {
+              ...stats,
+              calculatedAt: new Date()
+            }
+          },
+          { upsert: true, new: true }
+        );
 
-        console.log(`✅ Statistics saved for ${courseId} (ID: ${saved._id})`);
+        console.log(`✅ Statistics saved or updated for ${courseId} (ID: ${saved._id})`);
         ch.ack(msg);
 
       } catch (err) {

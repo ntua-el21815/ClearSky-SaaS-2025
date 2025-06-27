@@ -12,14 +12,16 @@ const {
   getCoursesForStudent,
   getCoursesForInstructor,
   getUserCountByInstitution,
-  linkGoogleAccount              // 👈 ADD THIS
+  linkGoogleAccount,
+  getUserInfoByGmail          
 } = require("../controllers/userController");
 
 
 router.post("/register", registerUser);
 router.get("/by-code/:code", getUserByCode);
 router.get("/by-institution/:institutionId", getUsersByInstitution);
-router.get("/count/by-institution/:institutionId", getUserCountByInstitution); // ✅ Added
+router.get("/count/by-institution/:institutionId", getUserCountByInstitution); 
+router.get("/by-gmail/:gmail", getUserInfoByGmail);
 
 router.get("/:id/courses", getCoursesForStudent);
 router.get("/:id/instructor-courses", getCoursesForInstructor);

@@ -16,6 +16,7 @@ app.use(express.json());
 // Environment variables
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
 const REVIEW_SERVICE_URL = process.env.REVIEW_SERVICE_URL || 'http://review-service:3001';
+const GRADE_SERVICE_URL = process.env.GRADE_SERVICE_URL || 'http://review-service:3002';
 const NOTIFICATION_QUEUE = 'review_notifications';
 
 let rabbitChannel = null;
@@ -73,18 +74,44 @@ app.post('/api/review-requests', async (req, res) => {
     const {
       studentCode,
       courseId,
-      reason
+      reason,
+      institutionId,
+      academicPeriod
     } = req.body;
 
     // Validate required fields
-    if (!studentCode || !courseId || !reason) {
+    if (!studentCode || !courseId || !reason || !institutionId || !academicPeriod) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: studentCode, courseId, reason'
+        error: 'Missing required fields: studentCode, courseId, reason, institutionId, or academicPeriod'
       });
     }
 
-    console.log('Processing review request for student:', studentCode);
+    console.log('🔍 Checking course grade status before review request...');
+
+    // Step 0: Check grade status via orchestrator route
+    const gradeStatusResponse = await axios.get(
+      `${GRADE_SERVICE_URL}/gradeRoutes/course-status`,
+      {
+        params: {
+          courseId,
+          institutionId,
+          academicPeriod
+        },
+        timeout: 5000
+      }
+    );
+
+    const status = gradeStatusResponse.data.status;
+
+    if (status !== "Open") {
+      return res.status(403).json({
+        success: false,
+        error: `Cannot submit review for closed course. Current status: ${status}`
+      });
+    }
+
+    console.log(`✅ Course status is ${status}, proceeding with review creation`);
 
     // Step 1: Create review request in Review Service
     const reviewData = {
@@ -103,15 +130,15 @@ app.post('/api/review-requests', async (req, res) => {
     });
 
     const createdReview = reviewResponse.data;
-    console.log('Review request created with ID:', createdReview.id);
+    console.log('✅ Review request created with ID:', createdReview.id);
 
-    // Step 2: Send notification about new review request
+    // Step 2: Send notification
     const notificationData = {
       type: 'REVIEW_REQUEST_CREATED',
       reviewId: createdReview.id,
       studentId: createdReview.studentCode,
       courseId: createdReview.courseId,
-      message: `New grade review request from student ${createdReview.studentCode}}`,
+      message: `New grade review request from student ${createdReview.studentCode}`,
       timestamp: new Date().toISOString()
     };
 
@@ -125,12 +152,19 @@ app.post('/api/review-requests', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error processing review request:', error.message);
-    
+    console.error('❌ Error processing review request:', error.message);
+
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        success: false,
+        error: 'Course not found or does not belong to student.'
+      });
+    }
+
     if (error.code === 'ECONNREFUSED') {
       return res.status(503).json({
         success: false,
-        error: 'Review service unavailable'
+        error: 'Grade service unavailable'
       });
     }
 
@@ -141,6 +175,8 @@ app.post('/api/review-requests', async (req, res) => {
     });
   }
 });
+;
+
 
 // UC04: Reply to review request orchestration
 app.post('/api/review-requests/:reviewId/reply', async (req, res) => {

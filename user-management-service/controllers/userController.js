@@ -57,6 +57,38 @@ exports.getUsersByInstitution = async (req, res) => {
   }
 };
 
+// GET /users/by-gmail/:gmail
+exports.getUserInfoByGmail = async (req, res) => {
+  try {
+    const gmail = req.params.gmail;
+
+    if (!gmail) {
+      return res.status(400).json({ message: "Missing gmail parameter" });
+    }
+
+    const user = await User.findOne({ gmail });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found with that Gmail" });
+    }
+
+    res.status(200).json({
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      gmail: user.gmail,
+      userCode: user.userCode,
+      role: user.role,
+      institutionId: user.institutionId
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching user by Gmail:", err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 exports.assignUserCode = async (req, res) => {
   const { email, userCode } = req.body;
 

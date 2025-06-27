@@ -25,5 +25,7 @@ router.get("/initial-courses", gradeController.getInitialCourses);
 
 router.get("/course-status", gradeController.getCourseStatus);
 
+router.get("/course-instructor", gradeController.getCourseInstructor);
+
 
 module.exports = router;

@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 const courseStatisticsSchema = new mongoose.Schema({
   courseId: { type: String, required: true },
-  gradeSheetId: { type: String, required: true },
+  institutionId: { type: String, required: true },        // ✅ Keep
+  academicPeriod: { type: String, required: true },       // ✅ Replace gradeSheetId
   averageGrade: Number,
   medianGrade: Number,
   standardDeviation: Number,
