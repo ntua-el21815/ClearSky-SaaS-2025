@@ -338,11 +338,16 @@ router.get('/api/grades/initial-courses', async (req, res) => {
 });
 
 
-// GET course status (Open/Closed) by instructor userCode and courseId
+// GET course status (Open/Closed) by courseId only
 router.get('/api/grades/course-status', async (req, res) => {
+  const { courseId } = req.query;
+  if (!courseId) {
+    return res.status(400).json({ success: false, message: 'Missing courseId parameter' });
+  }
+
   try {
     const response = await axios.get(`${GRADE_API}/course-status`, {
-      params: req.query
+      params: { courseId }
     });
     res.status(response.status).json(response.data);
   } catch (err) {
@@ -352,7 +357,6 @@ router.get('/api/grades/course-status', async (req, res) => {
     });
   }
 });
-
 
 
 module.exports = router;

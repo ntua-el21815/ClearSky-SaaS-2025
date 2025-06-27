@@ -59,6 +59,7 @@
       height: 100px;
       margin-top: 0.5rem;
       padding: 10px;
+      resize: none;
     }
   </style>
 </head>
@@ -78,17 +79,27 @@
 
   <script>
     const userCode = getCookie("userCode");
+    const instructorId = getCookie("instructorId");
+    console.log("Read userCode from cookie:", userCode);
     const role = getCookie("role");
     let studentId = null;
     let regNumber = null;
+    let activeTab = null; // 'request' or 'status'
+
+    const courseAcademicPeriods = {};
 
     async function loadStudentInfo() {
       try {
-        const res = await fetch(`http://localhost:8100/api/users/by-code/${userCode}`);
-        const user = await res.json();
-        document.getElementById('studentInfo').textContent = `${user.name}, ${user.email}`;
-        studentId = user.id;
-        regNumber = user.registrationNumber;
+        const res = await fetch(`http://localhost:8100/api/users/info/by-code/${userCode}`);
+        const user = (await res.json())?.user;
+        if(user){
+          document.getElementById('studentInfo').textContent = `${user.fullName || ''}, ${user.email || ''}`;
+          studentId = user.id;
+          regNumber = user.registrationNumber;
+          fetchCourses();
+        } else {
+          document.getElementById('studentInfo').textContent = 'Error loading student info.';
+        }
       } catch (err) {
         document.getElementById('studentInfo').textContent = 'Error loading student info.';
       }
@@ -101,11 +112,26 @@
     }
 
     async function fetchCourses() {
+      if (!userCode) {
+        console.error("No userCode found — aborting course fetch.");
+        return;
+      }
       try {
         const res = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/courses`);
         const data = await res.json();
         studentId = data.studentId;
         const courses = data.courses;
+
+        for (const course of courses) {
+          try {
+            const statusResp = await fetch(`http://localhost:8081/api/grades/course-status?courseId=${course.courseId}`);
+            const statusJson = await statusResp.json();
+            course.gradingStatus = statusJson?.status || 'Closed';
+          } catch (err) {
+            course.gradingStatus = 'Closed';
+          }
+        }
+
 
         let html = `<table>
           <thead>
@@ -115,25 +141,26 @@
           </thead><tbody>`;
 
         for (const course of courses) {
-          course.gradingStatus = course.gradingStatus || 'Open';
-          const disabled = course.gradingStatus !== 'Open';
+          const gradingStatus = course.gradingStatus;
+          const disabled = gradingStatus !== 'Open';
+          courseAcademicPeriods[course.courseId] = course.academicPeriod;
           html += `
           <tr>
             <td>${course.courseName}</td>
             <td>${course.academicPeriod}</td>
-            <td>${disabled ? '<i>Closed</i>' : 'Open'}</td>
+            <td>${gradingStatus}</td>
             <td>
-              <button class="btn btn-primary" onclick="viewGrades('${course.courseId}')">View Grades</button>
-              <button class="btn btn-secondary" ${disabled ? 'disabled' : ''} onclick="toggleReviewForm('${course.courseId}', '${course.gradeId || ''}')">Request Review</button>
-              <button class="btn btn-secondary" onclick="loadReviewStatus('${course.courseId}')">Review Status</button>
+              <button class="btn btn-primary" onclick="viewGrades('${course.courseId}', '${course.academicPeriod}')">View Grades</button>
+              <button class="btn btn-secondary" ${disabled ? 'disabled' : ''} onclick="toggleActiveTab('request', '${course.courseId}')">Request Review</button>
+              <button class="btn btn-secondary" onclick="toggleActiveTab('status', '${course.courseId}')">Review Status</button>
             </td>
           </tr>
           <tr><td colspan="4">
             <div id="review-box-${course.courseId}" style="display:none;" class="review-box">
               <label>Message to instructor:</label>
-              <textarea id="review-msg-${course.courseId}" maxlength="500" style="resize: none;" oninput="updateCharCount('${course.courseId}')"></textarea>
+              <textarea id="review-msg-${course.courseId}" maxlength="500" style="resize: none;" oninput="updateCharCount('${course.courseId}')" maxLength="500"></textarea>
               <div style="text-align:right; font-size: 0.85rem; color: #666;" id="char-count-${course.courseId}">0 / 500</div>
-              <button class="btn btn-primary" style="margin-top: 0.5rem;" onclick="submitReview('${course.courseId}', '${course.gradeId || ''}')">Submit Review Request</button>
+              <button class="btn btn-primary" style="margin-top: 0.5rem;" onclick="submitReview('${course.courseId}')">Submit Review Request</button>
               <div id="review-result-${course.courseId}" style="margin-top:0.5rem;"></div>
             </div>
             <div id="status-box-${course.courseId}" class="review-box" style="display:none;"></div>
@@ -159,23 +186,37 @@
       window.location.href = "login.html";
     }
 
-    function viewGrades(courseId) {
-      window.location.href = `student_view_personal_grades.html?courseId=${courseId}`;
+    function viewGrades(courseId, academicPeriod) {
+      const encodedPeriod = encodeURIComponent(academicPeriod);
+      window.location.href = `student_view_personal_grades.html?courseId=${courseId}&academicPeriod=${encodedPeriod}`;
     }
 
-    function toggleReviewForm(courseId, gradeId) {
-      document.querySelectorAll('[id^="review-box-"]').forEach(div => {
-        if (div.id !== `review-box-${courseId}`) div.style.display = 'none';
-      });
-      document.querySelectorAll('[id^="status-box-"]').forEach(div => {
-        div.style.display = 'none';
-      });
-      const box = document.getElementById(`review-box-${courseId}`);
-      box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+    function toggleActiveTab(tab, courseId) {
+      const reviewBox = document.getElementById(`review-box-${courseId}`);
+      const statusBox = document.getElementById(`status-box-${courseId}`);
+
+      if (activeTab === tab) {
+        activeTab = null;
+        reviewBox.style.display = 'none';
+        statusBox.style.display = 'none';
+      } else {
+        activeTab = tab;
+        // Hide all boxes first
+        document.querySelectorAll('[id^="review-box-"]').forEach(div => div.style.display = 'none');
+        document.querySelectorAll('[id^="status-box-"]').forEach(div => div.style.display = 'none');
+        if (tab === 'request') {
+          reviewBox.style.display = 'block';
+          statusBox.style.display = 'none';
+        } else if (tab === 'status') {
+          reviewBox.style.display = 'none';
+          statusBox.style.display = 'block';
+          loadReviewStatus(courseId);
+        }
+      }
     }
 
     // Χρησιμοποιεί τα studentId και regNumber από loadStudentInfo
-    async function submitReview(courseId, gradeId) {
+    async function submitReview(courseId) {
       const msg = document.getElementById(`review-msg-${courseId}`).value;
       const resultBox = document.getElementById(`review-result-${courseId}`);
       try {
@@ -183,9 +224,9 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            studentId, courseId, gradeId,
-            reason: msg,
-            studentRegistrationNumber: regNumber || null
+            studentCode: userCode,
+            courseId: courseId,
+            reason: msg
           })
         });
         const data = await res.json();
@@ -207,13 +248,16 @@
       document.querySelectorAll('[id^="review-box-"]').forEach(div => {
         div.style.display = 'none';
       });
-      box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+      box.style.display = 'block';
       try {
-        const res = await fetch(`http://localhost:8082/api/review-requests?studentId=${studentId}&courseId=${courseId}`);
+        const res = await fetch(`http://localhost:8082/api/review-requests?studentCode=${userCode}&courseId=${courseId}`);
         const json = await res.json();
-        if (json.success && json.data.length > 0) {
-          const r = json.data[0];
-          box.innerHTML = `<strong>Instructor Response:</strong> ${r.instructorResponse || 'Pending'} ${r.reviewedGrade ? '(New grade: ' + r.reviewedGrade + ')' : ''}`;
+        if (json.success && json.data?.success && Array.isArray(json.data.data) && json.data.data.length > 0) {
+          const r = json.data.data[0];
+          box.innerHTML = `<strong>Status:</strong> ${r.status}`;
+          if (r.status !== 'PENDING') {
+            box.innerHTML += `<br><strong>Message:</strong> ${r.instructorResponse || 'N/A'} ${r.reviewedGrade ? '(New grade: ' + r.reviewedGrade + ')' : ''}`;
+          }
         } else {
           box.innerHTML = 'No review requests found.';
         }
@@ -221,8 +265,6 @@
         box.innerHTML = 'Error loading review status.';
       }
     }
-
-    fetchCourses();
 
     function updateCharCount(courseId) {
       const text = document.getElementById(`review-msg-${courseId}`).value;
