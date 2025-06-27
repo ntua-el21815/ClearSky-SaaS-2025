@@ -11,8 +11,10 @@ const {
   registerUser,
   getCoursesForStudent,
   getCoursesForInstructor,
-  getUserCountByInstitution
+  getUserCountByInstitution,
+  linkGoogleAccount              // 👈 ADD THIS
 } = require("../controllers/userController");
+
 
 router.post("/register", registerUser);
 router.get("/by-code/:code", getUserByCode);
@@ -26,5 +28,7 @@ router.get("/", getAllUsers);
 router.get("/:id", getUserById);
 router.patch("/:id", updateUser);
 router.post("/assign-code", assignUserCode);
+router.post("/link-google-account", linkGoogleAccount);
+
 
 module.exports = router;
