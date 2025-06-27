@@ -150,6 +150,7 @@
 
       setCookie('userCode', user.userCode, 7);
       setCookie('role', user.role, 7);
+      setCookie('institutionId', user.institutionId, 7);
 
       if (user.role === 'student') {
         window.location.href = 'student_grade_statistics.html';
@@ -203,6 +204,7 @@ async function googleLogin() {
         localStorage.setItem('token', token);
         setCookie('userCode', user.userCode, 7);
         setCookie('role', user.role, 7);
+        setCookie('institutionId', user.institutionId, 7);
 
         if (user.role === 'student') {
           window.location.href = 'student_grade_statistics.html';
