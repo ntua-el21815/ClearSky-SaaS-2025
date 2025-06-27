@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Connecting Google...</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    .message {
+      font-size: 18px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="message" id="statusMessage">🔄 Connecting Google account...</div>
+
+  <script>
+    function getCookie(name) {
+      const cookieStr = document.cookie;
+      const cookies = cookieStr.split(';');
+      for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    async function linkGoogleAccount() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("token");
+      const userCode = getCookie("userCode");
+      const role = getCookie("role");
+
+      const statusDiv = document.getElementById("statusMessage");
+
+      if (!token || !userCode || !role) {
+        statusDiv.textContent = "❌ Missing token or user credentials.";
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:8100/api/users/google-signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userCode, googleAccessToken: token })
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          statusDiv.textContent = "✅ Google account linked successfully.";
+
+          // Redirect to role-based page after short delay
+          setTimeout(() => {
+            if (role === 'student') {
+              window.location.href = 'student_grade_statistics.html';
+            } else if (role === 'instructor') {
+              window.location.href = 'instr_dashboard.html';
+            } else if (role === 'institution_rep') {
+              window.location.href = 'rep_dashboard.html';
+            } else {
+              statusDiv.textContent = "❌ Unknown role.";
+            }
+          }, 1500);
+        } else {
+          statusDiv.textContent = "❌ Google signup failed.";
+        }
+      } catch (err) {
+        console.error(err);
+        statusDiv.textContent = "❌ Network error while connecting Google.";
+      }
+    }
+
+    linkGoogleAccount();
+  </script>
+</body>
+</html>

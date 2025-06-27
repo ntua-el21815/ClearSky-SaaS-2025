@@ -604,8 +604,8 @@ app.get('/oauth2callback', async (req, res) => {
 
     const { data: googleUser } = await google.oauth2({ auth: oauth2Client, version: 'v2' }).userinfo.get();
 
-    // 🔁 Τώρα redirect στη student_grade_statistics.html με το accessToken σαν query param
-    const redirectUrl = `http://127.0.0.1:5500/frontend_new/student_grade_statistics.html?token=${tokens.access_token}`;
+    // 🔁 Redirect στη γενική σελίδα σύνδεσης
+    const redirectUrl = `http://127.0.0.1:5500/frontend_new/google_connect.html?token=${tokens.access_token}`;
     return res.redirect(redirectUrl);
 
   } catch (err) {
@@ -613,6 +613,7 @@ app.get('/oauth2callback', async (req, res) => {
     return res.status(500).send('Google OAuth failed');
   }
 });
+
 
 // sign in with google via token 
 app.post('/api/auth/google', async (req, res) => {

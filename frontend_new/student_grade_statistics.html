@@ -98,40 +98,6 @@
 
   <script>
     
-    // STEP 1: Αν ήρθαμε με accessToken από Google
-  const urlParams = new URLSearchParams(window.location.search);
-  const googleAccessToken = urlParams.get("token");
-
-  if (googleAccessToken) {
-    const userCode = getCookie('userCode');
-
-    fetch("http://localhost:8100/api/users/google-signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userCode: userCode,
-        googleAccessToken: googleAccessToken
-      }),
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        alert("✅ Google account linked successfully.");
-        // Καθαρίζουμε το token από το URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        window.location.reload(); // Ή: loadStudentCourses();
-      } else {
-        alert("❌ Google signup failed.");
-      }
-    })
-    .catch(err => {
-      console.error("❌ Network error:", err);
-      alert("❌ Could not connect Google account.");
-    });
-  }
-
     function getCookie(name) {
       const cookies = document.cookie.split(';');
       for (let cookie of cookies) {

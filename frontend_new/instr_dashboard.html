@@ -115,6 +115,7 @@
 </head>
 <body>
   <button class="logout-btn" onclick="logout()">Logout</button>
+  <button class="logout-btn" style="right: 110px;" onclick="connectGoogle()">Connect with Google</button>
 
   <div style="text-align: center; margin-bottom: 2rem;">
     <h1 style="margin: 0; font-size: 2rem; font-weight: 700; color: #111827;">Instructor Dashboard</h1>
@@ -265,6 +266,33 @@
     tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:red;">❌ Error loading courses.</td></tr>';
   }
 }
+
+    async function connectGoogle() {
+  try {
+    const res = await fetch(`http://localhost:8100/api/users/info/by-code/${userCode}`);
+    const result = await res.json();
+    const user = result.user;
+
+    if (user.gmail) {
+      alert("✅ Ο λογαριασμός σου είναι ήδη συνδεδεμένος με: " + user.gmail);
+      return;
+    }
+
+    const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+    const params = new URLSearchParams({
+      client_id: '787551778672-p5tcibqjdt7khnq2ssqkkbk1cri73lje.apps.googleusercontent.com',
+      redirect_uri: 'http://localhost:8100/oauth2callback',
+      response_type: 'code',
+      scope: 'profile email'
+    });
+
+    window.location.href = `${baseUrl}?${params.toString()}`;
+  } catch (err) {
+    console.error(err);
+    alert('❌ Σφάλμα κατά τον έλεγχο λογαριασμού.');
+  }
+}
+
 
     const userCode = getCookie('userCode');
     const role = getCookie('role');

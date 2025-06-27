@@ -191,37 +191,6 @@
   </div>
 
   <script>
-    // Αν επιστρέψαμε από Google OAuth με token
-  const urlParams = new URLSearchParams(window.location.search);
-  const googleAccessToken = urlParams.get("token");
-
-  if (googleAccessToken) {
-    const userCode = getCookie('userCode');
-    if (userCode) {
-      fetch("http://localhost:8100/api/users/google-signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userCode: userCode,
-          googleAccessToken: googleAccessToken
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          alert("✅ Google account linked successfully.");
-          window.history.replaceState({}, document.title, window.location.pathname);
-          window.location.reload();
-        } else {
-          alert("❌ Google signup failed.");
-        }
-      })
-      .catch(err => {
-        console.error("❌ Network error:", err);
-        alert("❌ Could not connect Google account.");
-      });
-    }
-  }
 
     function getCookie(name) {
       const cookieStr = document.cookie;
