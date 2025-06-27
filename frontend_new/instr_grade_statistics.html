@@ -104,117 +104,120 @@
 
     const userCode = getCookie('userCode');
     const role = getCookie('role');
+    const institutionId = getCookie('institutionId');
     if (!userCode || role !== 'instructor') {
       window.location.href = 'login.html';
     }
 
-     async function loadInstructorCourses() {
-    const container = document.getElementById('course-table-container');
-    const chartsContainer = document.getElementById('charts-container');
-    chartsContainer.innerHTML = '';
-
-    try {
-      const response = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/instructor-courses`);
-      const result = await response.json();
-      const instructorCourses = result.courses;
-
-    if (!Array.isArray(instructorCourses) || instructorCourses.length === 0) {
-        container.innerHTML = '<p>No courses assigned to this instructor.</p>';
-        return;
-      }
-
-      const instCoursesRes = await fetch(`http://localhost:8100/api/institution/courses/by-user/${userCode}`);
-      const instCoursesData = await instCoursesRes.json();
-      const allCourses = instCoursesData.courses || [];
-
-      let tableHTML = `
-        <table>
-          <thead>
-            <tr>
-              <th>Course ID</th>
-              <th>Course Name</th>
-              <th>Academic Period</th>
-              <th>Average</th>
-              <th>Median</th>
-              <th>Std Dev</th>
-              <th>Pass</th>
-              <th>Fail</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      for (const { courseId, courseName, academicPeriod } of instructorCourses) {
-  const name = courseName ?? '-';
-  const period = academicPeriod ?? '-';
-
-  let avg = '-', med = '-', std = '-', pass = '-', fail = '-';
+    async function loadInstructorCourses() {
+  const container = document.getElementById('course-table-container');
+  const chartsContainer = document.getElementById('charts-container');
+  chartsContainer.innerHTML = '';
 
   try {
-    const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
-    if (statsRes.ok) {
-      const stats = await statsRes.json();
-      avg = stats.averageGrade?.toFixed(2) ?? '-';
-      med = stats.medianGrade?.toFixed(2) ?? '-';
-      std = stats.standardDeviation?.toFixed(2) ?? '-';
-      pass = stats.numberOfPasses ?? '-';
-      fail = stats.numberOfFails ?? '-';
+    const response = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/instructor-courses`);
+    const result = await response.json();
+    const instructorCourses = result.courses;
+
+    if (!Array.isArray(instructorCourses) || instructorCourses.length === 0) {
+      container.innerHTML = '<p>No courses assigned to this instructor.</p>';
+      return;
     }
-  } catch (err) {
-    console.warn(`Failed to load statistics for course ${courseId}`);
-  }
 
-  tableHTML += `
-    <tr style="cursor:pointer;" onclick="loadCourseCharts('${courseId}')">
-      <td>${courseId}</td>
-      <td>${name}</td>
-      <td>${period}</td>
-      <td>${avg}</td>
-      <td>${med}</td>
-      <td>${std}</td>
-      <td>${pass}</td>
-      <td>${fail}</td>
-    </tr>
-  `;
-}
+    const instCoursesRes = await fetch(`http://localhost:8100/api/institution/courses/by-user/${userCode}`);
+    const instCoursesData = await instCoursesRes.json();
+    const allCourses = instCoursesData.courses || [];
 
-      tableHTML += '</tbody></table>';
-      container.innerHTML = tableHTML;
+    let tableHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Course ID</th>
+            <th>Course Name</th>
+            <th>Academic Period</th>
+            <th>Average</th>
+            <th>Median</th>
+            <th>Std Dev</th>
+            <th>Pass</th>
+            <th>Fail</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
 
-    } catch (err) {
-      console.error('Error loading instructor courses:', err);
-      container.innerHTML = `<p style="color: red;">❌ Failed to load courses.</p>`;
-    }
-  }
+    for (const { courseId, courseName } of instructorCourses) {
+      const fullCourse = allCourses.find(c => c.courseId === courseId);
+      const academicPeriod = fullCourse?.academicPeriod;
 
-    async function loadCourseCharts(courseId) {
-    const chartsContainer = document.getElementById('charts-container');
-    chartsContainer.innerHTML = '<p>Loading charts...</p>';
+      let avg = '-', med = '-', std = '-', pass = '-', fail = '-';
 
-    try {
-      const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
-      if (!statsRes.ok) throw new Error('Failed to fetch stats');
-      const stats = await statsRes.json();
-
-      chartsContainer.innerHTML = ''; // Clear before drawing
-
-      createChart(`Total Grading - ${courseId}`, stats.finalGradeDistribution, chartsContainer);
-
-      const sortedQuestions = Object.entries(stats.questionDistributionsRaw || {}).sort((a, b) => {
-        const numA = parseInt(a[0].replace('Q', ''), 10);
-        const numB = parseInt(b[0].replace('Q', ''), 10);
-        return numA - numB;
-      });
-
-      for (const [question, dist] of sortedQuestions) {
-        createChart(`Course ${courseId} - Q${question.replace('Q', '')}`, dist, chartsContainer);
+      try {
+        const params = new URLSearchParams({ academicPeriod, institutionId });
+        const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}?${params}`);
+        if (statsRes.ok) {
+          const stats = await statsRes.json();
+          avg = stats.averageGrade?.toFixed(2) ?? '-';
+          med = stats.medianGrade?.toFixed(2) ?? '-';
+          std = stats.standardDeviation?.toFixed(2) ?? '-';
+          pass = stats.numberOfPasses ?? '-';
+          fail = stats.numberOfFails ?? '-';
+        }
+      } catch (err) {
+        console.warn(`Failed to load stats for ${courseId}`);
       }
 
-    } catch (err) {
-      console.error(err);
-      chartsContainer.innerHTML = '<p style="color:red;">❌ Failed to fetch statistics.</p>';
+      tableHTML += `
+        <tr style="cursor:pointer;" onclick="loadCourseCharts('${courseId}', '${institutionId}', '${academicPeriod}')">
+          <td>${courseId}</td>
+          <td>${courseName}</td>
+          <td>${academicPeriod}</td>
+          <td>${avg}</td>
+          <td>${med}</td>
+          <td>${std}</td>
+          <td>${pass}</td>
+          <td>${fail}</td>
+        </tr>
+      `;
     }
+
+    tableHTML += '</tbody></table>';
+    container.innerHTML = tableHTML;
+
+  } catch (err) {
+    console.error('Error loading instructor courses:', err);
+    container.innerHTML = `<p style="color: red;">❌ Failed to load courses.</p>`;
   }
+}
+
+    async function loadCourseCharts(courseId, institutionId, academicPeriod) {
+  const chartsContainer = document.getElementById('charts-container');
+  chartsContainer.innerHTML = '<p>Loading charts...</p>';
+
+  try {
+    const params = new URLSearchParams({ institutionId, academicPeriod });
+    const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}?${params}`);
+    if (!statsRes.ok) throw new Error('Failed to fetch stats');
+    const stats = await statsRes.json();
+
+    chartsContainer.innerHTML = ''; // Clear previous charts
+
+    createChart(`Total Grading - ${courseId}`, stats.finalGradeDistribution, chartsContainer);
+
+    const sortedQuestions = Object.entries(stats.questionDistributionsRaw || {}).sort((a, b) => {
+      const numA = parseInt(a[0].replace('Q', ''), 10);
+      const numB = parseInt(b[0].replace('Q', ''), 10);
+      return numA - numB;
+    });
+
+    for (const [question, dist] of sortedQuestions) {
+      createChart(`Course ${courseId} - Q${question.replace('Q', '')}`, dist, chartsContainer);
+    }
+
+  } catch (err) {
+    console.error(err);
+    chartsContainer.innerHTML = '<p style="color:red;">❌ Failed to fetch statistics.</p>';
+  }
+}
 
     function createChart(title, dataObj, container) {
     const box = document.createElement('div');

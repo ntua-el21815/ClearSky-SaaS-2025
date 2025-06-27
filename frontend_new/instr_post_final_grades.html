@@ -151,9 +151,12 @@
         return;
       }
 
+      const institutionId = getCookie('institutionId');
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('userCode', userCode);
+      formData.append('institutionId', institutionId);
       formData.append('final', 'true'); // Final grade submission
 
       try {

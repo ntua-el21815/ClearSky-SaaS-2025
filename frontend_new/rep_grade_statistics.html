@@ -90,6 +90,24 @@
   <div id="charts-container"></div>
 
   <script>
+
+    function getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [key, value] = cookie.trim().split('=');
+      if (key === name) return decodeURIComponent(value);
+    }
+    return null;
+  }
+
+  const userCode = getCookie('userCode');
+  const role = getCookie('role');
+  const institutionId = getCookie('institutionId');
+
+  if (!userCode || role !== 'institution_rep') {
+    window.location.href = 'login.html';
+  }
+
     async function loadStatistics() {
       const courseId = document.getElementById('courseIdInput').value.trim();
       const chartsContainer = document.getElementById('charts-container');
@@ -102,8 +120,38 @@
         return;
       }
 
+      let academicPeriod;
+
       try {
-        const res = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
+    // 🔍 Get list of courses by user
+    const resCourses = await fetch(`http://localhost:8100/api/institution/courses/by-user/${userCode}`);
+    const result = await resCourses.json();
+
+    if (!result.success || !Array.isArray(result.courses)) {
+      throw new Error('Could not fetch user courses');
+    }
+
+    const match = result.courses.find(c => c.courseId === courseId);
+    if (!match) {
+      alert('Course not found for this user');
+      return;
+    }
+
+    academicPeriod = match.academicPeriod;
+  } catch (err) {
+    console.error('❌ Error loading courses:', err);
+    chartsContainer.innerHTML = '<p style="color:red;">❌ Failed to fetch academic period</p>';
+    return;
+  }
+
+      try {
+
+        const queryParams = new URLSearchParams({
+          institutionId,
+          academicPeriod
+        });
+
+        const res = await fetch(`http://localhost:8081/api/statistics/course/${courseId}?${queryParams}`);
         if (!res.ok) throw new Error('Failed to load statistics');
         const stats = await res.json();
 
