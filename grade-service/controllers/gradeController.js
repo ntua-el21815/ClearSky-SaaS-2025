@@ -212,20 +212,17 @@ exports.getInitialCourses = async (req, res) => {
 
 
 exports.getCourseStatus = async (req, res) => {
-  const { userCode, courseId } = req.query;
+  const { courseId } = req.query;
 
-  if (!userCode || !courseId) {
-    return res.status(400).json({ success: false, message: "Missing userCode or courseId." });
+  if (!courseId) {
+    return res.status(400).json({ success: false, message: "Missing courseId." });
   }
 
   try {
-    const course = await GradeUpload.findOne({
-      instructorId: userCode,
-      courseId
-    }).sort({ final: -1 }).lean(); // prioritizes final:true over false/null if both exist
+    const course = await GradeUpload.findOne({ courseId }).sort({ final: -1 }).lean(); // prioritizes final:true over false/null if both exist
 
     if (!course) {
-      return res.status(404).json({ success: false, message: "Course not found for instructor." });
+      return res.status(404).json({ success: false, message: "Course not found." });
     }
 
     const status = course.final === true ? "Closed" : "Open";

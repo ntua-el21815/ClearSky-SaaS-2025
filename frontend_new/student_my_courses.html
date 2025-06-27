@@ -79,6 +79,8 @@
 
   <script>
     const userCode = getCookie("userCode");
+    const instructorId = getCookie("instructorId");
+    console.log("Read userCode from cookie:", userCode);
     const role = getCookie("role");
     let studentId = null;
     let regNumber = null;
@@ -94,6 +96,7 @@
           document.getElementById('studentInfo').textContent = `${user.fullName || ''}, ${user.email || ''}`;
           studentId = user.id;
           regNumber = user.registrationNumber;
+          fetchCourses();
         } else {
           document.getElementById('studentInfo').textContent = 'Error loading student info.';
         }
@@ -109,6 +112,10 @@
     }
 
     async function fetchCourses() {
+      if (!userCode) {
+        console.error("No userCode found — aborting course fetch.");
+        return;
+      }
       try {
         const res = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/courses`);
         const data = await res.json();
@@ -117,13 +124,14 @@
 
         for (const course of courses) {
           try {
-            const statusResp = await fetch(`http://localhost:8081/api/grades/course-status?instructorCode=${course.instructorId}&courseId=${course.courseId}`);
+            const statusResp = await fetch(`http://localhost:8081/api/grades/course-status?courseId=${course.courseId}`);
             const statusJson = await statusResp.json();
-            course.gradingStatus = statusJson?.gradingStatus || 'Closed';
+            course.gradingStatus = statusJson?.status || 'Closed';
           } catch (err) {
             course.gradingStatus = 'Closed';
           }
         }
+
 
         let html = `<table>
           <thead>
@@ -216,11 +224,9 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            studentId,
-            courseId,
-            academicPeriod: courseAcademicPeriods[courseId] || null,
-            reason: msg,
-            studentRegistrationNumber: regNumber || null
+            studentCode: userCode,
+            courseId: courseId,
+            reason: msg
           })
         });
         const data = await res.json();
@@ -244,11 +250,14 @@
       });
       box.style.display = 'block';
       try {
-        const res = await fetch(`http://localhost:8082/api/review-requests?studentId=${studentId}&courseId=${courseId}`);
+        const res = await fetch(`http://localhost:8082/api/review-requests?studentCode=${userCode}&courseId=${courseId}`);
         const json = await res.json();
-        if (json.success && json.data.length > 0) {
-          const r = json.data[0];
-          box.innerHTML = `<strong>Instructor Response:</strong> ${r.instructorResponse || 'Pending'} ${r.reviewedGrade ? '(New grade: ' + r.reviewedGrade + ')' : ''}`;
+        if (json.success && json.data?.success && Array.isArray(json.data.data) && json.data.data.length > 0) {
+          const r = json.data.data[0];
+          box.innerHTML = `<strong>Status:</strong> ${r.status}`;
+          if (r.status !== 'PENDING') {
+            box.innerHTML += `<br><strong>Message:</strong> ${r.instructorResponse || 'N/A'} ${r.reviewedGrade ? '(New grade: ' + r.reviewedGrade + ')' : ''}`;
+          }
         } else {
           box.innerHTML = 'No review requests found.';
         }
@@ -256,8 +265,6 @@
         box.innerHTML = 'Error loading review status.';
       }
     }
-
-    fetchCourses();
 
     function updateCharCount(courseId) {
       const text = document.getElementById(`review-msg-${courseId}`).value;
