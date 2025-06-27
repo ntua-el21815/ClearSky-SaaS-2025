@@ -7,31 +7,30 @@ export const createReview = async (req, res) => {
     const {
       studentCode,
       courseId,
+      academicPeriod,
+      institutionId,
       reason,
     } = req.body;
 
-    // Basic sanitization and validation
+    // Validation
     if (
+      !studentCode || !courseId || !academicPeriod || !institutionId || !reason ||
       typeof studentCode !== 'string' ||
       typeof courseId !== 'string' ||
-      typeof reason !== 'string' ||
-      !studentCode ||
-      !courseId ||
-      !reason
+      typeof academicPeriod !== 'string' ||
+      typeof institutionId !== 'string' ||
+      typeof reason !== 'string'
     ) {
-      return res.status(400).json({ message: 'Invalid input data' });
+      return res.status(400).json({ message: 'Missing or invalid input fields' });
     }
 
-    // Check if the student exists, remember to reapply later
-    // const student = await Student.findOne({ id: studentCode.trim() });
-    // if (!student) {
-    //   return res.status(404).json({ message: 'Student not found' });
-    // }
-    
     const review = new Review({
       studentCode: studentCode.trim(),
       courseId: courseId.trim(),
+      academicPeriod: academicPeriod.trim(),
+      institutionId: institutionId.trim(),
       reason: reason.trim(),
+      status: 'PENDING', // optional, as it's the default in schema
     });
 
     await review.save();
@@ -67,15 +66,31 @@ export const getReviewById = async (req, res) => {
 export const getReviewsByCourseId = async (req, res) => {
   try {
     const { courseId } = req.params;
-    if (!courseId || typeof courseId !== 'string' || !courseId.trim()) {
-      return res.status(400).json({ message: 'Invalid courseId' });
+    const { academicPeriod, institutionId } = req.query;
+
+    // Validate all required inputs
+    if (
+      !courseId || typeof courseId !== 'string' || !courseId.trim() ||
+      !academicPeriod || typeof academicPeriod !== 'string' || !academicPeriod.trim() ||
+      !institutionId || typeof institutionId !== 'string' || !institutionId.trim()
+    ) {
+      return res.status(400).json({
+        message: 'Missing or invalid parameters: courseId, academicPeriod, and institutionId are required'
+      });
     }
-    const reviews = await Review.find({ courseId: courseId.trim() });
-    res.status(200).json(reviews);
+
+    const reviews = await Review.find({
+      courseId: courseId.trim(),
+      academicPeriod: academicPeriod.trim(),
+      institutionId: institutionId.trim()
+    });
+
+    res.status(200).json({ success: true, data: reviews });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // Update a review [corresponds to "Review Finished" by Review Orchestrator [cite: 3]]
 // (e.g., status, instructorResponse, reviewedGrade)

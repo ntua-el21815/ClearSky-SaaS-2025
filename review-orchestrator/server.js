@@ -118,9 +118,12 @@ app.post('/api/review-requests', async (req, res) => {
       studentCode,
       courseId,
       reason,
+      institutionId,
+      academicPeriod,
       status: 'PENDING',
       requestedAt: new Date().toISOString()
     };
+
 
     const reviewResponse = await axios.post(`${REVIEW_SERVICE_URL}`, reviewData, {
       timeout: 10000,
@@ -176,7 +179,6 @@ app.post('/api/review-requests', async (req, res) => {
   }
 });
 ;
-
 
 // UC04: Reply to review request orchestration
 app.post('/api/review-requests/:reviewId/reply', async (req, res) => {
