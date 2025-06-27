@@ -84,6 +84,8 @@
     let regNumber = null;
     let activeTab = null; // 'request' or 'status'
 
+    const courseAcademicPeriods = {};
+
     async function loadStudentInfo() {
       try {
         const res = await fetch(`http://localhost:8100/api/users/info/by-code/${userCode}`);
@@ -113,6 +115,16 @@
         studentId = data.studentId;
         const courses = data.courses;
 
+        for (const course of courses) {
+          try {
+            const statusResp = await fetch(`http://localhost:8081/api/grades/course-status?instructorCode=${course.instructorId}&courseId=${course.courseId}`);
+            const statusJson = await statusResp.json();
+            course.gradingStatus = statusJson?.gradingStatus || 'Closed';
+          } catch (err) {
+            course.gradingStatus = 'Closed';
+          }
+        }
+
         let html = `<table>
           <thead>
             <tr>
@@ -121,15 +133,16 @@
           </thead><tbody>`;
 
         for (const course of courses) {
-          course.gradingStatus = course.gradingStatus || 'Open';
-          const disabled = course.gradingStatus !== 'Open';
+          const gradingStatus = course.gradingStatus;
+          const disabled = gradingStatus !== 'Open';
+          courseAcademicPeriods[course.courseId] = course.academicPeriod;
           html += `
           <tr>
             <td>${course.courseName}</td>
             <td>${course.academicPeriod}</td>
-            <td>${disabled ? '<i>Closed</i>' : 'Open'}</td>
+            <td>${gradingStatus}</td>
             <td>
-              <button class="btn btn-primary" onclick="viewGrades('${course.courseId}')">View Grades</button>
+              <button class="btn btn-primary" onclick="viewGrades('${course.courseId}', '${course.academicPeriod}')">View Grades</button>
               <button class="btn btn-secondary" ${disabled ? 'disabled' : ''} onclick="toggleActiveTab('request', '${course.courseId}')">Request Review</button>
               <button class="btn btn-secondary" onclick="toggleActiveTab('status', '${course.courseId}')">Review Status</button>
             </td>
@@ -165,8 +178,9 @@
       window.location.href = "login.html";
     }
 
-    function viewGrades(courseId) {
-      window.location.href = `student_view_personal_grades.html?courseId=${courseId}`;
+    function viewGrades(courseId, academicPeriod) {
+      const encodedPeriod = encodeURIComponent(academicPeriod);
+      window.location.href = `student_view_personal_grades.html?courseId=${courseId}&academicPeriod=${encodedPeriod}`;
     }
 
     function toggleActiveTab(tab, courseId) {
@@ -204,6 +218,7 @@
           body: JSON.stringify({
             studentId,
             courseId,
+            academicPeriod: courseAcademicPeriods[courseId] || null,
             reason: msg,
             studentRegistrationNumber: regNumber || null
           })

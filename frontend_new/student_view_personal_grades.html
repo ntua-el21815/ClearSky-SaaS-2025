@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Grade</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      padding: 2rem;
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      border: none;
+    }
+    .btn-primary {
+      background-color: #0a2a66;
+      color: white;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 6px 8px;
+      font-size: 0.9rem;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background-color: #0a2a66;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f3f4f6;
+    }
+    .grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .card {
+      background-color: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 1rem;
+      font-size: 0.9rem;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="header-row">
+    <div>
+      <h2>My Grade</h2>
+      <p id="studentInfo">Loading...</p>
+    </div>
+    <div>
+      <button class="btn btn-primary" onclick="goBack()">Go to My Courses</button>
+    </div>
+  </div>
+
+  <div id="gradeContainer">Loading grade info...</div>
+  <div id="statsContainer">Loading statistics...</div>
+  <div class="grid-layout" id="chartsContainer"></div>
+
+  <script>
+    const userCode = getCookie("userCode");
+    const role = getCookie("role");
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseId = urlParams.get("courseId");
+    const academicPeriod = urlParams.get("academicPeriod");
+
+    if (!userCode || role !== 'student') {
+      window.location.href = "login.html";
+    }
+
+    async function loadStudentInfo() {
+      try {
+        const res = await fetch(`http://localhost:8100/api/users/info/by-code/${userCode}`);
+        const user = (await res.json())?.user;
+        if (user && Array.isArray(user.courses)) {
+          const course = user.courses.find(c => c.courseId === courseId && c.academicPeriod === academicPeriod);
+          document.getElementById("studentInfo").textContent = course ? course.courseName : "Course info not found.";
+        } else {
+          document.getElementById("studentInfo").textContent = "Course info not found.";
+        }
+      } catch (err) {
+        document.getElementById("studentInfo").textContent = "Error loading course info.";
+      }
+    }
+
+    async function loadGradeAndStats() {
+      if (!academicPeriod) {
+        document.getElementById("gradeContainer").innerHTML = "Missing academic period.";
+        document.getElementById("statsContainer").innerHTML = "";
+        return;
+      }
+      try {
+        const gradeRes = await fetch(`http://localhost:8081/api/grades/student?studentId=${userCode}&courseId=${courseId}&academicPeriod=${academicPeriod}`);
+        const gradeJson = await gradeRes.json();
+
+        const grades = gradeJson?.student;
+        if (!grades) throw new Error("Grade not found");
+
+        let gradeHTML = `<h3>Your Grade: ${grades.grade ?? 'N/A'}</h3>`;
+        if (grades.responses && Object.keys(grades.responses).length > 0) {
+          gradeHTML += `
+            <table>
+              <thead><tr><th>Question</th><th>Grade</th></tr></thead>
+              <tbody>
+                ${Object.entries(grades.responses).map(([q, g]) => `<tr><td>Q${q}</td><td>${g}</td></tr>`).join('')}
+              </tbody>
+            </table>`;
+        }
+
+        document.getElementById("gradeContainer").innerHTML = gradeHTML;
+      } catch (e) {
+        document.getElementById("gradeContainer").innerHTML = "Failed to load your grade.";
+      }
+
+      try {
+        const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
+        const statsJson = await statsRes.json();
+
+        const stats = statsJson ?? {};
+
+        const statsHTML = `
+          <h3>Course Statistics</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Average</th>
+                <th>Median</th>
+                <th>Std Dev</th>
+                <th>Pass</th>
+                <th>Fail</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${stats.averageGrade?.toFixed(2) ?? '-'}</td>
+                <td>${stats.medianGrade?.toFixed(2) ?? '-'}</td>
+                <td>${stats.standardDeviation?.toFixed(2) ?? '-'}</td>
+                <td>${stats.numberOfPasses ?? '-'}</td>
+                <td>${stats.numberOfFails ?? '-'}</td>
+              </tr>
+            </tbody>
+          </table>
+        `;
+        document.getElementById("statsContainer").innerHTML = statsHTML;
+
+        const chartsContainer = document.getElementById("chartsContainer");
+        chartsContainer.innerHTML = "";
+
+        const renderChart = (title, data) => {
+          if (!data || Object.keys(data).length === 0) return;
+          const div = document.createElement("div");
+          div.className = "card";
+          const canvas = document.createElement("canvas");
+          div.innerHTML = `<h3>${title}</h3>`;
+          div.appendChild(canvas);
+          chartsContainer.appendChild(div);
+
+          new Chart(canvas, {
+            type: "bar",
+            data: {
+              labels: Object.keys(data),
+              datasets: [{
+                label: "Students",
+                data: Object.values(data),
+                backgroundColor: "#2563eb",
+              }]
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
+              }
+            }
+          });
+        };
+
+        renderChart("Total Grade Distribution", stats.finalGradeDistribution || {});
+        const qDists = stats.questionDistributionsRaw || {};
+        for (const [q, dist] of Object.entries(qDists)) {
+          if (dist && Object.keys(dist).length > 0) {
+            renderChart(`Question ${q.slice(-2)} Distribution`, dist);
+          }
+        }
+      } catch (e) {
+        document.getElementById("statsContainer").innerHTML = "Failed to load statistics.";
+      }
+    }
+
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(";").shift();
+    }
+
+    function goBack() {
+      window.location.href = "student_my_courses.html";
+    }
+
+    function viewGrades(courseId, academicPeriod) {
+      window.location.href = `student_view_personal_grades.html?courseId=${courseId}&academicPeriod=${academicPeriod}`;
+    }
+
+    loadStudentInfo();
+    loadGradeAndStats();
+  </script>
+</body>
+</html>
