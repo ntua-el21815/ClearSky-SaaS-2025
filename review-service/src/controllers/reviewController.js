@@ -1,7 +1,7 @@
 // src/controllers/reviewController.js
 import Review from '../models/reviewModel.js';
 
-// Create a new review [corresponds to "Review Requested" by Review Orchestrator [cite: 3]]
+// Create a new review [corresponds to "Review Requested" by Review Orchestrator]
 export const createReview = async (req, res) => {
   try {
     const {
@@ -12,7 +12,7 @@ export const createReview = async (req, res) => {
       reason,
     } = req.body;
 
-    // Validation
+    // Basic validation
     if (
       !studentCode || !courseId || !academicPeriod || !institutionId || !reason ||
       typeof studentCode !== 'string' ||
@@ -24,13 +24,28 @@ export const createReview = async (req, res) => {
       return res.status(400).json({ message: 'Missing or invalid input fields' });
     }
 
+    // 🚫 Duplicate check
+    const existingReview = await Review.findOne({
+      studentCode: studentCode.trim(),
+      courseId: courseId.trim(),
+      academicPeriod: academicPeriod.trim(),
+      institutionId: institutionId.trim()
+    });
+
+    if (existingReview) {
+      return res.status(409).json({
+        message: 'Duplicate review request already exists for this course and student.'
+      });
+    }
+
+    // ✅ Create new review
     const review = new Review({
       studentCode: studentCode.trim(),
       courseId: courseId.trim(),
       academicPeriod: academicPeriod.trim(),
       institutionId: institutionId.trim(),
       reason: reason.trim(),
-      status: 'PENDING', // optional, as it's the default in schema
+      status: 'PENDING',
     });
 
     await review.save();
