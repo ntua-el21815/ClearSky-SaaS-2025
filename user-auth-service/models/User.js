@@ -7,7 +7,9 @@ const userSchema = new mongoose.Schema({
   password: String,
   role: { type: String, enum: ["student", "instructor", "institution_rep"] },
   institutionId: String,
-  userCode: String
+  userCode: String,
+  googleId: { type: String, unique: true, sparse: true },
+  gmail: { type: String, unique: true, sparse: true }
 });
 
 module.exports = mongoose.model("User", userSchema);

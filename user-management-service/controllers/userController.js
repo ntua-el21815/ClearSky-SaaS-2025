@@ -151,3 +151,47 @@ exports.getUserCountByInstitution = async (req, res) => {
   }
 };
 
+exports.linkGoogleAccount = async (req, res) => {
+  const { userCode, googleId, gmail, fullName } = req.body;
+
+  if (!userCode || !googleId || !gmail) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
+
+  try {
+    const user = await User.findOne({ userCode });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Optional: Check if googleId already exists
+    const conflictUser = await User.findOne({ googleId });
+    if (conflictUser && conflictUser.userCode !== userCode) {
+      return res.status(409).json({ message: "Google account already linked to another user" });
+    }
+
+    user.googleId = googleId;
+    user.gmail = gmail;
+    if (!user.fullName) user.fullName = fullName;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Google account linked successfully",
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        gmail: user.gmail,
+        googleId: user.googleId,
+        role: user.role
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error linking Google account:", err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
