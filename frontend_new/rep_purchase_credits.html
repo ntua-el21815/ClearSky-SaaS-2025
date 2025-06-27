@@ -131,7 +131,7 @@
   }
 }
 
-    async function purchaseCredits() {
+  async function purchaseCredits() {
   const credits = parseInt(document.getElementById('credits').value);
   const message = document.getElementById('message');
   message.textContent = '';
@@ -148,14 +148,16 @@
       body: JSON.stringify({ credits })
     });
 
-    if (res.ok) {
+    const result = await res.json();
+
+    if (res.ok && result.status === 'COMPLETED') {
       message.style.color = 'green';
-      message.textContent = `✅ Successfully added ${credits} credits.`;
+      message.textContent = `✅ Transaction successful! ${credits} credits added.`;
       fetchCredits(userCode); // refresh balance
     } else {
-      const errData = await res.json();
       message.style.color = 'red';
-      message.textContent = errData.message || '❌ Error while purchasing credits.';
+      const reason = result.reasonForDecline || result.message || 'Transaction failed.';
+      message.textContent = `❌ Transaction failed: ${reason}`;
     }
   } catch (err) {
     console.error(err);

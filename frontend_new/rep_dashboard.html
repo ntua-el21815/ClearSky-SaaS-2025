@@ -122,17 +122,28 @@
   </div>
 
   <div class="stats-container">
-    <div class="stat-box">
-      <div class="stat-label">Available Credits</div>
-      <div class="stat-value" id="available-credits">Loading...</div>
-    </div>
+  <div class="stat-box">
+    <div class="stat-label">Available Credits</div>
+    <div class="stat-value" id="available-credits">Loading...</div>
   </div>
+  <div class="stat-box">
+    <div class="stat-label">Total Users</div>
+    <div class="stat-value" id="total-users">Loading...</div>
+  </div>
+  <div class="stat-box" id="institution-info-box">
+  <div class="stat-label">Institution</div>
+  <div class="stat-value" id="institution-name">-</div>
+  <div style="font-size: 14px; color: #6b7280;" id="institution-region">-</div>
+  <div style="font-size: 14px; color: #6b7280;" id="institution-address">-</div>
+  <div style="font-size: 14px; color: #6b7280;" id="institution-phone">-</div>
+</div>
+</div>
 
   <div class="sections">
     <div class="section-card">
-      <div class="section-title">Register Institution</div>
-      <div class="section-desc">Add a new institution to the system</div>
-      <button onclick="location.href='rep_register_institution.html'">Register Institution</button>
+      <div class="section-title">Update Institution</div>
+      <div class="section-desc">Update your institution information</div>
+      <button onclick="location.href='rep_update_institution.html'">Update Institution</button>
     </div>
 
     <div class="section-card">
@@ -203,7 +214,44 @@
   }
 }
 
+    async function fetchTotalUsers() {
+  try {
+    const response = await fetch(`http://localhost:8100/api/users/count/by-user/${userCode}`);
+    const result = await response.json();
+
+    if (response.ok && result.count !== undefined) {
+      document.getElementById('total-users').textContent = result.count;
+    } else {
+      document.getElementById('total-users').textContent = 'Error';
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById('total-users').textContent = 'Error';
+  }
+}
+
+async function fetchInstitutionInfo() {
+  try {
+    const response = await fetch(`http://localhost:8100/api/institution/info/by-user/${userCode}`);
+    const result = await response.json();
+
+    if (response.ok && result.success && result.institution) {
+      document.getElementById('institution-name').textContent = result.institution.name ?? '-';
+      document.getElementById('institution-region').textContent = result.institution.region ?? '-';
+      document.getElementById('institution-address').textContent = result.institution.address ?? '-';
+      document.getElementById('institution-phone').textContent = result.institution.contactPhone ?? '-';
+    } else {
+      document.getElementById('institution-name').textContent = 'Error';
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById('institution-name').textContent = 'Error';
+  }
+}
+
     fetchCredits();
+    fetchTotalUsers();
+    fetchInstitutionInfo();
   </script>
 </body>
 </html>

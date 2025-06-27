@@ -109,7 +109,6 @@
   <div class="header">
     <div>
       <div class="header-title">Reply to Grade Review Request</div>
-      <div class="header-subtitle">Dr. Maria Ioannidou</div>
     </div>
     <a class="back-btn" href="instr_dashboard.html">Back to Dashboard</a>
   </div>
@@ -159,25 +158,53 @@
 
   try {
     // 1. Πάρε τα μαθήματα του instructor
-    const coursesResp = await fetch(`http://localhost:8080/api/users/by-code/${userCode}/courses`);
-    const coursesData = await coursesResp.json();
+    const coursesResp = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/instructor-courses`);
+    const coursesResult = await coursesResp.json();
 
-    if (!Array.isArray(coursesData) || coursesData.length === 0) {
-      container.innerHTML = '<p>No courses found for this instructor.</p>';
-      return;
-    }
+    const courses = coursesResult.courses ?? coursesResult;
+    const coursePeriodMap = {};
+courses.forEach(c => {
+  coursePeriodMap[c.courseId] = c.academicPeriod;
+});
+if (!coursesResp.ok || !Array.isArray(courses)) {
+  container.innerHTML = '<p class="message">⚠️ Failed to fetch instructor courses.</p>';
+  return;
+}
 
     let allRequests = [];
 
     // 2. Για κάθε μάθημα κάνε fetch τα review requests του
-    for (const course of coursesData) {
+    for (const course of courses) {
       const courseId = course.courseId;
       const reviewResp = await fetch(`http://localhost:8082/api/review-requests?courseId=${courseId}`);
-      const reviewData = await reviewResp.json();
+      const reviewResult = await reviewResp.json();
 
-      if (Array.isArray(reviewData.data)) {
-        allRequests = allRequests.concat(reviewData.data);
-      }
+      const nestedData = reviewResult.data?.data;
+if (reviewResp.ok && Array.isArray(nestedData)) {
+  const filtered = nestedData.filter(r =>
+    r.status !== 'RESOLVED_APPROVED' && r.status !== 'RESOLVED_REJECTED'
+  );
+
+for (const r of filtered) {
+  const academicPeriod = coursePeriodMap[r.courseId];
+  const params = new URLSearchParams({
+    academicPeriod,
+    courseId: r.courseId,
+    studentId: r.studentRegistrationNumber
+  });
+
+  try {
+    const gradeResp = await fetch(`http://localhost:8081/api/grades/student?${params}`);
+    const gradeResult = await gradeResp.json();
+    r.grade = gradeResult.student?.grade ?? '-';
+  } catch (err) {
+    console.warn(`Failed to fetch grade for ${r.studentId} in ${r.courseId}`);
+    r.grade = '-';
+  }
+}
+
+allRequests = allRequests.concat(filtered);
+}
     }
 
     if (allRequests.length === 0) {
@@ -193,6 +220,7 @@
             <th>Course ID</th>
             <th>Student ID</th>
             <th>Grade ID</th>
+            <th>Grade</th>
             <th>Status</th>
             <th>Reason</th>
             <th>Action</th>
@@ -207,6 +235,7 @@
           <td>${req.courseId || '-'}</td>
           <td>${req.studentId || '-'}</td>
           <td>${req.gradeId || '-'}</td>
+          <td>${req.grade ?? '-'}</td>
           <td>${req.status || '-'}</td>
           <td>${req.reason || '-'}</td>
           <td><button onclick='showReplyForm(${JSON.stringify(req)})'>Reply</button></td>
@@ -251,7 +280,7 @@
         alert('Invalid grade input. Please try again.');
         return;
       }
-      body.reviewedGrade = parseFloat(grade);
+      body.reviewedGrade = grade.toString();
     }
 
     try {

@@ -7,10 +7,7 @@
     body {
       font-family: 'Segoe UI', sans-serif;
       background-color: #f9fafb;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      padding: 2rem;
     }
 
     .dashboard {
@@ -119,24 +116,48 @@
 <body>
   <button class="logout-btn" onclick="logout()">Logout</button>
 
-  <div class="dashboard">
-    <!-- Card 1 -->
-    <div class="card">
-      <h3>Course Management</h3>
-      <p>Manage grades and course content</p>
-      <button class="button primary-btn" onclick="location.href='instr_post_initial_grades.html'">Post Initial Grades</button>
-      <button class="button outline-btn" onclick="location.href='instr_post_final_grades.html'">Post Final Grades</button>
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <h1 style="margin: 0; font-size: 2rem; font-weight: 700; color: #111827;">Instructor Dashboard</h1>
+    <p style="margin: 0.2rem 0; font-size: 1rem; color: #6b7280;">Manage courses, grades, and student reviews</p>
+  </div>
+
+  <div style="max-width: 900px; margin: auto;">
+    <div class="dashboard">
+      <!-- Card 1 -->
+      <div class="card">
+        <h3>Course Management</h3>
+        <p>Manage grades and course content</p>
+        <button class="button primary-btn" onclick="location.href='instr_post_initial_grades.html'">Post Initial Grades</button>
+        <button class="button outline-btn" onclick="location.href='instr_post_final_grades.html'">Post Final Grades</button>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="card">
+        <h3>Student Interaction</h3>
+        <p>Handle reviews and view analytics</p>
+        <div class="btn-wrapper">
+          <button class="button primary-btn" onclick="location.href='instr_review_requests.html'">Review Requests</button>
+          <div class="notification-badge"></div>
+        </div>
+        <button class="button outline-btn" onclick="location.href='instr_grade_statistics.html'">Show Statistics</button>
+      </div>
     </div>
 
-    <!-- Card 2 -->
-    <div class="card">
-      <h3>Student Interaction</h3>
-      <p>Handle reviews and view analytics</p>
-      <div class="btn-wrapper">
-        <button class="button primary-btn" onclick="location.href='instr_review_requests.html'">Review Requests</button>
-        <div class="notification-badge"></div> <!-- δυναμικό στο μέλλον -->
-      </div>
-      <button class="button outline-btn" onclick="location.href='instr_grade_statistics.html'">Show Statistics</button>
+    <!-- Πίνακας -->
+    <div id="initial-courses-container" style="margin-top: 3rem; width: 100%;">
+      <h2>Courses with Initial Grades Only</h2>
+      <table id="initial-courses-table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+        <thead>
+          <tr style="background-color: #0a2a66; color: white;">
+            <th style="padding: 10px; border: 1px solid #ddd;">Course ID</th>
+            <th style="padding: 10px; border: 1px solid #ddd;">Course Name</th>
+            <th style="padding: 10px; border: 1px solid #ddd;">Academic Period</th>
+          </tr>
+        </thead>
+        <tbody id="initial-courses-body">
+          <tr><td colspan="3" style="text-align: center; padding: 10px;">Loading...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -162,41 +183,88 @@
     }
 
     async function updateReviewNotification() {
-      const badge = document.querySelector('.notification-badge');
+  const badge = document.querySelector('.notification-badge');
+  try {
+    const coursesRes = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/instructor-courses`);
+    const coursesJson = await coursesRes.json();
+
+    const courses = coursesJson.courses;
+    if (!Array.isArray(courses) || courses.length === 0) {
+      badge.style.display = 'none';
+      return;
+    }
+
+    let totalRequests = 0;
+
+    for (const course of courses) {
       try {
-        const coursesRes = await fetch(`http://localhost:8080/api/users/by-code/${userCode}/instructor-courses`);
-        const courses = await coursesRes.json();
+        const res = await fetch(`http://localhost:8082/api/review-requests?courseId=${course.courseId}`);
+        const resJson = await res.json();
 
-        if (!Array.isArray(courses) || courses.length === 0) {
-          badge.style.display = 'none';
-          return;
+        // ✅ Ελέγχει το success 2 φορές: έξω και μέσα
+        if (
+          res.ok &&
+          resJson.success === true &&
+          resJson.data?.success === true &&
+          Array.isArray(resJson.data.data)
+        ) {
+          const pending = resJson.data.data.filter(
+            r => r.status !== 'RESOLVED_APPROVED' && r.status !== 'RESOLVED_REJECTED'
+          );
+          totalRequests += pending.length;
         }
-
-        let totalRequests = 0;
-
-        for (const course of courses) {
-          try {
-            const res = await fetch(`http://localhost:8082/api/review-requests?courseId=${course.courseId}`);
-            const data = await res.json();
-            if (res.ok && Array.isArray(data.data)) {
-              totalRequests += data.data.length;
-            }
-          } catch (err) {
-            console.warn(`Could not fetch requests for ${course.courseId}`);
-          }
-        }
-
-        if (totalRequests > 0) {
-          badge.textContent = totalRequests;
-          badge.style.display = 'inline-block';
-        } else {
-          badge.style.display = 'none';
-        }
-      } catch (error) {
-        console.error('Failed to fetch instructor courses or review requests:', error);
-        badge.style.display = 'none';
+      } catch (err) {
+        console.warn(`Could not fetch requests for ${course.courseId}`);
       }
     }
+
+    if (totalRequests > 0) {
+      badge.textContent = totalRequests;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Failed to fetch instructor courses or review requests:', error);
+    badge.style.display = 'none';
+  }
+}
+
+    async function fetchInitialOnlyCourses() {
+  const tbody = document.getElementById('initial-courses-body');
+  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Loading...</td></tr>';
+
+  try {
+    const res = await fetch(`http://localhost:8081/api/grades/initial-courses?userCode=${userCode}`);
+    const result = await res.json();
+
+    // ✅ Διόρθωση: έλεγξε ότι result.success είναι true και result.data είναι array
+    if (!res.ok || !result.success || !Array.isArray(result.data)) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:red;">❌ Failed to fetch data.</td></tr>';
+      return;
+    }
+
+    if (result.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No initial-only courses found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    for (const course of result.data) {
+      const row = `
+        <tr>
+          <td style="padding: 10px; border: 1px solid #ddd;">${course.courseId}</td>
+          <td style="padding: 10px; border: 1px solid #ddd;">${course.courseName ?? '-'}</td>
+          <td style="padding: 10px; border: 1px solid #ddd;">${course.academicPeriod ?? '-'}</td>
+        </tr>
+      `;
+      tbody.innerHTML += row;
+    }
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:red;">❌ Error loading courses.</td></tr>';
+  }
+}
 
     const userCode = getCookie('userCode');
     const role = getCookie('role');
@@ -205,6 +273,7 @@
     }
 
     updateReviewNotification();
+    fetchInitialOnlyCourses();
 
   </script>
 </body>

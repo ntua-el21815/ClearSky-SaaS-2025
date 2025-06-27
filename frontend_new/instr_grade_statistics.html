@@ -116,9 +116,9 @@
     try {
       const response = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/instructor-courses`);
       const result = await response.json();
-      const courseIds = result.courses;
+      const instructorCourses = result.courses;
 
-      if (!Array.isArray(courseIds) || courseIds.length === 0) {
+    if (!Array.isArray(instructorCourses) || instructorCourses.length === 0) {
         container.innerHTML = '<p>No courses assigned to this instructor.</p>';
         return;
       }
@@ -144,40 +144,39 @@
           <tbody>
       `;
 
-      for (const courseId of courseIds) {
-        const metadata = allCourses.find(c => c.courseId === courseId);
-        const name = metadata?.name ?? '-';
-        const period = metadata?.academicPeriod ?? '-';
+      for (const { courseId, courseName, academicPeriod } of instructorCourses) {
+  const name = courseName ?? '-';
+  const period = academicPeriod ?? '-';
 
-        let avg = '-', med = '-', std = '-', pass = '-', fail = '-';
+  let avg = '-', med = '-', std = '-', pass = '-', fail = '-';
 
-        try {
-          const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
-          if (statsRes.ok) {
-            const stats = await statsRes.json();
-            avg = stats.averageGrade?.toFixed(2) ?? '-';
-            med = stats.medianGrade?.toFixed(2) ?? '-';
-            std = stats.standardDeviation?.toFixed(2) ?? '-';
-            pass = stats.numberOfPasses ?? '-';
-            fail = stats.numberOfFails ?? '-';
-          }
-        } catch (err) {
-          console.warn(`Failed to load statistics for course ${courseId}`);
-        }
+  try {
+    const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
+    if (statsRes.ok) {
+      const stats = await statsRes.json();
+      avg = stats.averageGrade?.toFixed(2) ?? '-';
+      med = stats.medianGrade?.toFixed(2) ?? '-';
+      std = stats.standardDeviation?.toFixed(2) ?? '-';
+      pass = stats.numberOfPasses ?? '-';
+      fail = stats.numberOfFails ?? '-';
+    }
+  } catch (err) {
+    console.warn(`Failed to load statistics for course ${courseId}`);
+  }
 
-        tableHTML += `
-          <tr style="cursor:pointer;" onclick="loadCourseCharts('${courseId}')">
-            <td>${courseId}</td>
-            <td>${name}</td>
-            <td>${period}</td>
-            <td>${avg}</td>
-            <td>${med}</td>
-            <td>${std}</td>
-            <td>${pass}</td>
-            <td>${fail}</td>
-          </tr>
-        `;
-      }
+  tableHTML += `
+    <tr style="cursor:pointer;" onclick="loadCourseCharts('${courseId}')">
+      <td>${courseId}</td>
+      <td>${name}</td>
+      <td>${period}</td>
+      <td>${avg}</td>
+      <td>${med}</td>
+      <td>${std}</td>
+      <td>${pass}</td>
+      <td>${fail}</td>
+    </tr>
+  `;
+}
 
       tableHTML += '</tbody></table>';
       container.innerHTML = tableHTML;

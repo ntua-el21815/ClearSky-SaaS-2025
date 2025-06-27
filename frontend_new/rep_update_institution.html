@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Register Institution</title>
+  <title>Update Institution</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -82,8 +82,8 @@
 </head>
 <body>
   <div class="container">
-    <h2>Register Institution</h2>
-    <p class="sub">Fill in your institution's details below.</p>
+    <h2>Update Institution</h2>
+    <p class="sub">Modify your institution's details below.</p>
 
     <label for="name">Institution Name</label>
     <input id="name" placeholder="e.g. National Technical University of Athens" />
@@ -98,7 +98,7 @@
     <input id="address" placeholder="e.g. 9 Iroon Polytechniou Street, Athens, 157 80" />
 
     <div class="buttons">
-      <button class="primary" onclick="submitInstitution()">Submit</button>
+      <button class="primary" onclick="submitUpdate()">Submit</button>
     </div>
 
     <div class="message" id="message"></div>
@@ -121,43 +121,49 @@
       window.location.href = 'login.html';
     }
 
-    async function submitInstitution() {
-  const name = document.getElementById('name').value.trim();
-  const region = document.getElementById('region').value.trim();
-  const contactPhone = document.getElementById('contactPhone').value.trim();
-  const address = document.getElementById('address').value.trim();
-  const message = document.getElementById('message');
+    async function submitUpdate() {
+      const name = document.getElementById('name').value.trim();
+      const region = document.getElementById('region').value.trim();
+      const contactPhone = document.getElementById('contactPhone').value.trim();
+      const address = document.getElementById('address').value.trim();
+      const message = document.getElementById('message');
 
-  message.textContent = '';
-  message.style.color = '';
+      message.textContent = '';
+      message.style.color = '';
 
-  if (!name || !region || !contactPhone || !address) {
-    message.textContent = '❌ Please fill in all fields.';
-    message.style.color = 'red';
-    return;
-  }
+      if (!name && !region && !contactPhone && !address) {
+        message.textContent = '❌ Please fill in at least one field.';
+        message.style.color = 'red';
+        return;
+      }
 
-  try {
-    const res = await fetch(`http://localhost:8100/api/institution/create/by-user/${userCode}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, region, contactPhone, address })
-    });
+      const updateData = {};
+      if (name) updateData.name = name;
+      if (region) updateData.region = region;
+      if (contactPhone) updateData.contactPhone = contactPhone;
+      if (address) updateData.address = address;
 
-    const result = await res.json();
+      try {
+        const res = await fetch(`http://localhost:8100/api/institution/update/by-user/${userCode}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData)
+        });
 
-    if (res.ok) {
-      window.location.href = 'rep_dashboard.html';  // ✅ επιτυχία → redirect
-    } else {
-      message.textContent = `❌ ${result.message || 'Failed to register institution.'}`;
-      message.style.color = 'red';
+        const result = await res.json();
+
+        if (res.ok) {
+          window.location.href = 'rep_dashboard.html';  // ✅ redirect on success
+        } else {
+          message.textContent = `❌ ${result.message || 'Failed to update institution.'}`;
+          message.style.color = 'red';
+        }
+      } catch (err) {
+        console.error(err);
+        message.textContent = '❌ Server error while submitting.';
+        message.style.color = 'red';
+      }
     }
-  } catch (err) {
-    console.error(err);
-    message.textContent = '❌ Server error while submitting.';
-    message.style.color = 'red';
-  }
-}
   </script>
 </body>
 </html>
