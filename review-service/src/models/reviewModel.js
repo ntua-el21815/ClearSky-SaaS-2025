@@ -6,6 +6,8 @@ const reviewSchema = new mongoose.Schema({
   _id: { type: String, default: uuidv4 }, // Using UUID for id
   studentCode: { type: String, required: true }, // UUID
   courseId: { type: String, required: true }, // UUID
+  academicPeriod: {type: String, required: true},
+  institutionId: {type: String, required: true},
   reason: { type: String, required: true },
   status: {
     type: String,
