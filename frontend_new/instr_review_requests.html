@@ -157,54 +157,53 @@
   container.innerHTML = 'Loading review requests...';
 
   try {
-    // 1. Πάρε τα μαθήματα του instructor
     const coursesResp = await fetch(`http://localhost:8100/api/users/by-code/${userCode}/instructor-courses`);
     const coursesResult = await coursesResp.json();
 
     const courses = coursesResult.courses ?? coursesResult;
     const coursePeriodMap = {};
-courses.forEach(c => {
-  coursePeriodMap[c.courseId] = c.academicPeriod;
-});
-if (!coursesResp.ok || !Array.isArray(courses)) {
-  container.innerHTML = '<p class="message">⚠️ Failed to fetch instructor courses.</p>';
-  return;
-}
+    courses.forEach(c => {
+      coursePeriodMap[c.courseId] = c.academicPeriod;
+    });
+
+    if (!coursesResp.ok || !Array.isArray(courses)) {
+      container.innerHTML = '<p class="message">⚠️ Failed to fetch instructor courses.</p>';
+      return;
+    }
 
     let allRequests = [];
 
-    // 2. Για κάθε μάθημα κάνε fetch τα review requests του
     for (const course of courses) {
       const courseId = course.courseId;
       const reviewResp = await fetch(`http://localhost:8082/api/review-requests?courseId=${courseId}`);
       const reviewResult = await reviewResp.json();
 
       const nestedData = reviewResult.data?.data;
-if (reviewResp.ok && Array.isArray(nestedData)) {
-  const filtered = nestedData.filter(r =>
-    r.status !== 'RESOLVED_APPROVED' && r.status !== 'RESOLVED_REJECTED'
-  );
+      if (reviewResp.ok && Array.isArray(nestedData)) {
+        const filtered = nestedData.filter(r =>
+          r.status !== 'RESOLVED_APPROVED' && r.status !== 'RESOLVED_REJECTED'
+        );
 
-for (const r of filtered) {
-  const academicPeriod = coursePeriodMap[r.courseId];
-  const params = new URLSearchParams({
-    academicPeriod,
-    courseId: r.courseId,
-    studentId: r.studentRegistrationNumber
-  });
+        for (const r of filtered) {
+          const academicPeriod = coursePeriodMap[r.courseId];
+          const params = new URLSearchParams({
+            academicPeriod,
+            courseId: r.courseId,
+            studentId: r.studentCode
+          });
 
-  try {
-    const gradeResp = await fetch(`http://localhost:8081/api/grades/student?${params}`);
-    const gradeResult = await gradeResp.json();
-    r.grade = gradeResult.student?.grade ?? '-';
-  } catch (err) {
-    console.warn(`Failed to fetch grade for ${r.studentId} in ${r.courseId}`);
-    r.grade = '-';
-  }
-}
+          try {
+            const gradeResp = await fetch(`http://localhost:8081/api/grades/student?${params}`);
+            const gradeResult = await gradeResp.json();
+            r.grade = gradeResult.student?.grade ?? '-';
+          } catch (err) {
+            console.warn(`Failed to fetch grade for ${r.studentCode} in ${r.courseId}`);
+            r.grade = '-';
+          }
+        }
 
-allRequests = allRequests.concat(filtered);
-}
+        allRequests = allRequests.concat(filtered);
+      }
     }
 
     if (allRequests.length === 0) {
@@ -212,14 +211,13 @@ allRequests = allRequests.concat(filtered);
       return;
     }
 
-    // 3. Δείξε τα αποτελέσματα
+    // ✅ Updated Table - Removed gradeId, changed studentId → studentCode
     let tableHTML = `
       <table>
         <thead>
           <tr>
             <th>Course ID</th>
             <th>Student ID</th>
-            <th>Grade ID</th>
             <th>Grade</th>
             <th>Status</th>
             <th>Reason</th>
@@ -233,8 +231,7 @@ allRequests = allRequests.concat(filtered);
       tableHTML += `
         <tr>
           <td>${req.courseId || '-'}</td>
-          <td>${req.studentId || '-'}</td>
-          <td>${req.gradeId || '-'}</td>
+          <td>${req.studentCode || '-'}</td>
           <td>${req.grade ?? '-'}</td>
           <td>${req.status || '-'}</td>
           <td>${req.reason || '-'}</td>
@@ -257,7 +254,7 @@ allRequests = allRequests.concat(filtered);
     document.getElementById('reply-form-container').style.display = 'block';
     document.getElementById('student-reason').value = request.reason || '';
     document.getElementById('reply-title').textContent =
-      `Reply to ${request.courseId} - ${request.studentId}`;
+      `Reply to ${request.courseId} - ${request.studentCode}`;
   }
 
   document.querySelector('.reply-form button').addEventListener('click', async () => {

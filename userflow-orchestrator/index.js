@@ -570,20 +570,15 @@ app.get('/oauth2callback', async (req, res) => {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
-    const { data: googleUser } = await oauth2.userinfo.get();
+    const { data: googleUser } = await google.oauth2({ auth: oauth2Client, version: 'v2' }).userinfo.get();
 
-    // 🔗 Now you can redirect to frontend with Google user data or access_token
-    // OR call your own backend to link this Google account
-    res.json({
-      success: true,
-      googleUser,
-      accessToken: tokens.access_token
-    });
+    // 🔁 Τώρα redirect στη student_grade_statistics.html με το accessToken σαν query param
+    const redirectUrl = `http://127.0.0.1:5500/frontend_new/student_grade_statistics.html?token=${tokens.access_token}`;
+    return res.redirect(redirectUrl);
 
   } catch (err) {
     console.error('❌ Google callback error:', err.message);
-    res.status(500).send('Google OAuth failed');
+    return res.status(500).send('Google OAuth failed');
   }
 });
 

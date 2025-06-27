@@ -89,6 +89,7 @@
     <div>
       <button class="dashboard-btn" onclick="window.location.href='student_my_courses.html'">Go to My Courses</button>
       <button class="dashboard-btn" onclick="logout()" style="margin-left: 10px;">Logout</button>
+      <button class="dashboard-btn" onclick="connectGoogle()" style="margin-left: 10px;">Connect to Google</button>
     </div>
   </div>
 
@@ -96,6 +97,41 @@
   <div id="charts-container"></div>
 
   <script>
+    
+    // STEP 1: Αν ήρθαμε με accessToken από Google
+  const urlParams = new URLSearchParams(window.location.search);
+  const googleAccessToken = urlParams.get("token");
+
+  if (googleAccessToken) {
+    const userCode = getCookie('userCode');
+
+    fetch("http://localhost:8100/api/users/google-signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userCode: userCode,
+        googleAccessToken: googleAccessToken
+      }),
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert("✅ Google account linked successfully.");
+        // Καθαρίζουμε το token από το URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        window.location.reload(); // Ή: loadStudentCourses();
+      } else {
+        alert("❌ Google signup failed.");
+      }
+    })
+    .catch(err => {
+      console.error("❌ Network error:", err);
+      alert("❌ Could not connect Google account.");
+    });
+  }
+
     function getCookie(name) {
       const cookies = document.cookie.split(';');
       for (let cookie of cookies) {
@@ -110,6 +146,34 @@
     if (!userCode || role !== 'student') {
       window.location.href = 'login.html';
     }
+
+    async function connectGoogle() {
+  try {
+    const res = await fetch(`http://localhost:8100/api/users/info/by-code/${userCode}`);
+    const result = await res.json();
+    const user = result.user;
+
+    if (user.gmail) {
+      alert("✅ Ο λογαριασμός σου είναι ήδη συνδεδεμένος με: " + user.gmail);
+      return;
+    }
+
+    // 🟢 Redirect flow (όχι popup)
+    const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+    const params = new URLSearchParams({
+      client_id: '787551778672-p5tcibqjdt7khnq2ssqkkbk1cri73lje.apps.googleusercontent.com',
+      redirect_uri: 'http://localhost:8100/oauth2callback',
+      response_type: 'code',
+      scope: 'profile email'
+    });
+
+    // 👉 Κάνουμε redirect στο ίδιο tab
+    window.location.href = `${baseUrl}?${params.toString()}`;
+  } catch (err) {
+    console.error(err);
+    alert('❌ Σφάλμα κατά τον έλεγχο λογαριασμού.');
+  }
+}
 
      async function loadStudentCourses() {
     const container = document.getElementById('course-table-container');

@@ -112,7 +112,7 @@
     <input type="email" id="email" placeholder="Enter your email" required>
     <input type="password" id="password" placeholder="Enter your password" required>
     <button class="signin-btn" onclick="login()">→ Sign In</button>
-    <button class="google-btn" onclick="alert('Google Login not implemented yet')">
+    <button class="google-btn" onclick="googleLogin()">
       <span class="google-icon">G</span> Continue with Google
     </button>
     <div class="message" id="message"></div>
@@ -180,6 +180,59 @@
     messageDiv.textContent = "Server error.";
   }
 }
+
+async function googleLogin() {
+    const email = prompt("Enter your Google email:");
+    if (!email) return;
+
+    const messageDiv = document.getElementById('message');
+    messageDiv.textContent = "";
+
+    try {
+      const res = await fetch('http://localhost:8100/api/auth/google-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gmail: email })
+      });
+
+      const result = await res.json();
+
+      if (res.ok && result.success) {
+        const { token, user } = result;
+
+        localStorage.setItem('token', token);
+        setCookie('userCode', user.userCode, 7);
+        setCookie('role', user.role, 7);
+
+        if (user.role === 'student') {
+          window.location.href = 'student_grade_statistics.html';
+        } else if (user.role === 'instructor') {
+          window.location.href = 'instr_dashboard.html';
+        } else if (user.role === 'institution_rep') {
+          const instCheck = await fetch(`http://localhost:8100/api/institution/info/by-user/${user.userCode}`);
+          const instResult = await instCheck.json();
+
+          if (instCheck.ok && instResult.success) {
+            window.location.href = 'rep_dashboard.html';
+          } else {
+            window.location.href = 'rep_register_institution.html';
+          }
+        } else {
+          messageDiv.style.color = "orange";
+          messageDiv.textContent = "Unknown role!";
+        }
+
+      } else {
+        messageDiv.style.color = "red";
+        messageDiv.textContent = result.error || "Google login failed.";
+      }
+
+    } catch (err) {
+      console.error(err);
+      messageDiv.textContent = "Server error during Google login.";
+    }
+  }
+
   </script>
 </body>
 </html>
