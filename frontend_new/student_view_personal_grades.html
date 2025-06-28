@@ -88,6 +88,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const courseId = urlParams.get("courseId");
     const academicPeriod = urlParams.get("academicPeriod");
+    const institutionId = getCookie("institutionId");
 
     if (!userCode || role !== 'student') {
       window.location.href = "login.html";
@@ -115,7 +116,7 @@
         return;
       }
       try {
-        const gradeRes = await fetch(`http://localhost:8081/api/grades/student?studentId=${userCode}&courseId=${courseId}&academicPeriod=${academicPeriod}`);
+        const gradeRes = await fetch(`http://localhost:8081/api/grades/student?studentId=${userCode}&courseId=${courseId}&academicPeriod=${academicPeriod}&institutionId=${institutionId}`);
         const gradeJson = await gradeRes.json();
 
         const grades = gradeJson?.student;
@@ -138,7 +139,7 @@
       }
 
       try {
-        const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}`);
+        const statsRes = await fetch(`http://localhost:8081/api/statistics/course/${courseId}?academicPeriod=${academicPeriod}&institutionId=${institutionId}`);
         const statsJson = await statsRes.json();
 
         const stats = statsJson ?? {};

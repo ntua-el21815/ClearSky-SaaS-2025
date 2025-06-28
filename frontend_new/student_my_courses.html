@@ -70,8 +70,8 @@
       <p id="studentInfo">Loading...</p>
     </div>
     <div>
-      <button class="btn btn-primary" onclick="location.href='student_grade_statistics.html'">Statistics</button>
       <button class="btn btn-secondary" onclick="logout()">Logout</button>
+      <button class="btn btn-primary" onclick="connectGoogle()" style="margin-left: 10px;">Connect to Google</button>
     </div>
   </div>
 
@@ -124,7 +124,9 @@
 
         for (const course of courses) {
           try {
-            const statusResp = await fetch(`http://localhost:8081/api/grades/course-status?courseId=${course.courseId}`);
+            const institutionId = getCookie("institutionId");
+            const encodedPeriod = encodeURIComponent(course.academicPeriod);
+            const statusResp = await fetch(`http://localhost:8081/api/grades/course-status?courseId=${course.courseId}&academicPeriod=${encodedPeriod}&institutionId=${institutionId}`);
             const statusJson = await statusResp.json();
             course.gradingStatus = statusJson?.status || 'Closed';
           } catch (err) {
@@ -219,6 +221,8 @@
     async function submitReview(courseId) {
       const msg = document.getElementById(`review-msg-${courseId}`).value;
       const resultBox = document.getElementById(`review-result-${courseId}`);
+      const institutionId = getCookie("institutionId");
+      const academicPeriod = courseAcademicPeriods[courseId];
       try {
         const res = await fetch('http://localhost:8082/api/review-requests', {
           method: 'POST',
@@ -226,7 +230,9 @@
           body: JSON.stringify({
             studentCode: userCode,
             courseId: courseId,
-            reason: msg
+            reason: msg,
+            institutionId,
+            academicPeriod
           })
         });
         const data = await res.json();
@@ -249,8 +255,10 @@
         div.style.display = 'none';
       });
       box.style.display = 'block';
+      const institutionId = getCookie("institutionId");
+      const academicPeriod = courseAcademicPeriods[courseId];
       try {
-        const res = await fetch(`http://localhost:8082/api/review-requests?studentCode=${userCode}&courseId=${courseId}`);
+        const res = await fetch(`http://localhost:8082/api/review-requests?studentCode=${userCode}&courseId=${courseId}&institutionId=${institutionId}&academicPeriod=${encodeURIComponent(academicPeriod)}`);
         const json = await res.json();
         if (json.success && json.data?.success && Array.isArray(json.data.data) && json.data.data.length > 0) {
           const r = json.data.data[0];
@@ -269,6 +277,32 @@
     function updateCharCount(courseId) {
       const text = document.getElementById(`review-msg-${courseId}`).value;
       document.getElementById(`char-count-${courseId}`).textContent = `${text.length} / 500`;
+    }
+
+    async function connectGoogle() {
+      try {
+        const res = await fetch(`http://localhost:8100/api/users/info/by-code/${userCode}`);
+        const result = await res.json();
+        const user = result.user;
+
+        if (user.gmail) {
+          alert("✅ Ο λογαριασμός σου είναι ήδη συνδεδεμένος με: " + user.gmail);
+          return;
+        }
+
+        const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+        const params = new URLSearchParams({
+          client_id: '787551778672-p5tcibqjdt7khnq2ssqkkbk1cri73lje.apps.googleusercontent.com',
+          redirect_uri: 'http://localhost:8100/oauth2callback',
+          response_type: 'code',
+          scope: 'profile email'
+        });
+
+        window.location.href = `${baseUrl}?${params.toString()}`;
+      } catch (err) {
+        console.error(err);
+        alert('❌ Σφάλμα κατά τον έλεγχο λογαριασμού.');
+      }
     }
   </script>
 </body>
