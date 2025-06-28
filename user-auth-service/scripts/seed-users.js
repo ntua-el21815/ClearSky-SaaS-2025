@@ -189,7 +189,7 @@ const mockUsers = [
   fullName: "ΑΝΑΣΤΑΣΙΟΥ ΕΙΡΗΝΗ",
   email: "rep.ntua@mail.ntua.gr",
   password: "123456",
-  role: "representative",
+  role: "institution_rep",
   institutionId: "NTUA",
   userCode: "REP2025NTUA"
 },
@@ -306,7 +306,7 @@ const mockUsers = [
   fullName: "ΓΡΗΓΟΡΙΟΥ ΕΥΓΕΝΙΑ",
   email: "egrigoriou@admin.uoa.gr",
   password: "123456",
-  role: "representative",
+  role: "institution_rep",
   institutionId: "ΕΚΠΑ",
   userCode: "REP2025EKPA"
 }
