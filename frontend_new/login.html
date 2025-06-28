@@ -119,6 +119,16 @@
   </div>
 
   <script>
+
+    // Αν υπάρχει error στο URL, εμφάνισέ το
+const urlParams = new URLSearchParams(window.location.search);
+const errorMessage = urlParams.get('error');
+if (errorMessage) {
+  const messageDiv = document.getElementById('message');
+  messageDiv.style.color = "red";
+  messageDiv.textContent = decodeURIComponent(errorMessage);
+}
+
     function setCookie(name, value, days) {
       const expires = new Date(Date.now() + days * 864e5).toUTCString();
       document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
