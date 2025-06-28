@@ -218,33 +218,38 @@
     }
 
     // Χρησιμοποιεί τα studentId και regNumber από loadStudentInfo
-    async function submitReview(courseId) {
-      const msg = document.getElementById(`review-msg-${courseId}`).value;
-      const resultBox = document.getElementById(`review-result-${courseId}`);
-      const institutionId = getCookie("institutionId");
-      const academicPeriod = courseAcademicPeriods[courseId];
-      try {
-        const res = await fetch('http://localhost:8082/api/review-requests', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            studentCode: userCode,
-            courseId: courseId,
-            reason: msg,
-            institutionId,
-            academicPeriod
-          })
-        });
-        const data = await res.json();
-        if (data.success) {
-          resultBox.innerHTML = '<p style="color:green;">Review submitted successfully.</p>';
-        } else {
-          resultBox.innerHTML = '<p style="color:red;">' + (data.error || 'Submission failed.') + '</p>';
-        }
-      } catch (e) {
-        resultBox.innerHTML = '<p style="color:red;">Error submitting review.</p>';
-      }
+  async function submitReview(courseId) {
+  const msg = document.getElementById(`review-msg-${courseId}`).value;
+  const resultBox = document.getElementById(`review-result-${courseId}`);
+  const institutionId = getCookie("institutionId");
+  const academicPeriod = courseAcademicPeriods[courseId];
+  try {
+    const res = await fetch('http://localhost:8082/api/review-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentCode: userCode,
+        courseId: courseId,
+        reason: msg,
+        institutionId,
+        academicPeriod
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      resultBox.innerHTML = '<p style="color:green;">Review submitted successfully.</p>';
+    } else {
+      // Χειρισμός σφαλμάτων ακόμα και σε status 500
+      const errorMessage = data?.details?.message || data?.error || 'Submission failed.';
+      resultBox.innerHTML = `<p style="color:red;">${errorMessage}</p>`;
     }
+  } catch (e) {
+    console.error("Network or parsing error", e);
+    resultBox.innerHTML = '<p style="color:red;">Unexpected error submitting review.</p>';
+  }
+}
 
     async function loadReviewStatus(courseId) {
       const box = document.getElementById(`status-box-${courseId}`);

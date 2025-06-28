@@ -79,7 +79,18 @@
           redirectByRole();
 
         } else {
-          document.getElementById('status').textContent = result.error || '❌ Login failed.';
+          if (res.status === 401) {
+            // Redirect back to login with error query param
+            let errorMessage = 'Unauthorized Google account';
+            if (result && typeof result.error === 'string') {
+              errorMessage = result.error;
+            } else if (result && result.error && typeof result.error.message === 'string') {
+              errorMessage = result.error.message;
+            }
+            window.location.href = `login.html?error=${encodeURIComponent(errorMessage)}`;
+            } else {
+              document.getElementById('status').textContent = result.error || '❌ Login failed.';
+          }
         }
 
       } catch (err) {
