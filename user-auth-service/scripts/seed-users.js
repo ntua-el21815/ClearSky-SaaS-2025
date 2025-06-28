@@ -306,7 +306,7 @@ const mockUsers = [
   fullName: "ΓΡΗΓΟΡΙΟΥ ΕΥΓΕΝΙΑ",
   email: "egrigoriou@admin.uoa.gr",
   password: "123456",
-  role: "institutiton_rep",
+  role: "institution_rep",
   institutionId: "ΕΚΠΑ",
   userCode: "REP2025EKPA"
 }
