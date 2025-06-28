@@ -241,7 +241,7 @@ app.post('/api/review-requests/:reviewId/reply', async (req, res) => {
     const cleanupNotification = {
       type: 'CLEANUP_TEMP_GRADES',
       reviewId: updatedReview.id,
-      //gradeId: updatedReview.gradeId,
+      gradeId: updatedReview.gradeId,
       message: 'Delete temporary personal grade details',
       timestamp: new Date().toISOString()
     };
