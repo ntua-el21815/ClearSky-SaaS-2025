@@ -8,7 +8,7 @@ const QUEUE = 'courses';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function startConsumer(retries = 5) {
+async function startConsumer(retries = 10) {
   await connectDB(); // Connect to MongoDB
 
   while (retries > 0) {
