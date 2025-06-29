@@ -190,10 +190,12 @@
     }
 
     function logout() {
-      document.cookie = "userCode=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-      document.cookie = "role=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-      window.location.href = "login.html";
-    }
+  const cookieNames = ["userCode", "role", "institutionId"];
+  for (const name of cookieNames) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+  }
+  window.location.href = "login.html";
+}
 
     function viewGrades(courseId, academicPeriod) {
       const encodedPeriod = encodeURIComponent(academicPeriod);

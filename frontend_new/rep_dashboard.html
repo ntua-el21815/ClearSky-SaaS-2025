@@ -218,6 +218,7 @@
     function logout() {
       deleteCookie('userCode');
       deleteCookie('role');
+      deleteCookie('institutionId');
       localStorage.removeItem('token');
       window.location.href = 'login.html';
     }

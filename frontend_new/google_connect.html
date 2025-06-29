@@ -71,8 +71,25 @@
             }
           }, 1500);
         } else {
-          statusDiv.textContent = "❌ Google signup failed.";
-        }
+  let errorMessage = 'Google signup failed.';
+
+  if (typeof result.error === 'string') {
+    errorMessage = result.error;
+  } else if (result.error && typeof result.error.message === 'string') {
+    errorMessage = result.error.message;
+  }
+
+  alert(errorMessage); // Καθαρό alert
+  if (role === 'student') {
+    window.location.href = 'student_my_courses.html';
+  } else if (role === 'instructor') {
+    window.location.href = 'instr_dashboard.html';
+  } else if (role === 'institution_rep') {
+    window.location.href = 'rep_dashboard.html';
+  } else {
+    statusDiv.textContent = "❌ Unknown role.";
+  }
+}
       } catch (err) {
         console.error(err);
         statusDiv.textContent = "❌ Network error while connecting Google.";
