@@ -44,8 +44,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Course is closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: Review service unavailable
+          description: Grade or review service unavailable
           content:
             application/json:
               schema:
@@ -70,7 +76,7 @@ paths:
           name: status
           schema:
             type: string
-          description: Filter by status
+          description: Filter by review status
       responses:
         '200':
           description: List of review requests
@@ -195,27 +201,22 @@ components:
     ReviewRequestInput:
       type: object
       required:
-        - studentId
+        - studentCode
         - courseId
-        - gradeId
-        - studentRegistrationNumber
         - reason
+        - institutionId
+        - academicPeriod
       properties:
-        studentId:
+        studentCode:
           type: string
-          description: Student's unique identifier
         courseId:
           type: string
-          description: Course's unique identifier
-        gradeId:
-          type: string
-          description: Grade's unique identifier
-        studentRegistrationNumber:
-          type: string
-          description: Student's registration number
         reason:
           type: string
-          description: Reason for the review request
+        institutionId:
+          type: string
+        academicPeriod:
+          type: string
 
     ReviewReplyInput:
       type: object
@@ -224,49 +225,36 @@ components:
       properties:
         instructorResponse:
           type: string
-          description: Instructor's response to the review
         reviewedGrade:
           type: string
-          description: Updated grade (optional)
 
     Review:
       type: object
       properties:
         id:
           type: string
-          description: Unique identifier for the review
-        studentId:
+        studentCode:
           type: string
-          description: Student's unique identifier
         courseId:
           type: string
-          description: Course's unique identifier
-        gradeId:
+        institutionId:
           type: string
-          description: Grade's unique identifier
-        studentRegistrationNumber:
-          type: string
-          description: Student's registration number
         reason:
           type: string
-          description: Reason for the review
         status:
           type: string
-          description: Status of the review
         instructorResponse:
           type: string
-          description: Instructor's response
         reviewedGrade:
           type: string
-          description: Reviewed grade
         requestedAt:
           type: string
           format: date-time
-          description: Request timestamp
         resolvedAt:
           type: string
           format: date-time
-          description: Resolution timestamp
+        gradeId:
+          type: string
 
     OrchestrationResponse:
       type: object
@@ -306,7 +294,5 @@ components:
           example: false
         error:
           type: string
-          description: Error message
         details:
           type: string
-          description: Additional error details

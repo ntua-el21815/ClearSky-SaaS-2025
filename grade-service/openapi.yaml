@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Grade Service API
   version: 1.0.0
-  description: API for uploading and retrieving course grades.
+  description: API for uploading, validating, and retrieving course grades.
 
 servers:
   - url: http://localhost:8500/gradeRoutes
@@ -19,14 +19,20 @@ paths:
           multipart/form-data:
             schema:
               type: object
+              required:
+                - file
+                - instructorId
+                - institutionId
               properties:
                 file:
                   type: string
                   format: binary
                 final:
                   type: boolean
-              required:
-                - file
+                instructorId:
+                  type: string
+                institutionId:
+                  type: string
       responses:
         '200':
           description: Grades uploaded successfully
@@ -34,6 +40,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UploadResponse'
+        '400':
+          description: Invalid input or duplicate upload
         '500':
           description: Upload failed due to server error
 
@@ -44,22 +52,24 @@ paths:
       parameters:
         - in: query
           name: academicPeriod
+          required: true
           schema:
             type: string
-          required: true
-          description: Academic period (e.g., "2024-Winter")
         - in: query
           name: courseId
+          required: true
           schema:
             type: string
+        - in: query
+          name: institutionId
           required: true
-          description: Course ID
+          schema:
+            type: string
         - in: query
           name: final
+          required: false
           schema:
             type: boolean
-          required: false
-          description: Whether to fetch final grades
       responses:
         '200':
           description: Course grades returned
@@ -81,19 +91,19 @@ paths:
       parameters:
         - in: query
           name: academicPeriod
+          required: true
           schema:
             type: string
-          required: true
         - in: query
           name: courseId
+          required: true
           schema:
             type: string
-          required: true
         - in: query
           name: studentId
+          required: true
           schema:
             type: string
-          required: true
       responses:
         '200':
           description: Student grade returned
@@ -105,6 +115,120 @@ paths:
           description: Missing required query parameters
         '404':
           description: Course or student not found
+        '500':
+          description: Internal server error
+
+  /initial-courses:
+    get:
+      summary: Get initial-only course uploads for instructor
+      operationId: getInitialCourses
+      parameters:
+        - in: query
+          name: userCode
+          required: true
+          schema:
+            type: string
+          description: The instructor ID (userCode)
+      responses:
+        '200':
+          description: Initial courses retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        courseId:
+                          type: string
+                        courseName:
+                          type: string
+                        academicPeriod:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+        '400':
+          description: Missing userCode
+        '500':
+          description: Internal server error
+
+  /course-status:
+    get:
+      summary: Get status of a course (Open/Closed)
+      operationId: getCourseStatus
+      parameters:
+        - in: query
+          name: courseId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: academicPeriod
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: institutionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Course status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [Open, Closed]
+        '400':
+          description: Missing required query parameters
+        '404':
+          description: Course not found
+        '500':
+          description: Internal server error
+
+  /course-instructor:
+    get:
+      summary: Get the instructor ID of a course
+      operationId: getCourseInstructor
+      parameters:
+        - in: query
+          name: courseId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: institutionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Instructor ID returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  instructorId:
+                    type: string
+        '400':
+          description: Missing required parameters
+        '404':
+          description: Course not found
         '500':
           description: Internal server error
 
@@ -141,6 +265,8 @@ components:
           type: string
         courseId:
           type: string
+        institutionId:
+          type: string
         final:
           type: boolean
         grades:
@@ -170,8 +296,8 @@ components:
         academicalEmail:
           type: string
         grade:
-          type: string
+          type: number
         responses:
           type: object
           additionalProperties:
-            type: string
+            type: number

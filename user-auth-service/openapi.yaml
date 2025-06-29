@@ -48,10 +48,64 @@ paths:
                         type: string
                       role:
                         type: string
+                      institutionId:
+                        type: string
+                      userCode:
+                        type: string
         '401':
           description: Invalid credentials
         '500':
           description: Server error
+
+  /login/google:
+    post:
+      summary: Login with Google credentials
+      operationId: loginWithGoogle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - googleId
+                - gmail
+              properties:
+                googleId:
+                  type: string
+                gmail:
+                  type: string
+      responses:
+        '200':
+          description: Google login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                      fullName:
+                        type: string
+                      role:
+                        type: string
+                      institutionId:
+                        type: string
+                      userCode:
+                        type: string
+        '400':
+          description: Missing googleId or gmail
+        '401':
+          description: Google account not linked
+        '500':
+          description: Server error during Google login
 
   /me:
     get:
@@ -77,17 +131,12 @@ paths:
         '401':
           description: Unauthorized
 
-  /verify:
+  /verify-token:
     get:
       summary: Verify JWT token
       operationId: verifyToken
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          schema:
-            type: string
-          description: Bearer token (e.g., "Bearer {jwt}")
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Token is valid

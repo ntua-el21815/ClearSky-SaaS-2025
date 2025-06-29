@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Grade Orchestrator API
   version: 1.0.0
-  description: API gateway handling grade submissions, credit deductions, and data orchestration with messaging queues.
+  description: API gateway handling grade submissions, credit deductions, student performance data, and orchestration via messaging queues.
 
 servers:
   - url: http://localhost:4000/api
@@ -22,74 +22,147 @@ paths:
               required:
                 - file
                 - userCode
+                - institutionId
               properties:
                 file:
                   type: string
                   format: binary
+                  description: The Excel file containing the grades
                 courseId:
                   type: string
+                  description: Course identifier
                 userCode:
                   type: string
+                  description: Instructor or user code
+                institutionId:
+                  type: string
+                  description: Institution identifier
                 final:
                   type: boolean
+                  description: Whether the upload is final (no credit deduction)
       responses:
         '200':
           description: Upload completed successfully
         '400':
-          description: Bad request (missing parameters or insufficient credits)
+          description: Missing parameters or insufficient credits
         '502':
-          description: Error in downstream services
+          description: Downstream service or file processing failure
 
   /grades/by-course:
     get:
-      summary: Get all grades for a course
+      summary: Retrieve grades by course
       operationId: getGradesByCourse
       parameters:
         - in: query
           name: courseId
-          required: false
+          required: true
           schema:
             type: string
         - in: query
           name: institutionId
-          required: false
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: academicPeriod
+          required: true
           schema:
             type: string
       responses:
         '200':
-          description: Grades for the course
+          description: Grades successfully fetched
+        '400':
+          description: Missing required query parameters
         '502':
-          description: Error in downstream services
+          description: Failed to fetch grades from grade-service
 
   /grades/student:
     get:
-      summary: Get all grades for a student
+      summary: Retrieve all grades for a student
       operationId: getGradesByStudent
       parameters:
         - in: query
+          name: academicPeriod
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: courseId
+          required: true
+          schema:
+            type: string
+        - in: query
           name: studentId
-          required: false
+          required: true
           schema:
             type: string
       responses:
         '200':
-          description: Student grades
+          description: Grades successfully fetched
+        '400':
+          description: Missing required parameters
         '502':
-          description: Error in downstream services
+          description: Error retrieving grades
+
+  /grades/initial-courses:
+    get:
+      summary: Get initial (non-final) uploaded courses for an instructor
+      operationId: getInitialCourses
+      parameters:
+        - in: query
+          name: instructorId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Initial courses retrieved
+        '400':
+          description: Missing instructorId
+        '502':
+          description: Downstream error retrieving data
+
+  /grades/course-status:
+    get:
+      summary: Get course open/closed status
+      operationId: getCourseStatus
+      parameters:
+        - in: query
+          name: courseId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: academicPeriod
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: institutionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Course status retrieved
+        '400':
+          description: Missing required parameters
+        '502':
+          description: Downstream error fetching course status
 
   /statistics/all:
     get:
-      summary: Get all statistics
+      summary: Retrieve all aggregated statistics
       operationId: getAllStatistics
       responses:
         '200':
-          description: All stored statistics
+          description: All statistics returned
         '502':
           description: Failed to fetch statistics
 
   /statistics/course/{courseId}:
     get:
-      summary: Get statistics for a specific course
+      summary: Retrieve statistics for a specific course
       operationId: getStatisticsByCourse
       parameters:
         - in: path
@@ -97,11 +170,23 @@ paths:
           required: true
           schema:
             type: string
+        - in: query
+          name: institutionId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: academicPeriod
+          required: true
+          schema:
+            type: string
       responses:
         '200':
-          description: Statistics for the course
+          description: Course statistics retrieved
+        '400':
+          description: Missing query parameters
         '502':
-          description: Failed to fetch statistics
+          description: Error from statistics service
 
 components:
   schemas: {}

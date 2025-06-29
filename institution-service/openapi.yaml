@@ -95,7 +95,7 @@ paths:
 
   /institutions/{institutionId}/courses:
     get:
-      summary: Get courses by institution
+      summary: Get all courses for an institution
       operationId: getCoursesByInstitution
       parameters:
         - in: path
@@ -178,7 +178,7 @@ components:
       properties:
         _id:
           type: string
-          description: Institution ID
+          description: Unique institution ID
         name:
           type: string
         location:
@@ -189,6 +189,12 @@ components:
         updatedAt:
           type: string
           format: date-time
+      example:
+        _id: EKPA
+        name: National and Kapodistrian University of Athens
+        location: Athens, Greece
+        createdAt: "2024-01-15T09:30:00Z"
+        updatedAt: "2024-01-20T12:00:00Z"
 
     InstitutionInput:
       type: object
@@ -198,10 +204,15 @@ components:
       properties:
         id:
           type: string
+          description: Institution ID to be used as `_id`
         name:
           type: string
         location:
           type: string
+      example:
+        id: EKPA
+        name: National and Kapodistrian University of Athens
+        location: Athens
 
     Course:
       type: object
@@ -224,6 +235,15 @@ components:
         updatedAt:
           type: string
           format: date-time
+      example:
+        _id: "60ab1234cd56789ef0123456"
+        courseId: CS101
+        courseName: Introduction to Computer Science
+        institutionId: EKPA
+        description: Introductory programming and algorithms
+        academicPeriod: 2024-Spring
+        createdAt: "2024-01-10T08:00:00Z"
+        updatedAt: "2024-01-15T10:00:00Z"
 
     CourseInput:
       type: object
@@ -238,6 +258,11 @@ components:
           type: string
         academicPeriod:
           type: string
+      example:
+        courseId: CS101
+        courseName: Introduction to Computer Science
+        description: Learn the fundamentals of computer science
+        academicPeriod: 2024-Spring
 
     CourseUpdate:
       type: object
@@ -248,3 +273,7 @@ components:
           type: string
         academicPeriod:
           type: string
+      example:
+        courseName: Computer Science I
+        description: Updated description
+        academicPeriod: 2024-Summer

@@ -69,7 +69,7 @@ paths:
           description: User not found
         '500':
           description: Server error
-    put:
+    patch:
       summary: Update a user by ID
       operationId: updateUser
       parameters:
@@ -96,7 +96,7 @@ paths:
         '500':
           description: Server error
 
-  /code/{code}:
+  /by-code/{code}:
     get:
       summary: Get user by userCode
       operationId: getUserByCode
@@ -118,7 +118,7 @@ paths:
         '500':
           description: Server error
 
-  /institution/{institutionId}:
+  /by-institution/{institutionId}:
     get:
       summary: Get users by institution
       operationId: getUsersByInstitution
@@ -177,6 +177,28 @@ paths:
         '500':
           description: Server error
 
+  /by-gmail/{gmail}:
+    get:
+      summary: Get user by Gmail
+      operationId: getUserByGmail
+      parameters:
+        - in: path
+          name: gmail
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
   /{id}/courses:
     get:
       summary: Get courses for a student
@@ -195,8 +217,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  studentId:
-                    type: string
                   courses:
                     type: array
                     items:
@@ -226,8 +246,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  instructorId:
-                    type: string
                   courses:
                     type: array
                     items:
@@ -285,13 +303,10 @@ components:
           type: array
           items:
             type: string
-        createdAt:
+        googleId:
           type: string
-          format: date-time
-        updatedAt:
+        gmail:
           type: string
-          format: date-time
-
     UserInput:
       type: object
       required:
@@ -300,6 +315,7 @@ components:
         - fullName
         - role
         - institutionId
+        - userCode
       properties:
         email:
           type: string
@@ -311,7 +327,8 @@ components:
           type: string
         institutionId:
           type: string
-
+        userCode:
+          type: string
     UserUpdate:
       type: object
       properties:
@@ -321,7 +338,6 @@ components:
           type: string
         userCode:
           type: string
-
     UserSummary:
       type: object
       properties:

@@ -21,12 +21,15 @@ paths:
               type: object
               required:
                 - courseId
-                - gradeSheetId
+                - institutionId
+                - academicPeriod
                 - data
               properties:
                 courseId:
                   type: string
-                gradeSheetId:
+                institutionId:
+                  type: string
+                academicPeriod:
                   type: string
                 data:
                   type: array
@@ -74,6 +77,16 @@ paths:
           required: true
           schema:
             type: string
+        - in: query
+          name: institutionId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: academicPeriod
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Latest statistics for course
@@ -82,7 +95,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Statistics'
         '400':
-          description: Missing courseId
+          description: Missing required parameters
         '404':
           description: No statistics found
         '500':
@@ -128,27 +141,38 @@ components:
       properties:
         courseId:
           type: string
-        gradeSheetId:
+        institutionId:
           type: string
-        average:
+        academicPeriod:
+          type: string
+        averageGrade:
           type: number
-        median:
+        medianGrade:
           type: number
-        stdDev:
+        standardDeviation:
           type: number
-        histogram:
+        numberOfStudents:
+          type: integer
+        numberOfPasses:
+          type: integer
+        numberOfFails:
+          type: integer
+        finalGradeDistribution:
           type: object
           additionalProperties:
             type: integer
-        questionStats:
+        questionDistributionsRaw:
           type: object
           additionalProperties:
             type: object
-            properties:
-              average:
-                type: number
-              stdDev:
-                type: number
+            additionalProperties:
+              type: integer
+        questionDistributionsNormalized:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: integer
         calculatedAt:
           type: string
           format: date-time

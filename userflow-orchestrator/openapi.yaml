@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Auth Orchestrator API
   version: 1.0.0
-  description: Orchestration layer for authentication, signup, user and credit handling, and institutional data routing.
+  description: Orchestration layer for authentication, signup, credit handling, user and institution management.
 
 servers:
   - url: http://localhost:4000/api
@@ -27,14 +27,10 @@ paths:
                 token:
                   type: string
       responses:
-        '200':
-          description: Authentication successful
-        '400':
-          description: Missing credentials
-        '401':
-          description: Invalid token
-        '500':
-          description: Server error
+        '200': { description: Authentication successful }
+        '400': { description: Missing credentials }
+        '401': { description: Invalid token }
+        '500': { description: Server error }
 
   /signup:
     post:
@@ -46,154 +42,255 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - email
-                - password
-                - fullName
-                - role
-                - userCode
-                - repCode
+              required: [email, password, fullName, role, userCode, repCode]
               properties:
-                email:
-                  type: string
-                password:
-                  type: string
-                fullName:
-                  type: string
-                role:
-                  type: string
-                userCode:
-                  type: string
-                repCode:
-                  type: string
+                email: { type: string }
+                password: { type: string }
+                fullName: { type: string }
+                role: { type: string }
+                userCode: { type: string }
+                repCode: { type: string }
       responses:
-        '201':
-          description: Signup successful
-        '400':
-          description: Validation error or missing fields
-        '502':
-          description: Failed to fetch rep user
-        '500':
-          description: Signup failed
+        '201': { description: Signup successful }
+        '400': { description: Validation error or missing fields }
+        '502': { description: Failed to fetch rep user }
+        '500': { description: Signup failed }
 
   /credits/user-code/{userCode}/add:
     post:
       summary: Add credits to a user's institution
       operationId: addCreditsToUserInstitution
       parameters:
-        - in: path
-          name: userCode
+        - name: userCode
+          in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - credits
+              required: [credits]
               properties:
-                credits:
-                  type: number
+                credits: { type: number }
       responses:
-        '200':
-          description: Credits added successfully
-        '400':
-          description: Institution not found
-        '500':
-          description: Credit addition failed
+        '200': { description: Credits added successfully }
+        '400': { description: Institution not found }
+        '500': { description: Credit addition failed }
 
   /users/by-code/{userCode}/courses:
     get:
       summary: Get student courses by userCode
       operationId: getStudentCoursesByUserCode
       parameters:
-        - in: path
-          name: userCode
+        - name: userCode
+          in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
-        '200':
-          description: Courses for the student
-        '400':
-          description: Not a student
-        '500':
-          description: Failed to fetch courses
+        '200': { description: Courses for the student }
+        '400': { description: Not a student }
+        '500': { description: Failed to fetch courses }
 
   /users/by-code/{userCode}/instructor-courses:
     get:
       summary: Get instructor courses by userCode
       operationId: getInstructorCoursesByUserCode
       parameters:
-        - in: path
-          name: userCode
+        - name: userCode
+          in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
-        '200':
-          description: Courses for the instructor
-        '400':
-          description: Not an instructor
-        '500':
-          description: Failed to fetch courses
+        '200': { description: Courses for the instructor }
+        '400': { description: Not an instructor }
+        '500': { description: Failed to fetch courses }
 
   /users/count/by-user/{userCode}:
     get:
       summary: Get user count in the institution of a user
       operationId: getUserCountByUserCode
       parameters:
-        - in: path
-          name: userCode
+        - name: userCode
+          in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
-        '200':
-          description: Count of users
-        '400':
-          description: Institution not found
-        '500':
-          description: Failed to fetch user count
+        '200': { description: Count of users }
+        '400': { description: Institution not found }
+        '500': { description: Failed to fetch user count }
 
   /credits/by-user/{userCode}/available:
     get:
       summary: Get available credits for institution by userCode
       operationId: getAvailableCreditsByUserCode
       parameters:
-        - in: path
-          name: userCode
+        - name: userCode
+          in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
-        '200':
-          description: Available credits
-        '400':
-          description: Institution not found
-        '500':
-          description: Failed to fetch credit balance
+        '200': { description: Available credits }
+        '400': { description: Institution not found }
+        '500': { description: Failed to fetch credit balance }
 
   /institution/courses/by-user/{userCode}:
     get:
       summary: Get courses for institution based on userCode
       operationId: getInstitutionCoursesByUserCode
       parameters:
-        - in: path
-          name: userCode
+        - name: userCode
+          in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
-        '200':
-          description: List of courses for the institution
-        '400':
-          description: Institution not found
-        '500':
-          description: Failed to fetch courses
+        '200': { description: List of courses for the institution }
+        '400': { description: Institution not found }
+        '500': { description: Failed to fetch courses }
+
+  /institution/create/by-user/{userCode}:
+    post:
+      summary: Create institution from userCode
+      operationId: createInstitutionByUserCode
+      parameters:
+        - name: userCode
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, region, contactPhone, address]
+              properties:
+                name: { type: string }
+                region: { type: string }
+                contactPhone: { type: string }
+                address: { type: string }
+      responses:
+        '201': { description: Institution created }
+        '400': { description: Missing fields or invalid data }
+        '500': { description: Creation failed }
+
+  /institution/info/by-user/{userCode}:
+    get:
+      summary: Get institution info by userCode
+      operationId: getInstitutionInfoByUserCode
+      parameters:
+        - name: userCode
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Institution information }
+        '400': { description: Institution not found }
+        '500': { description: Fetch failed }
+
+  /institution/update/by-user/{userCode}:
+    put:
+      summary: Update institution info by userCode
+      operationId: updateInstitutionInfoByUserCode
+      parameters:
+        - name: userCode
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200': { description: Institution updated }
+        '400': { description: Invalid data }
+        '500': { description: Update failed }
+
+  /users/info/by-code/{userCode}:
+    get:
+      summary: Get user info by userCode
+      operationId: getUserInfoByUserCode
+      parameters:
+        - name: userCode
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: User info }
+        '500': { description: Fetch failed }
+
+  /users/info/by-gmail/{gmail}:
+    get:
+      summary: Get user info by Gmail
+      operationId: getUserInfoByGmail
+      parameters:
+        - name: gmail
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: User info }
+        '400': { description: Missing Gmail }
+        '500': { description: Fetch failed }
+
+  /users/google-signup:
+    post:
+      summary: Link Google account to user
+      operationId: googleSignup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userCode, googleAccessToken]
+              properties:
+                userCode: { type: string }
+                googleAccessToken: { type: string }
+      responses:
+        '200': { description: Google account linked }
+        '400': { description: Validation error }
+        '500': { description: Signup failed }
+
+  /auth/google:
+    post:
+      summary: Google login via token
+      operationId: googleLoginToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [googleAccessToken]
+              properties:
+                googleAccessToken: { type: string }
+      responses:
+        '200': { description: Login successful }
+        '400': { description: Invalid Gmail }
+        '500': { description: Login failed }
+
+  /auth/google-login:
+    post:
+      summary: Google login via Gmail address
+      operationId: googleLoginEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [gmail]
+              properties:
+                gmail: { type: string }
+      responses:
+        '200': { description: Login successful }
+        '400': { description: Missing Gmail }
+        '500': { description: Login failed }
 
   /health:
     get:
@@ -207,10 +304,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                  service:
-                    type: string
-                  timestamp:
-                    type: string
-                    format: date-time
+                  status: { type: string }
+                  service: { type: string }
+                  timestamp: { type: string, format: date-time }
