@@ -158,6 +158,18 @@ services:
       - notification-network
     restart: unless-stopped
   
+  notification-seeder:                   
+    container_name: notification-seeder
+    build: ./notification-service
+    command: ["node", "seedNotificationInfo.js"]
+    environment:
+      - MONGO_URL=mongodb://notification-mongodb:27017/notification?authSource=admin
+    depends_on:
+      - notification-mongodb
+    networks:
+      - notification-network
+    restart: "no"
+  
   # institution-seeder:
   #   build: ./institution-service
   #   container_name: institution-seeder
@@ -169,7 +181,7 @@ services:
   #   networks: 
   #     - institution-network
   #     - clearsky-network  
-  #   restart: "no"
+  #   restart: "no"                           
 
   institution-service:
     build: ./institution-service
@@ -352,6 +364,32 @@ services:
       - clearsky-network
       - user-management-network
     restart: unless-stopped
+  
+    # grades-seeder:
+    # image: curlimages/curl:latest
+    # container_name: grades-seeder
+    # volumes:
+    #   - ./seed-data.sh:/seed-data.sh
+    #   - ./grades1.xlsx:/data/grades1.xlsx
+    #   - ./grades2.xlsx:/data/grades2.xlsx
+    #   - ./grades3.xlsx:/data/grades3.xlsx
+    #   - ./grades4.xlsx:/data/grades4.xlsx
+    #   - ./grades5.xlsx:/data/grades5.xlsx
+    # entrypoint: ["/bin/sh", "-c", "apk add --no-cache bash && chmod +x /seed-data.sh && /seed-data.sh"]
+    # depends_on:
+    #   - rabbitmq
+    #   - grade-orchestrator
+    #   - userflow-orchestrator
+    #   - institution-credit-service
+    #   - institution-service
+    #   - user-management-service
+    #   - user-auth-service
+    #   - grade-service
+    #   - grade-mongodb
+    # networks:
+    #   - clearsky-network
+    # restart: "no"
+
   
   # frontend:
   #   build: ./frontend
