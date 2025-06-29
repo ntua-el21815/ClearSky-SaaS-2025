@@ -11,7 +11,7 @@ ClearSky is a full-stack web application for managing and analyzing student grad
 ## Tech Stack
 
 ### Frontend
-- **React.js (Vite)** with Tailwind CSS
+-  HTML, JavaScript, CSS
 - `react-query`, `axios`, `chart.js`, `react-router-dom`
 
 ### Backend (Orchestrators)
@@ -69,19 +69,7 @@ git clone https://github.com/ntua/saas25-27.git
 cd saas25-27
 ```
 
-2. **Set up environment variables**
-
-Create `.env` files in each orchestrator and service folder. Example:
-
-```env
-# user-orchestrator/.env
-PORT=5002
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-REDIRECT_URI=http://localhost:5002/auth/google/callback
-```
-
-3. **Run with Docker Compose**
+2. **Run with Docker Compose**
 
 ```bash
 docker-compose up --build
@@ -89,7 +77,7 @@ docker-compose up --build
 
 All services will be available on their respective ports (e.g., 8081, 8100, 9000 etc.).
 
-4. **Open the frontend**
+3. **Open the frontend**
 
 Go to: [http://localhost](http://localhost)
 
