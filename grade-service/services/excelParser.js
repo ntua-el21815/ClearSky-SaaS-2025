@@ -69,7 +69,7 @@ exports.parseExcel = (filePath) => {
   const totalW = Object.entries(metadata)
     .filter(([k]) => /^w\d+$/.test(k))
     .reduce((s, [,v]) => s + (typeof v === "number" ? v : 0), 0);
-  if (Math.abs(totalW - 100) > 0.01) {
+  if (totalW !== 0 && Math.abs(totalW - 100) > 0.01) {
     throw new Error(`Το άθροισμα των βαρών είναι ${totalW}, δεν ισούται με 100`);
   }
 

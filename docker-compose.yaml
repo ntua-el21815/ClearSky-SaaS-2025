@@ -157,6 +157,18 @@ services:
     networks:
       - notification-network
     restart: unless-stopped
+  
+  notification-seeder:                   
+    container_name: notification-seeder
+    build: ./notification-service
+    command: ["node", "seedNotificationInfo.js"]
+    environment:
+      - MONGO_URL=mongodb://notification-mongodb:27017/notification?authSource=admin
+    depends_on:
+      - notification-mongodb
+    networks:
+      - notification-network
+    restart: "no"
 
   institution-service:
     build: ./institution-service

@@ -44,7 +44,20 @@ async function startConsumer() {
       let emails = [];
 
       if (event.type === 'GRADES_POSTED') {
-        emails = event.emails || [];
+        const rawEmails = event.emails || [];
+
+        // Only include emails that exist in UserEmail DB
+        const validEmails = [];
+        for (const email of rawEmails) {
+          const exists = await UserEmail.findOne({ email });
+          if (exists) {
+            validEmails.push(email);
+          } else {
+            //console.warn(`⛔ Email not found in DB, skipping: ${email}`);
+          }
+        }
+
+        emails = validEmails;
       } else if (event.studentId) {
         const entry = await UserEmail.findOne({ studentId: event.studentId });
         if (entry) emails.push(entry.email);
@@ -53,7 +66,7 @@ async function startConsumer() {
       const html = formatNotification(event);
       for (const email of emails) {
         if (!ALLOWED_EMAILS.has(email)) {
-          console.warn(`❌ Blocked email to unauthorized address: ${email}`);
+          //console.warn(`❌ Blocked email to unauthorized address: ${email}`);
           continue;
         }
         await sendEmail(email, '📢 ClearSky Notification', html);
