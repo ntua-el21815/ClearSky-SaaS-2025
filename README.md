@@ -91,7 +91,7 @@ All services will be available on their respective ports (e.g., 8081, 8100, 9000
 
 4. **Open the frontend**
 
-Go to: [http://localhost:5173](http://localhost:5173)
+Go to: [http://localhost](http://localhost)
 
 ---
 
