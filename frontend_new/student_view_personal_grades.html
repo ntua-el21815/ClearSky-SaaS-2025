@@ -214,11 +214,19 @@
 
         renderChart("Total Grade Distribution", stats.finalGradeDistribution || {});
         const qDists = stats.questionDistributionsRaw || {};
-        for (const [q, dist] of Object.entries(qDists)) {
-          if (dist && Object.keys(dist).length > 0) {
-            renderChart(`Question ${q.slice(-2)} Distribution`, dist);
-          }
-        }
+
+// 🔽 Ταξινόμηση κατά αριθμό ερώτησης
+const sortedQuestions = Object.entries(qDists).sort(([qA], [qB]) => {
+  const numA = parseInt(qA.replace(/\D/g, ''), 10);
+  const numB = parseInt(qB.replace(/\D/g, ''), 10);
+  return numA - numB;
+});
+
+for (const [q, dist] of sortedQuestions) {
+  if (dist && Object.keys(dist).length > 0) {
+    renderChart(`Question ${q.replace(/\D/g, '')} Distribution`, dist);
+  }
+}
       } catch (e) {
         document.getElementById("statsContainer").innerHTML = "Failed to load statistics.";
       }

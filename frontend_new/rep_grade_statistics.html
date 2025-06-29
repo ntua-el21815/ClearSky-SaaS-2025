@@ -194,16 +194,18 @@
         );
 
         // Ταξινόμηση των ερωτήσεων βάσει αριθμητικής τιμής (π.χ. Q01 < Q02 < ... < Q10)
-        const sortedQuestions = Object.entries(stats.questionDistributionsRaw)
-        .sort((a, b) => {
-          const numA = parseInt(a[0].replace('Q', ''), 10);
-          const numB = parseInt(b[0].replace('Q', ''), 10);
-          return numA - numB;
-        });
+        if (stats.questionDistributionsRaw && Object.keys(stats.questionDistributionsRaw).length > 0) {
+  const sortedQuestions = Object.entries(stats.questionDistributionsRaw)
+    .sort((a, b) => {
+      const numA = parseInt(a[0].replace('Q', ''), 10);
+      const numB = parseInt(b[0].replace('Q', ''), 10);
+      return numA - numB;
+    });
 
-        for (const [question, dist] of sortedQuestions) {
-          createChart(`Question ${question.replace('Q', '')}`, dist, chartsContainer);
-        }
+  for (const [question, dist] of sortedQuestions) {
+    createChart(`Question ${question.replace('Q', '')}`, dist, chartsContainer);
+  }
+}
 
       } catch (err) {
         console.error(err);

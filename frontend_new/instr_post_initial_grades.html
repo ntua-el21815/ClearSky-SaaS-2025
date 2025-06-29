@@ -197,7 +197,16 @@
 
     const result = await response.json();
 
-    const message = result?.data?.message || result?.message || 'Unknown error';
+    let message = 'Unknown error';
+if (result?.data?.message) {
+  message = result.data.message;
+} else if (result?.message) {
+  message = result.message;
+} else if (result?.error) {
+  message = result.error;
+} else if (typeof result === 'string') {
+  message = result;
+}
 
     if (response.ok && result.success) {
       messageDiv.style.color = 'green';
