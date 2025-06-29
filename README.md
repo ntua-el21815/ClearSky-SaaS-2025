@@ -60,7 +60,7 @@ ClearSky is a full-stack web application for managing and analyzing student grad
 
 ---
 
-## ⚙Installation & Running Locally
+## Installation & Running Locally
 
 1. **Clone the repo**
 
