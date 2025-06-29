@@ -30,7 +30,7 @@ function formatNotification(event) {
         <p style="font-size: 16px; color: #333;">${message}</p>
 
         <div style="margin-top: 30px; text-align: center;">
-          <a href="https://clearsky.example.com" style="background: #0057A0; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+          <a href="http://localhost/" style="background: #0057A0; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none; font-weight: bold;">
             Open ClearSky Platform
           </a>
         </div>
