@@ -64,14 +64,21 @@
   </style>
 </head>
 <body>
+  <div style="background-color: #0a2a66; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; color: white; font-size: 20px; font-weight: bold; margin-bottom: 2rem;">
+    ClearSky
+    <div>
+      <button onclick="connectGoogle()" style="background-color: #e5e7eb; color: #111827; border: none; border-radius: 6px; padding: 8px 14px; margin-right: 0.5rem; cursor: pointer;">
+        Connect with Google
+      </button>
+      <button onclick="logout()" style="background-color: #e5e7eb; color: #111827; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer;">
+        Logout
+      </button>
+    </div>
+  </div>
   <div class="header-row">
     <div>
       <h2>My Courses</h2>
       <p id="studentInfo">Loading...</p>
-    </div>
-    <div>
-      <button class="btn btn-secondary" onclick="logout()">Logout</button>
-      <button class="btn btn-primary" onclick="connectGoogle()" style="margin-left: 10px;">Connect to Google</button>
     </div>
   </div>
 

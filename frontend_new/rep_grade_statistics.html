@@ -81,7 +81,12 @@
 </head>
 <body>
 
-  <h2>📊 Grade Statistics (Institution Rep)</h2>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h2>Course Grade Statistics (Institution Rep)</h2>
+    <button onclick="window.location.href='rep_dashboard.html'" style="padding: 8px 14px; background: #e5e7eb; color: #111827; border: none; border-radius: 6px; cursor: pointer;">
+      Return to Dashboard
+    </button>
+  </div>
 
   <input type="text" id="courseIdInput" placeholder="Enter Course ID..." />
   <button onclick="loadStatistics()">Load Statistics</button>

@@ -27,9 +27,7 @@
       font-size: 16px;
     }
 
-    .dashboard-btn {
-      background-color: #0a2a66;
-      color: white;
+    .btn {
       padding: 10px 20px;
       font-size: 15px;
       border: none;
@@ -37,8 +35,31 @@
       cursor: pointer;
     }
 
-    .dashboard-btn:hover {
-      background-color: #07306a;
+    .btn-primary {
+      background-color: #0a2a66;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #083075;
+    }
+
+    .btn-danger {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #c0392b;
+    }
+
+    .btn-secondary {
+      background-color: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-secondary:hover {
+      background-color: #d1d5db;
     }
 
     .stats-container {
@@ -97,48 +118,39 @@
       margin-bottom: 1rem;
     }
 
-    .section-card button {
-      background-color: #0a2a66;
-      color: white;
+    /* .section-card button styles moved to .btn/.btn-primary */
+
+    .logout-button {
+      position: absolute;
+      top: 1rem;
+      right: 2rem;
+      background-color: #e5e7eb;
+      color: #111827;
       border: none;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 15px;
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 6px;
       cursor: pointer;
     }
 
-    .section-card button:hover {
-      background-color: #083075;
-    }
-
-    .logout-container {
-      text-align: center;
-      margin-top: 2rem;
-    }
-
-    .logout-btn {
-      background-color: #e74c3c;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 15px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    .logout-btn:hover {
-      background-color: #c0392b;
+    .logout-button:hover {
+      background-color: #d1d5db;
     }
   </style>
 </head>
 <body>
+ 
+  <div style="background-color: #0a2a66; padding: 1rem 2rem; color: white; font-size: 22px; font-weight: bold; margin-bottom: 2rem;">
+    ClearSky
+  </div>
   <div class="dashboard-header">
     <div>
-        <h1>Institution Dashboard</h1>
+        <h1 style="color: #0a2a66;">Institution Dashboard</h1>
         <p>Manage your institution's grading platform</p>
     </div>
     <div>
-      <button class="dashboard-btn" onclick="connectGoogle()">Connect with Google</button>
+      <button class="btn btn-primary" onclick="connectGoogle()">Connect with Google</button>
+      <button class="btn btn-secondary" onclick="logout()" style="margin-left: 0.5rem;">Logout</button>
     </div>
   </div>
 
@@ -164,31 +176,28 @@
     <div class="section-card">
       <div class="section-title">Update Institution</div>
       <div class="section-desc">Update your institution information</div>
-      <button onclick="location.href='rep_update_institution.html'">Update Institution</button>
+      <button class="btn btn-primary" onclick="location.href='rep_update_institution.html'">Update Institution</button>
     </div>
 
     <div class="section-card">
       <div class="section-title">Grade Statistics</div>
       <div class="section-desc">Analyze grading outcomes</div>
-      <button onclick="location.href='rep_grade_statistics.html'">Grade Statistics</button>
+      <button class="btn btn-primary" onclick="location.href='rep_grade_statistics.html'">Grade Statistics</button>
     </div>
 
     <div class="section-card">
       <div class="section-title">Credits Management</div>
       <div class="section-desc">Purchase additional credits</div>
-      <button onclick="location.href='rep_purchase_credits.html'">Purchase Credits</button>
+      <button class="btn btn-primary" onclick="location.href='rep_purchase_credits.html'">Purchase Credits</button>
     </div>
 
     <div class="section-card">
       <div class="section-title">User Administration</div>
       <div class="section-desc">Manage users and permissions</div>
-      <button onclick="location.href='rep_user_management.html'">User Management</button>
+      <button class="btn btn-primary" onclick="location.href='rep_user_management.html'">User Management</button>
     </div>
   </div>
 
-  <div class="logout-container">
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
 
   <script>
 
@@ -278,7 +287,7 @@ async function connectGoogle() {
         const user = result.user;
 
         if (user.gmail) {
-          alert("✅ Ο λογαριασμός σου είναι ήδη συνδεδεμένος με: " + user.gmail);
+          alert("Ο λογαριασμός σου είναι ήδη συνδεδεμένος με: " + user.gmail);
           return;
         }
 
@@ -293,7 +302,7 @@ async function connectGoogle() {
         window.location.href = `${baseUrl}?${params.toString()}`;
       } catch (err) {
         console.error(err);
-        alert('❌ Σφάλμα κατά τον έλεγχο λογαριασμού.');
+        alert('Σφάλμα κατά τον έλεγχο λογαριασμού.');
       }
     }
 

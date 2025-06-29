@@ -22,27 +22,6 @@
       text-align: center;
     }
 
-    .logo-title-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .logo {
-      width: 44px;
-      height: 44px;
-      background-color: #0a2a66;
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 22px;
-    }
-
     .title {
       font-size: 20px;
       font-weight: bold;
@@ -87,16 +66,6 @@
       background-color: #083075;
     }
 
-    .logout-btn {
-      background-color: #e74c3c;
-      color: white;
-      margin-top: 1rem;
-    }
-
-    .logout-btn:hover {
-      background-color: #c0392b;
-    }
-
     .message {
       margin-top: 1rem;
       font-weight: bold;
@@ -106,10 +75,6 @@
 </head>
 <body>
   <div class="card">
-    <div class="logo-title-row">
-      <div class="logo">C</div>
-      <p class="title">ClearSky</p>
-    </div>
     <p class="subtitle">Add New User Account</p>
 
     <form onsubmit="createUser(event)">
@@ -122,11 +87,14 @@
         <option value="instructor">Instructor</option>
       </select>
       <input type="text" id="userCode" placeholder="User Code (π.χ. 031xxxxx)" required>
-      <button type="submit" class="btn submit-btn">➕ Add User</button>
+      <button type="submit" class="btn submit-btn">Add User</button>
     </form>
 
+    <button class="btn" style="background-color: #e5e7eb; color: #111827; margin-top: 1.5rem;" onclick="window.location.href='rep_dashboard.html'">
+      Return to Dashboard
+    </button>
+
     <div class="message" id="message"></div>
-    <button class="btn logout-btn" onclick="logout()">🚪 Logout</button>
   </div>
 
   <script>

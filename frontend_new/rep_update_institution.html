@@ -64,14 +64,22 @@
     }
 
     .primary {
-      background-color: #1e3a8a;
+      background-color: #0a2a66;
       color: white;
+    }
+
+    .primary:hover {
+      background-color: #083075;
     }
 
     .secondary {
       background-color: #f3f4f6;
       color: #111827;
       border: 1px solid #d1d5db;
+    }
+
+    .secondary:hover {
+      background-color: #e5e7eb;
     }
 
     .message {
@@ -99,6 +107,7 @@
 
     <div class="buttons">
       <button class="primary" onclick="submitUpdate()">Submit</button>
+      <button class="secondary" onclick="window.location.href='rep_dashboard.html'">Return to Dashboard</button>
     </div>
 
     <div class="message" id="message"></div>

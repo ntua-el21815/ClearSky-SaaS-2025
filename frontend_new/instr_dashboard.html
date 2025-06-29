@@ -93,29 +93,23 @@
       font-size: 14px;
     }
 
-    .logout-btn {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background-color: #e74c3c;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    .logout-btn:hover {
-      background-color: #c0392b;
-    }
     .notification-badge {
       display: none; /* start hidden */
     }
   </style>
 </head>
 <body>
-  <button class="logout-btn" onclick="logout()">Logout</button>
-  <button class="logout-btn" style="right: 110px;" onclick="connectGoogle()">Connect with Google</button>
+  <div style="background-color: #0a2a66; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; color: white; font-size: 20px; font-weight: bold; margin-bottom: 2rem;">
+    ClearSky
+    <div>
+      <button onclick="connectGoogle()" style="background-color: #e5e7eb; color: #111827; border: none; border-radius: 6px; padding: 8px 14px; margin-right: 0.5rem; cursor: pointer;">
+        Connect with Google
+      </button>
+      <button onclick="logout()" style="background-color: #e5e7eb; color: #111827; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer;">
+        Logout
+      </button>
+    </div>
+  </div>
 
   <div style="text-align: center; margin-bottom: 2rem;">
     <h1 style="margin: 0; font-size: 2rem; font-weight: 700; color: #111827;">Instructor Dashboard</h1>

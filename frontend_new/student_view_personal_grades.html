@@ -67,6 +67,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+  <div style="background-color: #0a2a66; padding: 1rem 2rem; color: white; font-size: 20px; font-weight: bold; margin-bottom: 2rem;">
+    ClearSky
+  </div>
   <div class="header-row">
     <div>
       <h2>My Grade</h2>
@@ -122,15 +125,23 @@
         const grades = gradeJson?.student;
         if (!grades) throw new Error("Grade not found");
 
-        let gradeHTML = `<h3>Your Grade: ${grades.grade ?? 'N/A'}</h3>`;
+        let gradeHTML = `<h3>Total Grade: ${grades.grade ?? 'N/A'}</h3>`;
         if (grades.responses && Object.keys(grades.responses).length > 0) {
-          gradeHTML += `
-            <table>
-              <thead><tr><th>Question</th><th>Grade</th></tr></thead>
-              <tbody>
-                ${Object.entries(grades.responses).map(([q, g]) => `<tr><td>Q${q}</td><td>${g}</td></tr>`).join('')}
-              </tbody>
-            </table>`;
+          const sortedEntries = Object.entries(grades.responses).sort((a, b) => {
+            const aNum = parseInt(a[0].replace(/[^\d]/g, '')) || 0;
+            const bNum = parseInt(b[0].replace(/[^\d]/g, '')) || 0;
+            return aNum - bNum;
+          });
+
+          gradeHTML += '<table><thead><tr>';
+          for (const [question] of sortedEntries) {
+            gradeHTML += `<th>${question}</th>`;
+          }
+          gradeHTML += '</tr></thead><tbody><tr>';
+          for (const [, grade] of sortedEntries) {
+            gradeHTML += `<td>${grade}</td>`;
+          }
+          gradeHTML += '</tr></tbody></table>';
         }
 
         document.getElementById("gradeContainer").innerHTML = gradeHTML;
