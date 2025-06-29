@@ -609,7 +609,7 @@ app.get('/oauth2callback', async (req, res) => {
   ? 'google_login.html'
   : 'google_connect.html';
 
-const redirectUrl = `http://127.0.0.1:5500/frontend_new/${redirectTarget}?token=${tokens.access_token}`;
+const redirectUrl = `http://localhost/${redirectTarget}?token=${tokens.access_token}`;
 return res.redirect(redirectUrl);
 
   } catch (err) {
