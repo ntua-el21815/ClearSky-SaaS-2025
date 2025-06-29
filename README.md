@@ -11,7 +11,7 @@ ClearSky is a full-stack web application for managing and analyzing student grad
 ## Tech Stack
 
 ### Frontend
--  HTML, JavaScript, CSS
+- `HTML`, `JavaScript`, `CSS`
 - `react-query`, `axios`, `chart.js`, `react-router-dom`
 
 ### Backend (Orchestrators)
